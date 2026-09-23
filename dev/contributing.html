@@ -372,6 +372,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#list-of-existing-rules" id="toc-list-of-existing-rules" class="nav-link" data-scroll-target="#list-of-existing-rules">List of existing rules</a></li>
   <li><a href="#lint-definition" id="toc-lint-definition" class="nav-link" data-scroll-target="#lint-definition">Lint definition</a></li>
   <li><a href="#adding-a-new-rule" id="toc-adding-a-new-rule" class="nav-link" data-scroll-target="#adding-a-new-rule">Adding a new rule</a></li>
+  <li><a href="#documenting-a-new-rule" id="toc-documenting-a-new-rule" class="nav-link" data-scroll-target="#documenting-a-new-rule">Documenting a new rule</a></li>
   <li><a href="#useful-commands" id="toc-useful-commands" class="nav-link" data-scroll-target="#useful-commands">Useful commands</a></li>
   </ul></li>
   <li><a href="#integration-tests" id="toc-integration-tests" class="nav-link" data-scroll-target="#integration-tests">Integration tests</a></li>
@@ -407,7 +408,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Jarl relies on Insta to run snapshot tests. You can install it with:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> install cargo-insta</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Jarl uses <a href="https://github.com/casey/just" target="_blank">just</a> to quickly run several useful commands, such as <code>just document</code> or <code>just lint</code> (see the list of commands with <code>just -l</code>). When updating a rule, use <code>just document --no-quarto</code> to regenerate its Markdown page without rendering the full website. Run <code>just document</code> when you also need to render the website.</p>
-<p>For full website rendering, you will need <a href="https://quarto.org/" target="_blank">Quarto</a> and the R packages <code>reactable</code>, <code>rmarkdown</code>, and <code>yaml</code> installed.</p>
+<p>For full website rendering, you will need <a href="https://quarto.org/" target="_blank">Quarto</a> and the R packages <code>reactable</code>, <code>rmarkdown</code>, and <code>yaml12</code> installed.</p>
 </section>
 <section id="ai-policy" class="level2">
 <h2 class="anchored" data-anchor-id="ai-policy">AI policy</h2>
@@ -453,6 +454,33 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>Add tests in <code>src/lints/&lt;group&gt;/&lt;rulename&gt;/mod.rs</code></li>
 <li>Add the rule in the <code>src/analyze</code> folder. This depends on the initial node in the AST. For instance, for the rule <code>equals_na</code>, we check the presence of code such as <code>x == NA</code>. Since the top node for this expression is a <code>R_BINARY_EXPRESSION</code>, this rule is ran in <code>src/analyze/binary_expression.rs</code>.</li>
 </ol>
+</section>
+<section id="documenting-a-new-rule" class="level3">
+<h3 class="anchored" data-anchor-id="documenting-a-new-rule">Documenting a new rule</h3>
+<p>The documentation used in <code>jarl rule &lt;rulename&gt;</code> and on the Jarl website is generated from the documentation block in the <code>&lt;rulename.rs&gt;</code> file.</p>
+<p>The documentation block is positioned after any imports and declarations but before any of the code that operates the rule checks. The documentation block must be commented out using three slashes (<code>///</code>), it must start with the marker <code>&lt;!-- docs: start --&gt;</code> and end with the marker <code>&lt;!-- docs: end --&gt;</code>. Commented content outside of these markers will be ignored. The content of the documentation block uses standard markdown notation. Although the documentation website is built using Quarto, do not include any executable code as the documentation is extracted into plain markdown files.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">/// &lt;!-- docs: start --&gt;</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co">/// Version added: 0.1.2</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">///</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co">/// ## What it does</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">///</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co">/// Checks for usage of `do.call(cbind.data.frame, x)`.</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co">///</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co">/// [...]</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co">/// &lt;!-- docs: end --&gt;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The first line of a documentation block must declare the version added (in <code>MAJOR.MINOR.PATCH</code> format). The documentation block should have the following subsections (each using a level 2 (<code>##</code>) markdown header):</p>
+<ul>
+<li>“What is does” to explain what the rule does</li>
+<li>“Why is this bad?” to explain the rationale for the rule and potential caveats</li>
+<li>“Example” to illustrate code that will be flagged by the rule and code that will not be flagged by the rule</li>
+<li>Potentially a “References” section, such as <code>?&lt;function&gt;</code> if more details about the <code>&lt;function&gt;</code> the rule relates to can be found in R help, and/or links to external websites.</li>
+</ul>
+<p>If the rule has configuration options, these should be documented in the rule’s <code>options.rs</code> file and will be automatically included in the rule’s documentation page under the subsection heading “Configuration options”. Options documentation should also be commented out using three slashes and include <code>&lt;!-- docs: start --&gt;</code> and <code>&lt;!-- docs: end --&gt;</code> markers. The options documentation should explain the purpose of any option(s), their possible values and their effect(s). It should also have the following level 3 (<code>###</code>) subsections:</p>
+<ul>
+<li>“Default values” to specify the default settings (if any) used by Jarl when checking the rule, for example any functions that the rule check skips.</li>
+<li>“TOML settings” to show how to set the rule’s configuration options in the <code>jarl.toml</code> file.</li>
+</ul>
+<p>Use <code>just document</code> to build the documentation.</p>
 </section>
 <section id="useful-commands" class="level3">
 <h3 class="anchored" data-anchor-id="useful-commands">Useful commands</h3>

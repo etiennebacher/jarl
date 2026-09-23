@@ -918,7 +918,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#what-it-does" id="toc-what-it-does" class="nav-link" data-scroll-target="#what-it-does">What it does</a></li>
   <li><a href="#why-is-this-bad" id="toc-why-is-this-bad" class="nav-link" data-scroll-target="#why-is-this-bad">Why is this bad?</a></li>
-  <li><a href="#configuration" id="toc-configuration" class="nav-link" data-scroll-target="#configuration">Configuration</a></li>
+  <li><a href="#configuration-options" id="toc-configuration-options" class="nav-link" data-scroll-target="#configuration-options">Configuration options</a>
+  <ul class="collapse">
+  <li><a href="#default-values" id="toc-default-values" class="nav-link" data-scroll-target="#default-values">Default values</a></li>
+  <li><a href="#toml-settings" id="toc-toml-settings" class="nav-link" data-scroll-target="#toml-settings">TOML settings</a></li>
+  </ul></li>
   <li><a href="#example" id="toc-example" class="nav-link" data-scroll-target="#example">Example</a></li>
   </ul></li>
   </ul>
@@ -953,16 +957,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="why-is-this-bad">Why is this bad?</h2>
 <p>Some operators may be undesirable because they make the code less robust, more complex, or more prone to footguns. For example, <code>:::</code> accesses a package’s internal functions, meaning that they may disappear or behave differently without notice if the package changes. <code>&lt;&lt;-</code> and <code>-&gt;&gt;</code> assign outside the current environment and may lead to code that is harder to predict.</p>
 </section>
-<section id="configuration" class="level2">
-<h2 class="anchored" data-anchor-id="configuration">Configuration</h2>
-<p>By default, only <code>-&gt;&gt;</code>, <code>:::</code>, and <code>&lt;&lt;-</code> are flagged. You can customize the list in <code>jarl.toml</code>:</p>
-<p>To replace the default list entirely:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.undesirable_operator]</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="dt">operators</span> <span class="op">=</span> <span class="op">[</span><span class="st">"%notin%"</span><span class="op">,</span> <span class="st">"&amp;&amp;"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>To add to the defaults:</p>
+<section id="configuration-options" class="level2">
+<h2 class="anchored" data-anchor-id="configuration-options">Configuration options</h2>
+<p>The operation of the <code>undesirable_operator</code> rule can be customised in the <a href="../reference/config-file.html" target="_blank">configuration file</a>.</p>
+<p>Use <code>operators</code> to fully replace the default list of undesirable operators. Use <code>extend-operators</code> to add to the default list. Specifying both is an error.</p>
+<section id="default-values" class="level3">
+<h3 class="anchored" data-anchor-id="default-values">Default values</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="dt">operators</span> <span class="op">=</span> <span class="op">[</span><span class="st">"-&gt;&gt;"</span><span class="op">,</span> <span class="st">":::"</span><span class="op">,</span> <span class="st">"&lt;&lt;-"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="toml-settings" class="level3">
+<h3 class="anchored" data-anchor-id="toml-settings">TOML settings</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.undesirable_operator]</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="dt">extend-operators</span> <span class="op">=</span> <span class="op">[</span><span class="st">"&amp;&amp;"</span><span class="op">,</span> <span class="st">"%in%"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Specifying both <code>operators</code> and <code>extend-operators</code> is an error.</p>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Replace the default list entirely:</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="dt">operators</span> <span class="op">=</span> <span class="op">[</span><span class="st">":::"</span><span class="op">,</span> <span class="st">"%in%"</span><span class="op">]</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Or add to the defaults:</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="dt">extend-operators</span> <span class="op">=</span> <span class="op">[</span><span class="st">"%in%"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
 </section>
 <section id="example" class="level2">
 <h2 class="anchored" data-anchor-id="example">Example</h2>

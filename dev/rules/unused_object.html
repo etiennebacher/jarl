@@ -922,6 +922,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#limitations" id="toc-limitations" class="nav-link" data-scroll-target="#limitations">Limitations</a></li>
   <li><a href="#in-r-markdown-and-quarto-files" id="toc-in-r-markdown-and-quarto-files" class="nav-link" data-scroll-target="#in-r-markdown-and-quarto-files">In R Markdown and Quarto files</a></li>
   <li><a href="#in-roxygen-examples" id="toc-in-roxygen-examples" class="nav-link" data-scroll-target="#in-roxygen-examples">In roxygen examples</a></li>
+  <li><a href="#configuration-options" id="toc-configuration-options" class="nav-link" data-scroll-target="#configuration-options">Configuration options</a>
+  <ul class="collapse">
+  <li><a href="#default-values" id="toc-default-values" class="nav-link" data-scroll-target="#default-values">Default values</a></li>
+  <li><a href="#toml-settings" id="toc-toml-settings" class="nav-link" data-scroll-target="#toml-settings">TOML settings</a></li>
+  </ul></li>
   <li><a href="#examples" id="toc-examples" class="nav-link" data-scroll-target="#examples">Examples</a></li>
   </ul></li>
   </ul>
@@ -1015,10 +1020,42 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="in-roxygen-examples">In roxygen examples</h2>
 <p>R code in <code>@examples</code> and <code>@examplesIf</code> sections is checked too, in files under <code>R/</code> in a package. This can be turned off with <code>check-roxygen</code>.</p>
 </section>
+<section id="configuration-options" class="level2">
+<h2 class="anchored" data-anchor-id="configuration-options">Configuration options</h2>
+<p>The operation of the <code>unused_object</code> rule can be customised in the <a href="../reference/config-file.html" target="_blank">configuration file</a>.</p>
+<p>Use <code>skipped-functions</code> to fully replace the default list of calls whose directly-assigned arguments are allowed to be unused. Use <code>extend-skipped-functions</code> to add to the default list. Specifying both is an error.</p>
+<p>Function names in <code>skipped-functions</code> or <code>extend-skipped-functions</code> also match namespaced calls, e.g.&nbsp;<code>skipped-functions = ["expect_error"]</code> will allow <code>expect_error()</code> and <code>testthat::expect_error()</code>.</p>
+<p>Only the direct argument position counts: an assignment nested in a block or in a function defined inside the call is an ordinary local and is still reported.</p>
+<section id="default-values" class="level3">
+<h3 class="anchored" data-anchor-id="default-values">Default values</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="dt">skipped-functions</span> <span class="op">=</span> <span class="op">[</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"expect_error"</span><span class="op">,</span>         <span class="co"># from {testthat}</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"expect_warning"</span><span class="op">,</span>       <span class="co"># from {testthat}</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"expect_message"</span><span class="op">,</span>       <span class="co"># from {testthat}</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"expect_silent"</span><span class="op">,</span>        <span class="co"># from {testthat}</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">"expect_defunct"</span><span class="op">,</span>       <span class="co"># from {lifecycle}</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">"expect_deprecated"</span><span class="op">,</span>    <span class="co"># from {lifecycle}</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"expect_snapshot"</span><span class="op">,</span>      <span class="co"># from {testthat}</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">"expect_no_condition"</span><span class="op">,</span>  <span class="co"># from {testthat}</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">"expect_no_warning"</span><span class="op">,</span>    <span class="co"># from {testthat}</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">"expect_no_error"</span><span class="op">,</span>      <span class="co"># from {testthat}</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">"expect_no_message"</span>     <span class="co"># from {testthat}</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="toml-settings" class="level3">
+<h3 class="anchored" data-anchor-id="toml-settings">TOML settings</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="dt">...</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.unused_object]</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Also allow an unused assignment passed straight to `my_expect()`.</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="dt">extend-skipped-functions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"my_expect"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
 <section id="examples" class="level2">
 <h2 class="anchored" data-anchor-id="examples">Examples</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="dv">1</span>   <span class="co"># unused</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(y)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="dv">1</span>   <span class="co"># unused</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(y)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
 </section>

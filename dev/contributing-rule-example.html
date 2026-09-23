@@ -376,6 +376,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#implement-the-rule" id="toc-implement-the-rule" class="nav-link" data-scroll-target="#implement-the-rule">Implement the rule</a></li>
   <li><a href="#add-toml-options" id="toc-add-toml-options" class="nav-link" data-scroll-target="#add-toml-options">Add TOML options</a></li>
   <li><a href="#add-tests" id="toc-add-tests" class="nav-link" data-scroll-target="#add-tests">Add tests</a></li>
+  <li><a href="#add-documentation" id="toc-add-documentation" class="nav-link" data-scroll-target="#add-documentation">Add documentation</a></li>
   <li><a href="#all-the-rest" id="toc-all-the-rest" class="nav-link" data-scroll-target="#all-the-rest">All the rest</a></li>
   </ul></li>
   <li><a href="#proposing-your-changes" id="toc-proposing-your-changes" class="nav-link" data-scroll-target="#proposing-your-changes">Proposing your changes</a>
@@ -541,28 +542,30 @@ Important
 <span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">struct</span> List2Df<span class="op">;</span></span>
 <span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co">/// Version added: 0.1.2</span></span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="co">///</span></span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="co">/// ## What it does</span></span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="co">///</span></span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="co">/// Checks for usage of `do.call(cbind.data.frame, x)`.</span></span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="co">///</span></span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="co">/// [...]</span></span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="kw">impl</span> Violation <span class="cf">for</span> List2Df <span class="op">{</span></span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">fn</span> rule(<span class="op">&amp;</span><span class="kw">self</span>) <span class="op">-&gt;</span> Rule <span class="op">{</span></span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>        <span class="pp">Rule::</span>List2df</span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">fn</span> body(<span class="op">&amp;</span><span class="kw">self</span>) <span class="op">-&gt;</span> <span class="dt">String</span> <span class="op">{</span></span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>        <span class="st">"`do.call(cbind.data.frame, x)` is inefficient and can be hard to read."</span><span class="op">.</span>to_string()</span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>    <span class="kw">fn</span> suggestion(<span class="op">&amp;</span><span class="kw">self</span>) <span class="op">-&gt;</span> <span class="dt">Option</span><span class="op">&lt;</span><span class="dt">String</span><span class="op">&gt;</span> <span class="op">{</span></span>
-<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Some</span>(<span class="st">"Use `list2DF(x)` instead."</span><span class="op">.</span>to_string())</span>
-<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> list2df(ast<span class="op">:</span> <span class="op">&amp;</span>RCall<span class="op">,</span> fn_name<span class="op">:</span> <span class="op">&amp;</span><span class="dt">str</span>) <span class="op">-&gt;</span> <span class="pp">anyhow::</span><span class="dt">Result</span><span class="op">&lt;</span><span class="dt">Option</span><span class="op">&lt;</span>Diagnostic<span class="op">&gt;&gt;</span> <span class="op">{</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co">/// &lt;!-- docs: start --&gt;</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="co">/// Version added: 0.1.2</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="co">///</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="co">/// ## What it does</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="co">///</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="co">/// Checks for usage of `do.call(cbind.data.frame, x)`.</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="co">///</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="co">/// [...]</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="co">/// &lt;!-- docs: end --&gt;</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="kw">impl</span> Violation <span class="cf">for</span> List2Df <span class="op">{</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">fn</span> rule(<span class="op">&amp;</span><span class="kw">self</span>) <span class="op">-&gt;</span> Rule <span class="op">{</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>        <span class="pp">Rule::</span>List2df</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">fn</span> body(<span class="op">&amp;</span><span class="kw">self</span>) <span class="op">-&gt;</span> <span class="dt">String</span> <span class="op">{</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>        <span class="st">"`do.call(cbind.data.frame, x)` is inefficient and can be hard to read."</span><span class="op">.</span>to_string()</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>    <span class="kw">fn</span> suggestion(<span class="op">&amp;</span><span class="kw">self</span>) <span class="op">-&gt;</span> <span class="dt">Option</span><span class="op">&lt;</span><span class="dt">String</span><span class="op">&gt;</span> <span class="op">{</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Some</span>(<span class="st">"Use `list2DF(x)` instead."</span><span class="op">.</span>to_string())</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
 <span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> list2df(ast<span class="op">:</span> <span class="op">&amp;</span>RCall<span class="op">,</span> fn_name<span class="op">:</span> <span class="op">&amp;</span><span class="dt">str</span>) <span class="op">-&gt;</span> <span class="pp">anyhow::</span><span class="dt">Result</span><span class="op">&lt;</span><span class="dt">Option</span><span class="op">&lt;</span>Diagnostic<span class="op">&gt;&gt;</span> <span class="op">{</span></span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Let’s analyze this by blocks:</p>
 <ul>
 <li>the first lines import required crates and functions, declare the signature of the function we target (more on this below), and define a struct using the rule name (in TitleCase);</li>
@@ -714,7 +717,7 @@ Important
 <p>Finally:</p>
 <ul>
 <li>run <code>just gen-schema</code> to update <code>artifacts/jarl.schema.json</code>;</li>
-<li>document the option for users in <code>docs/reference/config-file.md</code> (this page is written by hand, it is not generated from the Rust code);</li>
+<li>document the option for users (see the section below on adding documentation);</li>
 <li>add integration tests in <code>crates/jarl/tests/integration/toml_rule_args.rs</code>, covering invalid values, unknown fields in the rule table, and the option actually changing what is reported.</li>
 </ul>
 </div>
@@ -823,6 +826,10 @@ Important
 <span id="cb25-23"><a href="#cb25-23" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
 </ol>
 <p>Since we have snapshot tests, we first need to run <code>cargo insta test</code> to generate the snapshots and then <code>cargo insta review</code> to review and validate them. After that, run <code>cargo test</code> to ensure that all tests pass.</p>
+</section>
+<section id="add-documentation" class="level3">
+<h3 class="anchored" data-anchor-id="add-documentation">Add documentation</h3>
+<p>The documentation used in <code>jarl rule &lt;rulename&gt;</code> and on the Jarl website is automatically generated from a documentation block in the <code>&lt;rulename.rs&gt;</code> file. See the details in the <a href="./contributing.html#documenting-a-new-rule" target="_blank">general information on contributing</a>.</p>
 </section>
 <section id="all-the-rest" class="level3">
 <h3 class="anchored" data-anchor-id="all-the-rest">All the rest</h3>

@@ -917,7 +917,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#expect_null" id="toc-expect_null" class="nav-link active" data-scroll-target="#expect_null">expect_null</a>
   <ul>
   <li><a href="#what-it-does" id="toc-what-it-does" class="nav-link" data-scroll-target="#what-it-does">What it does</a></li>
-  <li><a href="#why-is-this-bad" id="toc-why-is-this-bad" class="nav-link" data-scroll-target="#why-is-this-bad">Why is this bad</a></li>
+  <li><a href="#why-is-this-bad" id="toc-why-is-this-bad" class="nav-link" data-scroll-target="#why-is-this-bad">Why is this bad?</a></li>
   <li><a href="#example" id="toc-example" class="nav-link" data-scroll-target="#example">Example</a></li>
   </ul></li>
   </ul>
@@ -949,7 +949,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Checks for usage of <code>expect_equal(x, NULL)</code>, <code>expect_identical(x, NULL)</code>, and <code>expect_true(is.null(x))</code>.</p>
 </section>
 <section id="why-is-this-bad" class="level2">
-<h2 class="anchored" data-anchor-id="why-is-this-bad">Why is this bad</h2>
+<h2 class="anchored" data-anchor-id="why-is-this-bad">Why is this bad?</h2>
 <p><code>expect_null()</code> is more explicit and clearer in intent than comparing with <code>expect_equal()</code>, <code>expect_identical()</code>, or wrapping <code>is.null()</code> in <code>expect_true()</code>. It also provides better error messages when tests fail.</p>
 <p>This rule is <strong>disabled by default</strong>. Select it either with the rule name <code>"expect_null"</code> or with the rule group <code>"TESTTHAT"</code>.</p>
 </section>
