@@ -10,9 +10,9 @@ const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &["try", "tryCatch", "withCallingHand
 /// Use `skipped-functions` to fully replace the default list of outer calls
 /// whose nested pipes are allowed. Use `extend-skipped-functions` to add to the
 /// default list. Specifying both is an error.
-/// 
+///
 /// ### Default values
-/// 
+///
 /// ```toml
 /// skipped-functions = [
 ///     "try",
@@ -20,13 +20,13 @@ const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &["try", "tryCatch", "withCallingHand
 ///     "withCallingHandlers"
 /// ]
 /// ```
-/// 
+///
 /// ### TOML settings
-/// 
+///
 /// ```toml
 /// [lint]
 /// ...
-/// 
+///
 /// [lint.nested_pipe]
 /// # also allow in stopifnot()
 /// extend-skipped-fuctions = ["stopifnot"]

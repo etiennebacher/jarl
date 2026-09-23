@@ -10,13 +10,13 @@ const DEFAULT_STOPPING_FUNCTIONS: &[&str] =
 /// Use `stopping-functions` to fully replace the default list of functions that are
 /// considered to stop execution (never return). Use `extend-stopping-functions` to
 /// add to the default list. Specifying both is an error.
-/// 
+///
 /// Function names in `stopping-functions` or `extend-stopping-functions` also match
 /// namespaced calls, e.g. `stopping-functions = ["abort"]` will consider `abort()`
 /// and `rlang::abort()` as stopping functions.
-/// 
+///
 /// ### Default values
-/// 
+///
 /// ```toml
 /// stopping-functions = [
 ///     "stop",
@@ -27,13 +27,13 @@ const DEFAULT_STOPPING_FUNCTIONS: &[&str] =
 ///     "quit"
 /// ]
 /// ```
-/// 
+///
 /// ### TOML settings
-/// 
+///
 /// ```toml
 /// [lint]
 /// ...
-/// 
+///
 /// [lint.unreachable_code]
 /// # Add a custom function to the list of stopping functions
 /// extend-stopping-functions = ["my_custom_stop"]

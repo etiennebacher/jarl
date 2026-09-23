@@ -9,15 +9,15 @@ const DEFAULT_FUNCTIONS: &[&str] = &["browser"];
 /// Use `functions` to fully replace the default list of undesirable functions.
 /// Use `extend-functions` to add to the default list.
 /// Specifying both is an error.
-/// 
+///
 /// ### Default values
-/// 
+///
 /// ```toml
 /// functions = ["browser"]
 /// ```
 ///
 /// ### TOML settings
-/// 
+///
 /// ```toml
 /// [lint.undesirable_function]
 /// # Replace the default list entirely:

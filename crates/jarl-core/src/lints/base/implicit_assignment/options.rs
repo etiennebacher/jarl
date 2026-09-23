@@ -27,16 +27,16 @@ const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &[
 /// Use `skipped-functions` to fully replace the default list of functions that are
 /// allowed to contain implicit assignment. Use `extend-skipped-functions` to add to
 /// the default list. Specifying both is an error.
-/// 
+///
 /// Function names in `skipped-functions` or `extend-skipped-functions` also match
 /// namespaced calls, e.g. `skipped-functions = ["list2"]` will ignore `list2()` and
 /// `rlang::list2()`.
-/// 
+///
 /// ### Default values
-/// 
+///
 /// ```toml
 /// skipped-functions = [
-///     "alist", 
+///     "alist",
 ///     "expect_error",         # from {testthat}
 ///     "expect_warning",       # from {testthat}
 ///     "expect_message",       # from {testthat}
@@ -54,13 +54,13 @@ const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &[
 ///     "try"
 /// ]
 /// ```
-/// 
+///
 /// ### TOML settings
-/// 
+///
 /// ```toml
 /// [lint]
 /// ...
-/// 
+///
 /// [lint.implicit_assignment]
 /// # Ignore implicit assignment in `list()` only.
 /// skipped-functions = ["list"]

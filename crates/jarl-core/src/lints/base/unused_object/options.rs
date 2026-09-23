@@ -21,16 +21,16 @@ const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &[
 /// directly-assigned arguments are allowed to be unused. Use
 /// `extend-skipped-functions` to add to the default list. Specifying both is an
 /// error.
-/// 
+///
 /// Function names in `skipped-functions` or `extend-skipped-functions` also match
 /// namespaced calls, e.g. `skipped-functions = ["expect_error"]` will allow
 /// `expect_error()` and `testthat::expect_error()`.
-/// 
+///
 /// Only the direct argument position counts: an assignment nested in a block or in
 /// a function defined inside the call is an ordinary local and is still reported.
-/// 
+///
 /// ### Default values
-/// 
+///
 /// ```toml
 /// skipped-functions = [
 ///     "expect_error",         # from {testthat}
@@ -46,13 +46,13 @@ const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &[
 ///     "expect_no_message"     # from {testthat}
 /// ]
 /// ```
-/// 
+///
 /// ### TOML settings
-/// 
+///
 /// ```toml
 /// [lint]
 /// ...
-/// 
+///
 /// [lint.unused_object]
 /// # Also allow an unused assignment passed straight to `my_expect()`.
 /// extend-skipped-functions = ["my_expect"]

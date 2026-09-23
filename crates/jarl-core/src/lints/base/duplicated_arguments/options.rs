@@ -9,13 +9,13 @@ const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &["c", "mutate", "summarize", "transm
 /// Use `skipped-functions` to fully replace the default list of functions that are
 /// allowed to have duplicated arguments. Use `extend-skipped-functions` to add to
 /// the default list. Specifying both is an error.
-/// 
+///
 /// Function names in `skipped-functions` or `extend-skipped-functions` also match
 /// namespaced calls, e.g. `skipped-functions = ["list2"]` will ignore `list2()` and
 /// `rlang::list2()`.
-/// 
+///
 /// ### Default values
-/// 
+///
 /// ```toml
 /// skipped-functions = [
 ///     "c",
@@ -24,13 +24,13 @@ const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &["c", "mutate", "summarize", "transm
 ///     "transmute"
 /// ]
 /// ```
-/// 
+///
 /// ### TOML settings
-/// 
+///
 /// ```toml
 /// [lint]
 /// ...
-/// 
+///
 /// [lint.duplicated_arguments]
 /// # Ignore duplicated arguments in `list()` only.
 /// skipped-functions = ["list"]

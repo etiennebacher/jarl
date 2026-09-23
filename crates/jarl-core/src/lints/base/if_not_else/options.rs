@@ -10,27 +10,27 @@ const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &["is.null", "is.na", "missing"];
 /// negated calls are allowed as an `if`/`ifelse()` condition (e.g. `!is.null(x)`).
 /// Use `extend-skipped-functions` to add to the default list. Specifying both is an
 /// error.
-/// 
+///
 /// Function names in `skipped-functions` or `extend-skipped-functions` also match
 /// namespaced calls, e.g. `skipped-functions = ["is.null"]` will allow `is.null()`
 /// and `base::is.null()`.
-/// 
+///
 /// ### Default values
-/// 
+///
 /// ```toml
 /// skipped-functions = [
-///     "is.null", 
-///     "is.na", 
+///     "is.null",
+///     "is.na",
 ///     "missing"
 /// ]
 /// ```
-/// 
+///
 /// ### TOML settings
-/// 
+///
 /// ```toml
 /// [lint]
 /// ...
-/// 
+///
 /// [lint.if_not_else]
 /// # Also allow a negated `is.data.frame()` call in the condition.
 /// extend-skipped-functions = ["is.data.frame"]

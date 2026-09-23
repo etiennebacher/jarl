@@ -11,19 +11,19 @@ pub enum PreferredPipe {
 /// preferred pipe operator in the files to check. If `pipe = "|>"` and if the
 /// `"pipe_consistency"` rule is enabled, then any use of `%>%` will be
 /// reported, and vice-versa.
-/// 
+///
 /// ### Default values
-/// 
+///
 /// ```toml
 /// pipe = "|>"
 /// ```
-/// 
+///
 /// ### TOML settings
-/// 
+///
 /// ```toml
 /// [lint]
 /// ...
-/// 
+///
 /// [lint.pipe_consistency]
 /// # Use the {magrittr} pipe instead
 /// pipe = "%>%"

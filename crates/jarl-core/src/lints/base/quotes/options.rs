@@ -20,19 +20,19 @@ impl PreferredQuote {
 /// indicating the preferred quote style in the files to check. If
 /// `quote = "double"` and if the `"quotes"` rule is enabled, then any use of
 /// single quotes `'` will be reported, and vice-versa.
-/// 
+///
 /// ### Default values
-/// 
+///
 /// ```toml
 /// quote = "double"
 /// ```
-/// 
+///
 /// ### TOML settings
-/// 
+///
 /// ```toml
 /// [lint]
 /// ...
-/// 
+///
 /// [lint.quotes]
 /// # Prefer single quotes instead
 /// quote = "single"

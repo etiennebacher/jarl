@@ -7,26 +7,26 @@ const DEFAULT_THRESHOLD_IGNORE: usize = 50;
 /// allowed to be unused in the R package. Function names in `skipped-functions`
 /// **are parsed as regular expressions** (this differs from other rules that have a
 /// `skipped-functions` argument).
-/// 
+///
 /// `unused_function` might return false positives because Jarl cannot statically
 /// determine whether a function is used. By default, Jarl will hide `unused_function`
 /// diagnostics if there are more than 50, as this would suggest that the package
 /// has some internal mechanism to use those functions. This number can be changed
 /// with the `threshold-ignore` argument.
-/// 
+///
 /// ### Default values
-/// 
+///
 /// ```toml
 /// skipped-functions = []
 /// threshold-ignore = 5
 /// ```
-/// 
+///
 /// ### TOML settings
-/// 
+///
 /// ```toml
 /// [lint]
 /// ...
-/// 
+///
 /// [lint.unused_function]
 /// # Ignore all functions that start with "pl_" or "cs_", and the function
 /// # "my.function"
