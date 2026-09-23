@@ -16,12 +16,12 @@ format:
     toc-depth: 4
     code-copy: true
 language:
-  search-text-placeholder: "Search (press \"s\")"
+  search-text-placeholder: Search (press "s")
 execute:
   eval: false
 website:
   title: Jarl
-  repo-url: "https://github.com/etiennebacher/jarl"
+  repo-url: https://github.com/etiennebacher/jarl
   repo-subdir: docs
   repo-actions:
     - source
@@ -33,7 +33,7 @@ website:
   navbar:
     right:
       - icon: github
-        href: "https://github.com/etiennebacher/jarl"
+        href: https://github.com/etiennebacher/jarl
         aria-label: GitHub
     left:
       - text: Getting started
@@ -159,7 +159,6 @@ website:
             - rules/system_file.md
             - rules/true_false_symbol.md
             - rules/undesirable_function.md
-            - rules/undesirable_operator.md
             - rules/unexplained_suppression.md
             - rules/unmatched_range_suppression.md
             - rules/unnecessary_nesting.md
