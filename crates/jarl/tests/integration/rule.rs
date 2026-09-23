@@ -117,8 +117,7 @@ fn test_known_rule_disabled_by_default() -> anyhow::Result<()> {
     rule to be checked. It takes a single value (`"<-"` or `"="`) indicating
     the preferred assignment operator in the files to check.
     If `operator = "<-"` then any use of the `"="` operator to assign values
-    will be reported, and vice-versa. To stop checking this rule remove this
-    setting from the configuration file.
+    will be reported, and vice-versa.
 
     ### Default values
 
