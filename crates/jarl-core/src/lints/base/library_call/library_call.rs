@@ -12,7 +12,7 @@ struct LibraryStatement {
     range: TextRange,
 }
 
-/// Version added: 0.6.0
+/// Version added: 0.7.0
 ///
 /// ## What it does
 ///
