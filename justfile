@@ -4,6 +4,7 @@ _default:
 # Update the list of rules and the website
 [arg("no_quarto", long="no-quarto", value="true")]
 document no_quarto="false":
+    Rscript docs/check_pkgs.R
     Rscript docs/make_docs.R
     @if [ "{{ no_quarto }}" != "true" ]; then (cd docs && quarto render); fi
 
@@ -23,7 +24,7 @@ lint:
 lint-fix:
     cargo clippy \
       --all-targets \
-      --all-features \gh pr
+      --all-features \
       --locked \
       --fix --allow-dirty
 
