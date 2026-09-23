@@ -15,26 +15,6 @@ internal functions, meaning that they may disappear or behave differently withou
 notice if the package changes. `<<-` and `->>` assign outside the current environment
 and may lead to code that is harder to predict.
 
-## Configuration
-
-By default, only `->>`, `:::`, and `<<-` are flagged. You can customize the
-list in `jarl.toml`:
-
-To replace the default list entirely:
-
-```toml
-[lint.undesirable_operator]
-operators = ["%notin%", "&&"]
-```
-
-To add to the defaults:
-
-```toml
-[lint.undesirable_operator]
-extend-operators = ["&&", "%in%"]
-```
-
-Specifying both `operators` and `extend-operators` is an error.
 
 ## Configuration options
 
