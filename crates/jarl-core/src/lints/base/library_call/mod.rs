@@ -156,9 +156,9 @@ library(abc)
     }
 
     #[test]
-    fn test_library_call_with_comments_no_fix() {
+    fn test_library_call_with_comments() {
         insta::assert_snapshot!(
-            "no_fix_with_comments",
+            "fix_with_comments",
             get_unsafe_fixed_text(
                 vec![
                     // Leading comment inside the call.
@@ -167,6 +167,10 @@ library(abc)
                     "library(dplyr)\nx <- 1\nlibrary(purrr # inline\n)\n",
                     // Trailing comment on the same line.
                     "library(dplyr)\nx <- 1\nlibrary(purrr) # trailing\n",
+                    // Comment preceding the call is not moved.
+                    "library(dplyr)\nx <- 1\n# preceding\nlibrary(purrr)\n",
+                    // Other code on the same line: no fix.
+                    "library(dplyr)\nx <- 1\nlibrary(purrr); y <- 2 # trailing\n",
                 ],
                 "library_call",
             )

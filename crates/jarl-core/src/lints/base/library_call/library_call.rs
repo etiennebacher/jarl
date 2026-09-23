@@ -1,6 +1,6 @@
 use crate::diagnostic::*;
 use crate::rule_set::Rule;
-use crate::utils::{get_function_name, line_start, next_line_start, node_contains_comments};
+use crate::utils::{get_function_name, line_start, next_line_start};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstNodeList, TextRange, TextSize};
 
@@ -8,7 +8,6 @@ use biome_rowan::{AstNode, AstNodeList, TextRange, TextSize};
 /// in `suppressMessages()`/`suppressPackageStartupMessages()`) or an `if`
 /// statement whose branches only contain such calls.
 struct LibraryStatement {
-    node: RSyntaxNode,
     range: TextRange,
 }
 
@@ -90,19 +89,13 @@ fn classify_library_statement(stmt: &RSyntaxNode) -> Option<LibraryStatement> {
         if !is_library_call(&call) {
             return None;
         }
-        return Some(LibraryStatement {
-            node: stmt.clone(),
-            range: stmt.text_trimmed_range(),
-        });
+        return Some(LibraryStatement { range: stmt.text_trimmed_range() });
     }
 
     if let Some(if_stmt) = RIfStatement::cast(stmt.clone())
         && if_is_library_only(&if_stmt)
     {
-        return Some(LibraryStatement {
-            node: stmt.clone(),
-            range: stmt.text_trimmed_range(),
-        });
+        return Some(LibraryStatement { range: stmt.text_trimmed_range() });
     }
 
     None
@@ -172,13 +165,14 @@ fn branch_is_library_only(branch: &AnyRExpression) -> bool {
 }
 
 /// Whether `range` is alone on its lines: nothing but whitespace before it on
-/// its first line, and nothing but whitespace after it on its last line.
+/// its first line, and nothing but whitespace or a comment after it on its
+/// last line.
 fn statement_alone_on_lines(contents: &str, range: TextRange) -> bool {
     let start = usize::from(range.start());
     let end = usize::from(range.end());
     let before = &contents[line_start(contents, start)..start];
-    let after = &contents[end..next_line_start(contents, end)];
-    before.trim().is_empty() && after.trim().is_empty()
+    let after = contents[end..next_line_start(contents, end)].trim();
+    before.trim().is_empty() && (after.is_empty() || after.starts_with('#'))
 }
 
 fn misplaced_diagnostic(
@@ -187,14 +181,13 @@ fn misplaced_diagnostic(
     insertion_point: TextSize,
 ) -> Diagnostic {
     let start = usize::from(stmt.range.start());
-    let end = usize::from(stmt.range.end());
-    let text = contents[start..end].to_string();
+    let end = next_line_start(contents, usize::from(stmt.range.end()));
+    // Include the trailing comment on the last line, if any.
+    let text = contents[start..end].trim_end();
 
-    let to_skip =
-        node_contains_comments(&stmt.node) || !statement_alone_on_lines(contents, stmt.range);
+    let to_skip = !statement_alone_on_lines(contents, stmt.range);
 
-    let deletion =
-        Edit::deletion_with_offsets(line_start(contents, start), next_line_start(contents, end));
+    let deletion = Edit::deletion_with_offsets(line_start(contents, start), end);
     let insertion = Edit::insertion(insertion_point, format!("{text}\n"));
 
     Diagnostic::new(
