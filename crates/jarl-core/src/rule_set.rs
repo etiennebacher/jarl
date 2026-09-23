@@ -519,6 +519,13 @@ declare_rules! {
         fix: Unsafe,
         min_r_version: None,
     },
+    ObjectName => {
+        name: "object_name",
+        categories: [Read],
+        default: Disabled,
+        fix: None,
+        min_r_version: None,
+    },
     OuterNegation => {
         name: "outer_negation",
         categories: [Perf, Read],

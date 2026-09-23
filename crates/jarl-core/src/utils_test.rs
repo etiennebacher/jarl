@@ -169,6 +169,16 @@ pub fn check_code(text: &str, rule: &str, min_r_version: Option<&str>) -> Vec<Di
     run_check(text, rule, min_r_version, None, None)
 }
 
+/// Check code with custom settings and return its diagnostics.
+pub fn check_code_with_settings(
+    text: &str,
+    rule: &str,
+    min_r_version: Option<&str>,
+    settings: Option<Settings>,
+) -> Vec<Diagnostic> {
+    run_check(text, rule, min_r_version, settings, None)
+}
+
 /// Convenience function to assert that code has no lint
 pub fn expect_no_lint(text: &str, rule: &str, min_r_version: Option<&str>) {
     let diagnostics = run_check(text, rule, min_r_version, None, None);
