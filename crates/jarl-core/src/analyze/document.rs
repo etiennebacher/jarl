@@ -147,7 +147,7 @@ pub(crate) fn check_document(
         checker.report_diagnostic(empty_file(&expressions, syntax));
     }
 
-    // It is frequent to call `library()` after the first chunk in Rmd/Qmd 
+    // It is frequent to call `library()` after the first chunk in Rmd/Qmd
     // (ecosystem checks) so skip these files.
     if checker.is_rule_enabled(Rule::LibraryCall)
         && !crate::fs::has_rmd_extension(&checker.file_path)
