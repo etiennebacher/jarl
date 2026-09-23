@@ -1822,7 +1822,6 @@ stop('hi')
     exit_code: 0
     ----- stdout -----
     ── Summary ──────────────────────────────────────
-
     All checks passed!
 
     ----- stderr -----
