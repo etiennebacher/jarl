@@ -285,3 +285,47 @@ any(is.na(x))
 
     Ok(())
 }
+
+// A fixable rule whose violation sits in an `@examples` section is reported as
+// unfixable, so the output says why.
+#[test]
+fn test_stats_roxygen_fix_note() -> anyhow::Result<()> {
+    let case = CliTest::package_with_files([(
+        "R/test.R",
+        "\
+#' Title
+#' @examples
+#' any(is.na(x))
+foo <- function() NULL
+",
+    )])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("any_is_na")
+            .arg("--statistics")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+        1 [ ] any_is_na
+
+    Rules with `[*]` have an automatic safe fix.
+    Rules with `[^]` have an automatic unsafe fix.
+
+    Some fixes are disabled because the violations are in `@examples` sections.
+    Set `fix-roxygen = true` in `jarl.toml` to apply them.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}

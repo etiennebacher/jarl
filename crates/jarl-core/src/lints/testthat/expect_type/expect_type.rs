@@ -140,7 +140,6 @@ fn check_expect_true_is_type(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> 
         "is.character" => "\"character\"",
         "is.raw" => "\"raw\"",
         "is.list" => "\"list\"",
-        "is.null" => "\"NULL\"",
         "is.symbol" => "\"symbol\"",
         "is.expression" => "\"expression\"",
         "is.language" => "\"language\"",

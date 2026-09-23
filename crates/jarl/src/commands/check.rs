@@ -282,6 +282,12 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         // ── Summary ──
         print_summary(&all_diagnostics_flat, !all_errors.is_empty());
 
+        // Only when the user asked for fixes: otherwise nothing in the output
+        // claims these violations were fixable in the first place.
+        if args.fix || args.fix_only {
+            output_format::print_roxygen_fix_note(&all_diagnostics_flat);
+        }
+
         // ── Warnings ──
         let mut warnings: Vec<String> = Vec::new();
 

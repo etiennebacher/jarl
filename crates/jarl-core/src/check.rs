@@ -680,6 +680,7 @@ fn get_checks_roxygen(
             if config.fix_roxygen {
                 d.fix = remap_roxygen_fix(&d.fix, chunk, contents);
             } else {
+                d.fix_disabled_in_roxygen = d.has_safe_fix() || d.has_unsafe_fix();
                 d.fix = Fix::empty();
             }
             d.filename = file.to_path_buf();
@@ -716,7 +717,7 @@ fn reads_outside_chunk_code(
     let dropped = skipped
         .iter()
         .map(|i| &chunks[*i])
-        .filter(|chunk| chunk.evaluated)
+        .filter(|chunk| chunk.options.eval)
         .map(|chunk| chunk.code.as_str());
     for code in inline.into_iter().chain(dropped) {
         names.extend(all_symbols(code));
@@ -790,7 +791,7 @@ fn get_checks_rmd(
         source: virtual_source,
         offset_map,
         skipped,
-        unevaluated,
+        chunks: chunk_spans,
     } = crate::rmd::build_virtual_r_source(&chunks);
 
     if virtual_source.trim().is_empty() {
@@ -809,9 +810,10 @@ fn get_checks_rmd(
     checker.minimum_r_version = config.minimum_r_version;
     checker.file_path = file.to_path_buf();
     checker.source_index_cache = source_cache.clone();
-    // A chunk marked `eval = FALSE` is still linted, but it never runs, so it
-    // defines nothing and reads nothing.
-    checker.unevaluated_ranges = unevaluated;
+    // Rules read a chunk's options to tell what its code does at render time:
+    // one marked `eval = FALSE` is still linted but defines and reads nothing,
+    // and one marked `error = TRUE` can't make later code unreachable.
+    checker.chunks = chunk_spans;
 
     // The document's own path anchors `source()` resolution, so a chunk
     // sourcing a helper next to the document resolves it there.

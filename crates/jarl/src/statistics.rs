@@ -57,6 +57,7 @@ pub fn print_statistics(
 
     println!("\nRules with `[*]` have an automatic safe fix.");
     println!("Rules with `[^]` have an automatic unsafe fix.");
+    crate::output_format::print_roxygen_fix_note(diagnostics);
 
     // Inform the user if the config file used comes from a parent directory.
     if let Some(config_path) = parent_config_path {

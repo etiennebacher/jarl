@@ -84,6 +84,18 @@ pub fn print_summary(diagnostics: &[&Diagnostic], has_errors: bool) {
     }
 }
 
+/// Tells the user that fixes were dropped because their violations sit in
+/// roxygen `@examples` sections. Only worth saying when the user expected a
+/// fix to happen: a rule that is documented as fixable is reported here
+/// without a fix, and nothing else explains why.
+pub fn print_roxygen_fix_note(diagnostics: &[&Diagnostic]) {
+    if diagnostics.iter().any(|d| d.fix_disabled_in_roxygen) {
+        println!(
+            "\nSome fixes are disabled because the violations are in `@examples` sections.\nSet `fix-roxygen = true` in `jarl.toml` to apply them."
+        );
+    }
+}
+
 /// Prints warnings under a `── Warnings ──` section header.
 pub fn print_warnings(warnings: &[String]) {
     if warnings.is_empty() {

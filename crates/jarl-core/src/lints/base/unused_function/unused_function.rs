@@ -20,9 +20,10 @@ use crate::package::{FileScope, SharedFileData};
 ///
 /// ## Why is this bad?
 ///
-/// An internal function that is never called is likely dead code left over from
-/// refactoring. Removing it keeps the codebase easier to understand and
-/// maintain.
+/// Functions must be documented in NAMESPACE to be exported to end users. A
+/// function that is never called nor exported is likely dead code left over
+/// from refactoring. Removing unused internal functions keeps the codebase
+/// easier to understand and maintain.
 ///
 /// ## Limitations
 ///
@@ -197,7 +198,7 @@ pub(crate) fn compute_unused_from_shared(
 
                 if occurrences <= definitions && !extra_symbol_set.contains(name.as_str()) {
                     let help = format!(
-                        "Defined at {path}:{line}:{col} but never called",
+                        "Defined at {path}:{line}:{col}.",
                         path = file.rel_path.display()
                     );
                     unused.push((name.clone(), *range, help));
