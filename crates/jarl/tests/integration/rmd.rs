@@ -1822,9 +1822,13 @@ stop('hi')
     exit_code: 0
     ----- stdout -----
     ── Summary ──────────────────────────────────────
+
     All checks passed!
-    ");
-    
+
+    ----- stderr -----
+    "
+    );
+
     Ok(())
 }
 
@@ -2004,7 +2008,6 @@ stop('hi')
 
     Ok(())
 }
-
 
 /// `library_call` doesn't apply to documents: each chunk attaches what it
 /// needs, so scattered `library()` calls are not reported.
