@@ -84,10 +84,10 @@ pub struct Checker {
     // consumer. Fresh (empty) when the on-disk contents may drift from the
     // run's caches (fix mode, LSP buffers).
     pub source_index_cache: jarl_semantic::SourceIndexCache,
-    // Ranges of the file that are parsed but never evaluated, so use-def
-    // rules must not read a definition or a use out of them. Only Rmd/Qmd
-    // documents have any: the chunks marked `eval = FALSE`.
-    pub unevaluated_ranges: Vec<biome_rowan::TextRange>,
+    // The file's chunks and the knitr options that govern them, in order and
+    // non-overlapping. Only an Rmd/Qmd document has any; an R script is all
+    // ordinary code, which is what `ChunkOptions::default()` describes.
+    pub chunks: Vec<crate::rmd::ChunkSpan>,
 }
 
 impl Checker {
@@ -107,7 +107,7 @@ impl Checker {
             namespace_exports: HashSet::new(),
             file_path: std::path::PathBuf::new(),
             source_index_cache: jarl_semantic::SourceIndexCache::new(),
-            unevaluated_ranges: Vec::new(),
+            chunks: Vec::new(),
         }
     }
 
@@ -117,6 +117,32 @@ impl Checker {
         if let Some(diagnostic) = diagnostic {
             self.diagnostics.push(diagnostic);
         }
+    }
+
+    /// The index in [`Self::chunks`] of the chunk `range` sits in, if any.
+    ///
+    /// The chunks are ordered and don't overlap, so this is a binary search.
+    /// An R script has none, and neither does a range that falls between two
+    /// chunks of a document — code outside a chunk runs on the ordinary terms
+    /// [`crate::rmd::ChunkOptions::default`] describes.
+    pub(crate) fn chunk_index_at(&self, range: biome_rowan::TextRange) -> Option<usize> {
+        let index = self
+            .chunks
+            .partition_point(|chunk| chunk.range.end() <= range.start());
+        self.chunks
+            .get(index)
+            .is_some_and(|chunk| chunk.range.contains_range(range))
+            .then_some(index)
+    }
+
+    /// The spans of the file that are parsed but never evaluated, so use-def
+    /// rules must not read a definition or a use out of them.
+    pub(crate) fn unevaluated_ranges(&self) -> Vec<biome_rowan::TextRange> {
+        self.chunks
+            .iter()
+            .filter(|chunk| !chunk.options.eval)
+            .map(|chunk| chunk.range)
+            .collect()
     }
 
     pub(crate) fn is_rule_enabled(&mut self, rule: Rule) -> bool {

@@ -9,7 +9,7 @@ title: Configuration file
 
 ## Introduction
 
-To avoid typing options every time and to ensure all uses of Jarl in a project are consistent, it is possible to store options in `jarl.toml`.
+To avoid typing options every time and to ensure all uses of Jarl in a project are consistent, it is possible to store options in `jarl.toml` (or `.jarl.toml`).
 
 This file could look like this:
 
@@ -54,9 +54,9 @@ Jarl follows a hierarchical strategy to detect the closest config file relative 
 
 Jarl follows these steps:
 
-1. look for `jarl.toml` in the current working directory;
-1. if not present, go to the parent folder until a `jarl.toml` is found;
-1. if none of the parent directories contain the config file, Jarl checks if one exists in the home config directory. For Unix users, it looks for `~/.config/jarl/jarl.toml`. For Windows users, it looks for `~/AppData/Roaming/jarl/jarl.toml`.
+1. look for `jarl.toml` or `.jarl.toml` in the current working directory;
+1. if not present, go to the parent folder until one of them is found;
+1. if none of the parent directories contain the config file, Jarl checks if one exists in the home config directory. For Unix users, it looks for `~/.config/jarl/jarl.toml` (or `~/.config/jarl/.jarl.toml`). For Windows users, it looks for `~/AppData/Roaming/jarl/jarl.toml`.
 1. if the config file is not present there, then it stops looking for one.
 
 Storing a default `jarl.toml` in the home config directory may be useful to apply some arguments by default on all R files.
@@ -303,6 +303,7 @@ configuration file, see the relevant rule documentation page for details:
 * [`quotes`](../rules/quotes.md#configuration-options)
 * [`true_false_symbol`](../rules/true_false_symbol.md#configuration-options)
 * [`undesirable_function`](../rules/undesirable_function.md#configuration-options)
+* [`undesirable_operator`](../rules/undesirable_operator.md#configuration-options)
 * [`unreachable_code`](../rules/unreachable_code.md#configuration-options)
 * [`unused_function`](../rules/unused_function.md#configuration-options)
 * [`unused_object`](../rules/unused_object.md#configuration-options)

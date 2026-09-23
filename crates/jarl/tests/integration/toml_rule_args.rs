@@ -598,6 +598,91 @@ pipe = "foo"
     Ok(())
 }
 
+// undesirable_operator ----------------------------------------
+
+#[test]
+fn test_undesirable_operator_unknown_field_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+
+[lint.undesirable_operator]
+unknown-option = ["$"]
+"#,
+        ),
+        ("test.R", "x + 1"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 5, column 1
+      |
+    5 | unknown-option = ["$"]
+      | ^^^^^^^^^^^^^^
+    unknown field `unknown-option`, expected `operators` or `extend-operators`
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_undesirable_operator_cannot_replace_and_extend() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+
+[lint.undesirable_operator]
+operators = ["$"]
+extend-operators = ["@"]
+"#,
+        ),
+        ("test.R", "x + 1"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Cannot specify both `operators` and `extend-operators` in `[lint.undesirable_operator]`.
+    "#
+    );
+
+    Ok(())
+}
+
 // quotes ----------------------------------------
 
 #[test]

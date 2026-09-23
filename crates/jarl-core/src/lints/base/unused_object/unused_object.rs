@@ -161,7 +161,7 @@ pub fn unused_object(
         semantic,
         &checker.source_index_cache,
         &checker.packages_in_reach(),
-        &checker.unevaluated_ranges,
+        &checker.unevaluated_ranges(),
     );
     let exports = &checker.namespace_exports;
     let skipped = &checker.rule_options.unused_object.skipped_functions;

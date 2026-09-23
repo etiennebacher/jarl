@@ -15,10 +15,28 @@
   "fix": { "edits": [ { "range": [0, 13], "content": "anyNA(x)" } ], "to_skip": false }
   ```
 
+### Deprecations
+
+* The `internal_function` rule is deprecated. Use `undesirable_operator` instead.
+
 ### Changes
+
+* New rules:
+
+  * `undesirable_operator` (#657, @christopherkenny)
+
+* The config file can be named `.jarl.toml` as well as `jarl.toml`. Both names
+  are equivalent, and a directory containing both is now an error instead of
+  silently using `jarl.toml` (#717).
 
 * `expect_length` no longer reports cases where `length()` is in the `expected`
   argument, e.g. `expect_equal(nrow(x), length(y))` (#684).
+
+* The `nzchar` rule now also reports comparisons of `nchar(x)` with zero, such
+  as `nchar(x) == 0`, and its fixes preserve missing values with
+  `keepNA = TRUE` (#705, @Yousa-Mirage).
+
+* Only use placeholder text in messages and suggestions (#722).
 
 * The LSP now also publishes diagnostics when opening a file (#685).
 
@@ -26,6 +44,12 @@
   cannot be applied because the violation is in part of `@examples` (#702).
 
 ### Bug fixes
+
+* Prevent `unused_function` and `unused_object` from falsely reporting non-ASCII
+  names (#706, @Yousa-Mirage).
+
+* Handle uppercase `.RMD`/`.QMD` extensions (and any other letter-case variant)
+  files consistently (#709, @Yousa-Mirage).
 
 * Prevent the `nzchar` rule from treating quote characters as empty strings and
   support empty raw string literals (#696, @Yousa-Mirage).
@@ -52,8 +76,8 @@
   autofix now also produces `lengths(x)` instead of the invalid
   `lengths(X = x)` when `X` is passed by name (#671, @Yousa-Mirage).
 
-* Fix language server suppression quickfix positions for non-ASCII text
-  (#676, @Yousa-Mirage).
+* Fix language server suppression quickfix positions for non-ASCII text and
+  Rmd/Qmd chunk insertion positions (#676, #708, @Yousa-Mirage).
 
 * Avoid invalid `literal_coercion` fixes for strings containing quotes
   (#678, @Yousa-Mirage).
@@ -66,6 +90,10 @@
 
 * Prevent incorrect `dplyr_filter_out` fixes caused by matching `is.na()` guard
   arguments as substrings of other identifiers (#681, @Yousa-Mirage).
+
+* In R Markdown and Quarto documents, `unreachable_code` no longer reports code
+  in chunks following a chunk that would stop evaluation but is either unevaluated or
+  has `error: true` (#724).
 
 ## 0.6.0
 
