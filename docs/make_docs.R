@@ -8,7 +8,7 @@ dir.create("docs/rules")
 
 ### get list of lint rules ----
 
-lints_dir <- "crates/jarl-core/src/lints" #
+lints_dir <- "crates/jarl-core/src/lints"
 lints <- list.dirs(lints_dir, full.names = FALSE)
 
 # rules are nested 2 levels deep within lints, ignore any subfolders
@@ -46,7 +46,7 @@ quarto_yml$website$sidebar <- list(list(
   )
 ))
 
-# use format_yaml until https://github.com/posit.dev/r-yaml12/issues#40 fixed
+# use format_yaml until https://github.com/posit-dev/r-yaml12/issues/40 is fixed
 writeLines(
   yaml12::format_yaml(quarto_yml),
   "docs/_quarto.yml"

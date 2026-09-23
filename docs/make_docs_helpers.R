@@ -23,7 +23,6 @@
 }
 
 create_rule_md <- function(rule, lints_dir) {
-  # rule meta
   rule_name <- basename(rule)
   rs_file <- file.path(lints_dir, rule, paste0(rule_name, ".rs"))
   options_rs <- file.path(lints_dir, rule, "options.rs")
