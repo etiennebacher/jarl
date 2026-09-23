@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-core/src/lints/base/library_call/mod.rs
-expression: "get_unsafe_fixed_text(vec![\"options(stringsAsFactors = FALSE)\\nlibrary(dplyr)\\nif (interactive()) {\\n  library(rlang)\\n}\\nsuppressPackageStartupMessages(library(zoo))\\nx <- 1\\nlibrary(purrr)\\nlibrary(abc)\\n\",],\n\"library_call\",)"
+expression: "get_unsafe_fixed_text(vec![\"options(stringsAsFactors = FALSE)\\nlibrary(dplyr)\\nif (interactive()) {\\n  library(rlang)\\n}\\nsuppressPackageStartupMessages(library(zoo))\\nx <- 1\\nlibrary(purrr)\\nlibrary(abc)\\n\",\n\"library(baz)\\nx <- 1\\nif (foo) {\\n    library(bar)\\n} else {\\n    library(bar2)\\n}\"],\n\"library_call\",)"
 ---
 OLD:
 ====
@@ -24,4 +24,24 @@ if (interactive()) {
 suppressPackageStartupMessages(library(zoo))
 library(purrr)
 library(abc)
+x <- 1
+
+
+OLD:
+====
+library(baz)
+x <- 1
+if (foo) {
+    library(bar)
+} else {
+    library(bar2)
+}
+NEW:
+====
+library(baz)
+if (foo) {
+    library(bar)
+} else {
+    library(bar2)
+}
 x <- 1

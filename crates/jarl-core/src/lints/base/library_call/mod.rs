@@ -45,6 +45,42 @@ library(baz)
             "library_call",
             None,
         );
+        expect_no_lint(
+            r#"
+if (foo) library(bar)
+library(baz)
+"#,
+            "library_call",
+            None,
+        );
+
+        // Should not be reported because not all the if-else is about library()
+        expect_no_lint(
+            r#"
+library(baz)
+x <- 1
+if (foo) {
+    print(x + 1)
+    library(bar)
+} 
+"#,
+            "library_call",
+            None,
+        );
+        expect_no_lint(
+            r#"
+library(baz)
+x <- 1
+if (foo) {
+    library(bar)
+} else {
+    library(bar2)
+    print(x + 1)
+}
+"#,
+            "library_call",
+            None,
+        );
 
         // `suppressPackageStartupMessages(library(x))` is part of the block.
         expect_no_lint(
@@ -106,6 +142,34 @@ library(purrr)
         insta::assert_snapshot!(
             snapshot_lint(
                 r#"
+library(baz)
+x <- 1
+if (foo) {
+    library(bar)
+} else {
+    library(bar2)
+}
+"#
+            ),
+            @"
+        warning: library_call
+         --> <test>:4:1
+          |
+        4 | / if (foo) {
+        5 | |     library(bar)
+        6 | | } else {
+        7 | |     library(bar2)
+        8 | | }
+          | |_- `library()` calls should be grouped at the top of the script.
+          |
+          = help: Move this call next to the other `library()` calls.
+        Found 1 error.
+        "
+        );
+
+        insta::assert_snapshot!(
+            snapshot_lint(
+                r#"
 library(dplyr)
 x <- 1
 library(purrr)
@@ -139,6 +203,7 @@ library(abc)
             get_unsafe_fixed_text(
                 vec![
                     "options(stringsAsFactors = FALSE)\nlibrary(dplyr)\nif (interactive()) {\n  library(rlang)\n}\nsuppressPackageStartupMessages(library(zoo))\nx <- 1\nlibrary(purrr)\nlibrary(abc)\n",
+                    "library(baz)\nx <- 1\nif (foo) {\n    library(bar)\n} else {\n    library(bar2)\n}"
                 ],
                 "library_call",
             )
