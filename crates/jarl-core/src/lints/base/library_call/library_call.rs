@@ -26,6 +26,9 @@ struct LibraryStatement {
 ///
 /// - an `if` statement that only contains `library()` calls is considered
 ///   equivalent to a simple `library()` call;
+/// - similarly, `suppressMessages()` and `suppressPackageStartupMessages()`
+///   containing `library()` calls are considered equivalent to a simple
+///   `library()` call;
 /// - `options()` and `Sys.setenv()` at the top of the script stay there. Jarl
 ///   will not move `library()` calls above these functions.
 /// - this rule is skipped in R Markdown and Quarto documents, where it is more
