@@ -7,10 +7,27 @@ const DEFAULT_MAX_COMPLEXITY: usize = 15;
 /// dominated by the branching constructs, so the exact list matters little.
 const STOPPING_FUNCTIONS: &[&str] = &["stop", ".Defunct", "abort", "cli_abort", "q", "quit"];
 
-/// TOML options for `[lint.cyclomatic_complexity]`.
+/// <!-- docs: start -->
+/// Use `max-complexity` to set the highest score a function (or the top-level code
+/// of a file) is allowed to reach before it is reported. It must be at least 1.
 ///
-/// Use `max-complexity` to set the highest score a function (or the top-level
-/// code of a file) is allowed to reach before it is reported.
+/// ### Default values
+///
+/// ```toml
+/// max-complexity = 15
+/// ```
+///
+/// ### TOML settings
+///
+/// ```toml
+/// [lint]
+/// ...
+///
+/// [lint.cyclomatic_complexity]
+/// # Only report the functions that are really tangled.
+/// max-complexity = 25
+/// ```
+/// <!-- docs: end -->
 #[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]

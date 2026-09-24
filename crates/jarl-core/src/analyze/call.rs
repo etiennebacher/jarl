@@ -33,6 +33,7 @@ use crate::lints::base::stopifnot_all::stopifnot_all::stopifnot_all;
 use crate::lints::base::strings_as_factors::strings_as_factors::strings_as_factors;
 use crate::lints::base::system_file::system_file::system_file;
 use crate::lints::base::undesirable_function::undesirable_function::undesirable_function;
+use crate::lints::base::undesirable_operator::undesirable_operator::undesirable_operator_call;
 use crate::lints::base::which_grepl::which_grepl::which_grepl;
 
 use crate::lints::dplyr::dplyr_filter_out::dplyr_filter_out::dplyr_filter_out;
@@ -148,6 +149,12 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::UndesirableFunction) {
         checker.report_diagnostic(undesirable_function(r_expr, fn_name, checker)?);
     }
+    if checker.is_rule_enabled(Rule::UndesirableOperator) {
+        checker.report_diagnostic(undesirable_operator_call(
+            r_expr,
+            &checker.rule_options.undesirable_operator,
+        )?);
+    }
     if checker.is_rule_enabled(Rule::WhichGrepl) {
         checker.report_diagnostic(which_grepl(r_expr, fn_name)?);
     }
@@ -155,45 +162,49 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     //
     // ------------- DPLYR -------------
     //
-    if checker.is_rule_enabled(Rule::DplyrFilterOut) {
-        checker.report_diagnostic(dplyr_filter_out(r_expr, fn_name, ns_prefix, checker)?);
-    }
-    if checker.is_rule_enabled(Rule::DplyrGroupByUngroup) {
-        checker.report_diagnostic(dplyr_group_by_ungroup(r_expr, fn_name, ns_prefix, checker)?);
+    if ns_prefix == Some("dplyr::") || checker.package_in_reach("dplyr") {
+        if checker.is_rule_enabled(Rule::DplyrFilterOut) {
+            checker.report_diagnostic(dplyr_filter_out(r_expr, fn_name, ns_prefix, checker)?);
+        }
+        if checker.is_rule_enabled(Rule::DplyrGroupByUngroup) {
+            checker.report_diagnostic(dplyr_group_by_ungroup(r_expr, fn_name, ns_prefix, checker)?);
+        }
     }
 
     //
     // ------------- TESTTHAT -------------
     //
-    if checker.is_rule_enabled(Rule::TestthatExpectLength) {
-        checker.report_diagnostic(expect_length(r_expr, fn_name)?);
-    }
-    if checker.is_rule_enabled(Rule::TestthatExpectMatch) {
-        checker.report_diagnostic(expect_match(r_expr, fn_name)?);
-    }
-    if checker.is_rule_enabled(Rule::TestthatExpectNamed) {
-        checker.report_diagnostic(expect_named(r_expr, fn_name)?);
-    }
-    if checker.is_rule_enabled(Rule::TestthatExpectNoMatch) {
-        checker.report_diagnostic(expect_no_match(r_expr, fn_name)?);
-    }
-    if checker.is_rule_enabled(Rule::TestthatExpectNot) {
-        checker.report_diagnostic(expect_not(r_expr, fn_name)?);
-    }
-    if checker.is_rule_enabled(Rule::TestthatExpectNull) {
-        checker.report_diagnostic(expect_null(r_expr, fn_name)?);
-    }
-    if checker.is_rule_enabled(Rule::TestthatExpectS3Class) {
-        checker.report_diagnostic(expect_s3_class(r_expr, fn_name)?);
-    }
-    if checker.is_rule_enabled(Rule::TestthatExpectS4Class) {
-        checker.report_diagnostic(expect_s4_class(r_expr, fn_name)?);
-    }
-    if checker.is_rule_enabled(Rule::TestthatExpectType) {
-        checker.report_diagnostic(expect_type(r_expr, fn_name)?);
-    }
-    if checker.is_rule_enabled(Rule::TestthatExpectTrueFalse) {
-        checker.report_diagnostic(expect_true_false(r_expr, fn_name)?);
+    if ns_prefix == Some("testthat::") || checker.package_in_reach("testthat") {
+        if checker.is_rule_enabled(Rule::TestthatExpectLength) {
+            checker.report_diagnostic(expect_length(r_expr, fn_name)?);
+        }
+        if checker.is_rule_enabled(Rule::TestthatExpectMatch) {
+            checker.report_diagnostic(expect_match(r_expr, fn_name)?);
+        }
+        if checker.is_rule_enabled(Rule::TestthatExpectNamed) {
+            checker.report_diagnostic(expect_named(r_expr, fn_name)?);
+        }
+        if checker.is_rule_enabled(Rule::TestthatExpectNoMatch) {
+            checker.report_diagnostic(expect_no_match(r_expr, fn_name)?);
+        }
+        if checker.is_rule_enabled(Rule::TestthatExpectNot) {
+            checker.report_diagnostic(expect_not(r_expr, fn_name)?);
+        }
+        if checker.is_rule_enabled(Rule::TestthatExpectNull) {
+            checker.report_diagnostic(expect_null(r_expr, fn_name)?);
+        }
+        if checker.is_rule_enabled(Rule::TestthatExpectS3Class) {
+            checker.report_diagnostic(expect_s3_class(r_expr, fn_name)?);
+        }
+        if checker.is_rule_enabled(Rule::TestthatExpectS4Class) {
+            checker.report_diagnostic(expect_s4_class(r_expr, fn_name)?);
+        }
+        if checker.is_rule_enabled(Rule::TestthatExpectType) {
+            checker.report_diagnostic(expect_type(r_expr, fn_name)?);
+        }
+        if checker.is_rule_enabled(Rule::TestthatExpectTrueFalse) {
+            checker.report_diagnostic(expect_true_false(r_expr, fn_name)?);
+        }
     }
     Ok(())
 }

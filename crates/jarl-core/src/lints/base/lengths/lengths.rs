@@ -14,6 +14,7 @@ const FORMALS_MAP_DBL: Formals = &[".x", ".f"];
 
 pub struct Lengths;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.8
 ///
 /// ## What it does
@@ -43,6 +44,7 @@ pub struct Lengths;
 /// ## References
 ///
 /// See `?lengths`
+/// <!-- docs: end -->
 impl Violation for Lengths {
     fn rule(&self) -> Rule {
         Rule::Lengths
@@ -77,13 +79,14 @@ pub fn lengths(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>>
             .text_trimmed()
             == "length"
     {
+        let arg_x = unwrap_or_return_none!(arg_x.and_then(|arg| arg.value()));
         let range = ast.syntax().text_trimmed_range();
         let diagnostic = Diagnostic::new(
             Lengths,
             range,
             Fix::new(
                 range,
-                format!("lengths({})", arg_x.unwrap().into_syntax().text_trimmed()),
+                format!("lengths({})", arg_x.into_syntax().text_trimmed()),
                 node_contains_comments(ast.syntax()),
             ),
         );

@@ -6,13 +6,14 @@ use biome_rowan::{AstNode, AstSeparatedList};
 
 const FORMALS_EXPECT_TRUE: Formals = &["object", "info", "label"];
 
+/// <!-- docs: start -->
 /// Version added: 0.2.0
 ///
 /// ## What it does
 ///
 /// Checks for usage of `expect_true(!x)` and `expect_false(!x)` in tests.
 ///
-/// ## Why is this bad
+/// ## Why is this bad?
 ///
 /// Using `expect_false(x)` is clearer and more direct than `expect_true(!x)`,
 /// and vice versa.
@@ -40,6 +41,7 @@ const FORMALS_EXPECT_TRUE: Formals = &["object", "info", "label"];
 /// # rlang "!!!" operator is left unmodified
 /// expect_true(!!!x)
 /// ```
+/// <!-- docs: end -->
 pub fn expect_not(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     // Only check expect_true and expect_false
     if fn_name != "expect_true" && fn_name != "expect_false" {

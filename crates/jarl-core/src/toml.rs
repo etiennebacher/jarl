@@ -15,7 +15,7 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use crate::config::resolve_rule_names;
-use crate::lints::base::assignment::options::AssignmentConfig;
+use crate::lints::base::assignment::options::AssignmentOptions;
 use crate::lints::base::cyclomatic_complexity::options::CyclomaticComplexityOptions;
 use crate::lints::base::duplicated_arguments::options::DuplicatedArgumentsOptions;
 use crate::lints::base::if_not_else::options::IfNotElseOptions;
@@ -26,6 +26,7 @@ use crate::lints::base::pipe_consistency::options::PipeConsistencyOptions;
 use crate::lints::base::quotes::options::QuotesOptions;
 use crate::lints::base::true_false_symbol::options::TrueFalseSymbolOptions;
 use crate::lints::base::undesirable_function::options::UndesirableFunctionOptions;
+use crate::lints::base::undesirable_operator::options::UndesirableOperatorOptions;
 use crate::lints::base::unreachable_code::options::UnreachableCodeOptions;
 use crate::lints::base::unused_function::options::UnusedFunctionOptions;
 use crate::lints::base::unused_object::options::UnusedObjectOptions;
@@ -38,6 +39,7 @@ use crate::settings::Settings;
 pub enum ParseTomlError {
     Read(PathBuf, io::Error),
     Deserialize(PathBuf, toml::de::Error),
+    Invalid(PathBuf, String),
 }
 
 impl std::error::Error for ParseTomlError {}
@@ -53,6 +55,13 @@ impl Display for ParseTomlError {
             Self::Deserialize(path, err) => {
                 write!(f, "Failed to parse {path}:\n{err}", path = path.display())
             }
+            Self::Invalid(path, err) => {
+                write!(
+                    f,
+                    "Invalid configuration in {path}:\n{err}",
+                    path = path.display()
+                )
+            }
         }
     }
 }
@@ -60,7 +69,57 @@ impl Display for ParseTomlError {
 pub fn parse_jarl_toml(path: &Path) -> Result<TomlOptions, ParseTomlError> {
     let toml =
         fs::read_to_string(path).map_err(|err| ParseTomlError::Read(path.to_path_buf(), err))?;
+
+    // Rule options are sub-tables (`[lint.assignment]`), so a `[lint]` key set
+    // to anything else can only be an unknown option. Catch those before
+    // deserializing, otherwise a known rule name (`assignment = "<-"`) reports
+    // a type mismatch instead of the "Unknown field" message every other
+    // unknown option gets. A malformed file is left to the deserializer, which
+    // reports the syntax error with its position.
+    if let Ok(table) = toml.parse::<toml::Table>()
+        && let Some(field) = unknown_lint_field(&table)
+    {
+        return Err(ParseTomlError::Invalid(
+            path.to_path_buf(),
+            unknown_lint_field_message(field),
+        ));
+    }
+
     toml::from_str(&toml).map_err(|err| ParseTomlError::Deserialize(path.to_path_buf(), err))
+}
+
+/// The primary `[lint]` options, i.e. everything but the per-rule sub-tables.
+const LINT_OPTIONS: &[&str] = &[
+    "select",
+    "extend-select",
+    "ignore",
+    "fixable",
+    "unfixable",
+    "exclude",
+    "default-exclude",
+    "include",
+    "per-file-ignores",
+    "check-roxygen",
+    "fix-roxygen",
+];
+
+/// Find a `[lint]` key that holds a non-table value but isn't a primary option.
+fn unknown_lint_field(table: &toml::Table) -> Option<&str> {
+    let lint = table.get("lint")?.as_table()?;
+    lint.iter().find_map(|(key, value)| {
+        (!value.is_table() && !LINT_OPTIONS.contains(&key.as_str())).then_some(key.as_str())
+    })
+}
+
+fn unknown_lint_field_message(field: &str) -> String {
+    format!(
+        "Unknown field `{field}` in `[lint]`. Expected one of: {options}.",
+        options = LINT_OPTIONS
+            .iter()
+            .map(|option| format!("`{option}`"))
+            .collect::<Vec<_>>()
+            .join(", ")
+    )
 }
 
 #[derive(Clone, Debug, Default, serde::Deserialize)]
@@ -247,11 +306,11 @@ pub struct LinterTomlOptions {
     ///
     /// Defaults to `false`.
     pub fix_roxygen: Option<bool>,
-    /// # Assignment operator to use
+    /// # Options for the `assignment` rule
     ///
-    /// Accepts either the legacy form `assignment = "<-"` (deprecated) or the
-    /// new table form `[lint.assignment]` with an `operator` field.
-    pub assignment: Option<AssignmentConfig>,
+    /// Use `operator` to specify which assignment operator to enforce.
+    /// Valid values are `"<-"` (the default) and `"="`.
+    pub assignment: Option<AssignmentOptions>,
 
     /// # Options for the `cyclomatic_complexity` rule
     ///
@@ -334,6 +393,14 @@ pub struct LinterTomlOptions {
     #[serde(rename = "undesirable_function")]
     pub undesirable_function: Option<UndesirableFunctionOptions>,
 
+    /// # Options for the `undesirable_operator` rule
+    ///
+    /// Use `operators` to fully replace the default list of undesirable operators.
+    /// Use `extend-operators` to add to the default list.
+    /// Specifying both is an error.
+    #[serde(rename = "undesirable_operator")]
+    pub undesirable_operator: Option<UndesirableOperatorOptions>,
+
     /// # Options for the `unreachable_code` rule
     ///
     /// Use `stopping-functions` to fully replace the default list of functions
@@ -371,31 +438,25 @@ pub struct LinterTomlOptions {
 }
 
 /// Return the path to the `jarl.toml` or `.jarl.toml` file in a given directory.
-pub fn find_jarl_toml_in_directory<P: AsRef<Path>>(path: P) -> Option<PathBuf> {
-    // Check for `jarl.toml` first, as we prioritize the "visible" one.
-    let toml = path.as_ref().join("jarl.toml");
-    if toml.is_file() {
-        return Some(toml);
-    }
+///
+/// The two names are interchangeable, so a directory holding both is ambiguous
+/// and is reported as an error rather than silently resolved: picking one would
+/// leave the user editing a file that has no effect.
+pub fn find_jarl_toml_in_directory<P: AsRef<Path>>(path: P) -> anyhow::Result<Option<PathBuf>> {
+    let directory = path.as_ref();
+    let visible = directory.join("jarl.toml");
+    let hidden = directory.join(".jarl.toml");
 
-    // Now check for `.jarl.toml` as well
-    let toml = path.as_ref().join(".jarl.toml");
-    if toml.is_file() {
-        return Some(toml);
+    match (visible.is_file(), hidden.is_file()) {
+        (true, true) => Err(anyhow::anyhow!(
+            "Found two configuration files: '{}' and '{}'. Use only one of them.",
+            visible.display(),
+            hidden.display()
+        )),
+        (true, false) => Ok(Some(visible)),
+        (false, true) => Ok(Some(hidden)),
+        (false, false) => Ok(None),
     }
-
-    // Didn't find a configuration file
-    None
-}
-
-/// Find the path to the closest `jarl.toml` or `.jarl.toml` if one exists, walking up the filesystem
-pub fn find_jarl_toml<P: AsRef<Path>>(path: P) -> Option<PathBuf> {
-    for directory in path.as_ref().ancestors() {
-        if let Some(toml) = find_jarl_toml_in_directory(directory) {
-            return Some(toml);
-        }
-    }
-    None
 }
 
 impl TomlOptions {
@@ -405,12 +466,7 @@ impl TomlOptions {
         // Reject unknown fields in `[lint]` with a clean error message that
         // only lists the primary options (not every rule sub-table name).
         if let Some(field) = linter.unknown_fields.keys().next() {
-            return Err(anyhow::anyhow!(
-                "Unknown field `{field}` in `[lint]`. Expected one of: \
-                 `select`, `extend-select`, `ignore`, `fixable`, `unfixable`, \
-                 `exclude`, `default-exclude`, `include`, `per-file-ignores`, \
-                 `check-roxygen`, `fix-roxygen`."
-            ));
+            return Err(anyhow::anyhow!(unknown_lint_field_message(field)));
         }
 
         let per_file_ignores = resolve_per_file_ignores(linter.per_file_ignores.as_ref(), root)?;
@@ -428,10 +484,6 @@ impl TomlOptions {
             fix_roxygen: linter.fix_roxygen,
             fixable: linter.fixable,
             unfixable: linter.unfixable,
-            deprecated_assignment_syntax: linter
-                .assignment
-                .as_ref()
-                .is_some_and(AssignmentConfig::is_legacy),
             rule_options,
             per_file_ignores,
         };

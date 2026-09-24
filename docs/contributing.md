@@ -11,10 +11,9 @@ Jarl relies on Insta to run snapshot tests. You can install it with:
 cargo install cargo-insta
 ```
 
-Jarl uses [just](https://github.com/casey/just) to quickly run several useful commands, such as `just document` or `just lint` (see the list of commands with `just -l`).
-This is not mandatory but convenient.
+Jarl uses [just](https://github.com/casey/just) to quickly run several useful commands, such as `just document` or `just lint` (see the list of commands with `just -l`). When updating a rule, use `just document --no-quarto` to regenerate its Markdown page without rendering the full website. Run `just document` when you also need to render the website.
 
-For documentation, you will need to have [Quarto](https://quarto.org/) and the R packages `reactable` and `rmarkdown` installed.
+For full website rendering, you will need [Quarto](https://quarto.org/) and the R packages `reactable`, `rmarkdown`, and `yaml12` installed.
 
 ## AI policy
 
@@ -27,11 +26,12 @@ Contributors are allowed to use AI tools, with some conditions.
 ## Basic structure of the repository
 
 The folder `crates` contains several sub-crates.
-At the time of writing (October 2025), there are three:
+At the time of writing (September 2026), there are four:
 
 * `jarl` contains the structure of the command-line tool with which users interact. This is where we can add or modify arguments to be passed to the CLI.
 * `jarl-core` contains the "meat" of the linter. It is where the R code is parsed and checked, and where the rules are defined. **This is probably the crate you will have to modify.**
 * `jarl-lsp` contains the code to integrate the linter with the Language Server Protocol, which allows editors such as VS Code or Positron to highlight diagnostics and provide "Quick Fix" buttons for example.
+* `jarl-semantic` contains the code to build the semantic index used in some rules (e.g. `unused_object`). It is unlikely you need to edit this crate.
 
 ## Adding or modifying a rule
 
@@ -66,12 +66,52 @@ Adding a new rule requires four main steps:
 1. Add tests in `src/lints/<group>/<rulename>/mod.rs`
 1. Add the rule in the `src/analyze` folder. This depends on the initial node in the AST. For instance, for the rule `equals_na`, we check the presence of code such as `x == NA`. Since the top node for this expression is a `R_BINARY_EXPRESSION`, this rule is ran in `src/analyze/binary_expression.rs`.
 
+### Documenting a new rule
+
+The documentation used in `jarl rule <rulename>` and on the Jarl website is generated from the documentation block in the `<rulename.rs>` file.
+
+The documentation block is positioned after any imports and declarations but before any of the code that operates the rule checks.
+The documentation block must be commented out using three slashes (`///`), it must start with the marker `<!-- docs: start -->` and end with the marker `<!-- docs: end -->`.
+Commented content outside of these markers will be ignored.
+The content of the documentation block uses standard markdown notation.
+Although the documentation website is built using Quarto, do not include any executable code as the documentation is extracted into plain markdown files.
+
+```rust
+/// <!-- docs: start -->
+/// Version added: 0.1.2
+///
+/// ## What it does
+///
+/// Checks for usage of `do.call(cbind.data.frame, x)`.
+///
+/// [...]
+/// <!-- docs: end -->
+```
+
+The first line of a documentation block must declare the version added (in `MAJOR.MINOR.PATCH` format).
+The documentation block should have the following subsections (each using a level 2 (`##`) markdown header):
+
+* "What is does" to explain what the rule does
+* "Why is this bad?" to explain the rationale for the rule and potential caveats
+* "Example" to illustrate code that will be flagged by the rule and code that will not be flagged by the rule
+* Potentially a "References" section, such as `?<function>` if more details about the `<function>` the rule relates to can be found in R help, and/or links to external websites.
+
+If the rule has configuration options, these should be documented in the rule's `options.rs` file and will be automatically included in the rule's documentation page under the subsection heading "Configuration options".
+Options documentation should also be commented out using three slashes and include `<!-- docs: start -->` and `<!-- docs: end -->` markers.
+The options documentation should explain the purpose of any option(s), their possible values and their effect(s).
+It should also have the following level 3 (`###`) subsections:
+
+* "Default values" to specify the default settings (if any) used by Jarl when checking the rule, for example any functions that the rule check skips.
+* "TOML settings" to show how to set the rule's configuration options in the `jarl.toml` file.
+
+Use `just document` to build the documentation.
+
 ### Useful commands
 
 * `cargo run --bin jarl -- check file.R` (or any other paths to check). The `--` in the middle is required to use the CLI in development mode (i.e. without installing it with `cargo install`)
 * `cargo insta test` and `cargo insta review` (if necessary) for snapshot tests only.
 * `cargo test` to run all tests, including snapshot tests.
-* `cargo install --path crates/jarl --profile=release` (or `--profile=dev`) to have a system-wide install and test the crate in other R projects.
+* `cargo install --path crates/jarl --profile=release` (or `--profile=dev`) to have a system-wide install and test the crate in other R projects. Note that you might need to use the full path to this binary (e.g. `/home/etienne/.cargo/bin/jarl`) if you have previously installed Jarl in another way.
 
 
 ## Integration tests
@@ -81,7 +121,7 @@ When you add a new rule, it is usually sufficient to add tests in the directory 
 However, in some cases you may affect the way users interact with Jarl as a whole, for instance by adding new command line arguments or arguments that can be set in `jarl.toml`. For those changes, it is important to check that the general behavior of Jarl is correct (check what happens when there are no R files, how TOML and CLI arguments interact, etc.).
 
 Tests for this are stored in `crates/jarl/tests/integration`.
-It is likely that you will need to edit one of the files instead of creating a new one.
+You will likely need to edit one of the files instead of creating a new one.
 For example, adding an extra argument in `crates/jarl-core/src/toml.rs` would require adding tests in `crates/jarl/tests/integration/toml_rule_args.rs`.
 
 

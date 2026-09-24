@@ -1998,6 +1998,7 @@ extend-select = ["TESTTHAT"]
         (
             "test.R",
             "
+library(testthat)
 any(is.na(x))
 expect_equal(foo(x), TRUE)
 ",
@@ -2018,17 +2019,17 @@ expect_equal(foo(x), TRUE)
     exit_code: 1
     ----- stdout -----
     warning: any_is_na
-     --> test.R:2:1
+     --> test.R:3:1
       |
-    2 | any(is.na(x))
+    3 | any(is.na(x))
       | ------------- `any(is.na(...))` is inefficient.
       |
       = help: Use `anyNA(...)` instead.
 
     warning: expect_true_false
-     --> test.R:3:1
+     --> test.R:4:1
       |
-    3 | expect_equal(foo(x), TRUE)
+    4 | expect_equal(foo(x), TRUE)
       | -------------------------- `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
       |
       = help: Use `expect_true(x)` instead.
@@ -2059,6 +2060,7 @@ extend-select = ["TESTTHAT"]
         (
             "test.R",
             "
+library(testthat)
 any(is.na(x))
 any(duplicated(x))
 expect_equal(foo(x), TRUE)
@@ -2081,17 +2083,17 @@ expect_equal(foo(x), TRUE)
     exit_code: 1
     ----- stdout -----
     warning: any_is_na
-     --> test.R:2:1
+     --> test.R:3:1
       |
-    2 | any(is.na(x))
+    3 | any(is.na(x))
       | ------------- `any(is.na(...))` is inefficient.
       |
       = help: Use `anyNA(...)` instead.
 
     warning: expect_true_false
-     --> test.R:4:1
+     --> test.R:5:1
       |
-    4 | expect_equal(foo(x), TRUE)
+    5 | expect_equal(foo(x), TRUE)
       | -------------------------- `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
       |
       = help: Use `expect_true(x)` instead.
@@ -2884,6 +2886,83 @@ select = ["any_is_na"]
     jarl failed
       Cause: Failed to read [TEMP_DIR]/jarl.toml:
     Permission denied (os error 13)
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_hidden_toml_is_used() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        ("test.R", "any(is.na(x))\nany(duplicated(x))"),
+        (
+            ".jarl.toml",
+            r#"
+[lint]
+select = ["any_duplicated"]
+"#,
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_duplicated
+     --> test.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_both_toml_names_is_an_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        ("test.R", "any(is.na(x))"),
+        ("jarl.toml", "[lint]\n"),
+        (".jarl.toml", "[lint]\n"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Found two configuration files: '[TEMP_DIR]/jarl.toml' and '[TEMP_DIR]/.jarl.toml'. Use only one of them.
     "
     );
 

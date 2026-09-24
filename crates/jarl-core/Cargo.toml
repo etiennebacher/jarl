@@ -45,7 +45,6 @@ strsim.workspace = true
 # Error handling and utilities
 anyhow.workspace = true
 tracing.workspace = true
-path-absolutize.workspace = true
 ignore.workspace = true
 etcetera.workspace = true
 
@@ -56,14 +55,14 @@ rayon.workspace = true
 regex.workspace = true
 
 schemars = { workspace = true, optional = true }
-annotate-snippets = "0.11"
+annotate-snippets = "0.12"
 
 [dev-dependencies]
 insta.workspace = true
 tempfile.workspace = true
 
 [lints.clippy]
-module-inception = "allow"
+module_inception = "allow"
 
 [features]
 schemars = ["dep:schemars"]

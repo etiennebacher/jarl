@@ -5,6 +5,7 @@ use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.1.0
 ///
 /// ## What it does
@@ -33,6 +34,7 @@ use biome_rowan::AstNode;
 /// !all(x)
 /// !any(x)
 /// ```
+/// <!-- docs: end -->
 pub fn outer_negation(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     // We don't want to report calls like `!any(x)`, just `any(x)`
     if ast.parent_is_bang_unary() {
@@ -57,8 +59,9 @@ pub fn outer_negation(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     }
 
     let arg_value = unwrap_or_return_none!(first_arg.value());
-    // Check if the argument is a unary expression (negation)
-    if arg_value.syntax().kind() != RSyntaxKind::R_UNARY_EXPRESSION {
+    let unary_expr = unwrap_or_return_none!(arg_value.as_r_unary_expression());
+    let operator = unwrap_or_return_none!(unary_expr.operator().ok());
+    if operator.kind() != RSyntaxKind::BANG {
         return Ok(None);
     }
 

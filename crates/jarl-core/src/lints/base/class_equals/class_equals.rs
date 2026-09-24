@@ -4,6 +4,7 @@ use crate::utils::{get_arg_by_position, get_function_name, node_contains_comment
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.8
 ///
 /// ## What it does
@@ -64,6 +65,7 @@ use biome_rowan::AstNode;
 /// ## References
 ///
 /// See `?inherits`
+/// <!-- docs: end -->
 pub fn class_equals(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 

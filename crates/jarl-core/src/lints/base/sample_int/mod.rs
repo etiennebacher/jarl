@@ -21,6 +21,7 @@ mod tests {
         expect_no_lint("sample(10:1, m)", "sample_int", None);
         expect_no_lint("sample(replace = TRUE, letters)", "sample_int", None);
         expect_no_lint("x$sample(1:2, 1)", "sample_int", None);
+        expect_no_lint("sample(, 1)", "sample_int", None);
     }
 
     #[test]

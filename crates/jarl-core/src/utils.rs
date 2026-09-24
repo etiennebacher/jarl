@@ -278,11 +278,15 @@ pub fn get_nested_functions_content(
     }
 
     // Try nested case: outer_fn(inner_fn(content))
-    let unnamed_arg = call
+    let mut unnamed_args = call
         .arguments()?
         .items()
         .into_iter()
-        .find(|x| x.as_ref().is_ok_and(|arg| arg.name_clause().is_none()));
+        .filter(|x| x.as_ref().is_ok_and(|arg| arg.name_clause().is_none()));
+    let unnamed_arg = match (unnamed_args.next(), unnamed_args.next()) {
+        (Some(arg), None) => Some(arg),
+        _ => None,
+    };
 
     if let Some(arg) = unnamed_arg {
         let value = arg?.value();
@@ -413,26 +417,22 @@ pub fn scan_symbols(content: &str) -> HashMap<String, usize> {
             continue;
         }
 
-        let bytes = line.as_bytes();
-        let len = bytes.len();
-        let mut i = 0;
+        let mut chars = line.char_indices();
 
-        while i < len {
-            let b = bytes[i];
-
-            // R identifiers start with a letter, `.`, or `_`
-            if b.is_ascii_alphabetic() || b == b'.' || b == b'_' {
-                let start = i;
-                i += 1;
-                while i < len
-                    && (bytes[i].is_ascii_alphanumeric() || bytes[i] == b'.' || bytes[i] == b'_')
-                {
-                    i += 1;
-                }
-                let name = &line[start..i];
+        while let Some((start, character)) = chars.next() {
+            // R identifiers start with a letter, `.`, or `_`.
+            if character.is_alphabetic() || character == '.' || character == '_' {
+                let end = chars
+                    .find_map(|(index, character)| {
+                        if !character.is_alphanumeric() && character != '.' && character != '_' {
+                            Some(index)
+                        } else {
+                            None
+                        }
+                    })
+                    .unwrap_or(line.len());
+                let name = &line[start..end];
                 *symbols.entry(name).or_insert(0) += 1;
-            } else {
-                i += 1;
             }
         }
     }
@@ -441,6 +441,19 @@ pub fn scan_symbols(content: &str) -> HashMap<String, usize> {
         .into_iter()
         .map(|(k, v)| (k.to_string(), v))
         .collect()
+}
+
+/// Offset of the first character of the line containing `offset`.
+pub fn line_start(source: &str, offset: usize) -> usize {
+    source[..offset].rfind('\n').map_or(0, |i| i + 1)
+}
+
+/// Offset just past the line break ending the line that contains `offset`, or
+/// the end of the source if that line is the last one.
+pub fn next_line_start(source: &str, offset: usize) -> usize {
+    source[offset..]
+        .find('\n')
+        .map_or(source.len(), |i| offset + i + 1)
 }
 
 #[cfg(test)]
@@ -497,5 +510,12 @@ mod tests {
         let syms = scan_symbols("123 + foo\n");
         assert!(syms.contains_key("foo"));
         assert!(!syms.contains_key("123"));
+    }
+
+    #[test]
+    fn test_scan_symbols_supports_non_ascii_identifiers() {
+        let syms = scan_symbols("中文函数 <- 1\n中文函数()\nhéllo <- 1\nhéllo()\n");
+        assert_eq!(syms.get("中文函数"), Some(&2));
+        assert_eq!(syms.get("héllo"), Some(&2));
     }
 }

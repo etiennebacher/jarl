@@ -7,6 +7,7 @@ use crate::utils::{get_arg_by_position, get_function_name};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.6.0
 ///
 /// ## What it does
@@ -42,6 +43,7 @@ use biome_rowan::AstNode;
 ///
 /// ifelse(cond, y, x)
 /// ```
+/// <!-- docs: end -->
 pub fn if_not_else(ast: &RIfStatement, checker: &Checker) -> anyhow::Result<Option<Diagnostic>> {
     // Only simple `if`/`else` statements, not `if`/`else if` chains: swapping the
     // branches of an `else if` wouldn't be a straightforward rewrite.

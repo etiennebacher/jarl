@@ -1,10 +1,14 @@
 # internal_function
+
 ::: {.callout-note title="Added in 0.4.0" .low-opacity}
 :::
 
 ## What it does
 
 Checks for usage of `:::`.
+
+**This rule is deprecated and will be removed in a future version. Use
+`undesirable_operator` instead.**
 
 ## Why is this bad?
 

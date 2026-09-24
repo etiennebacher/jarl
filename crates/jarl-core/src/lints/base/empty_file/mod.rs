@@ -14,10 +14,12 @@ mod tests {
         // Case 1: zero-byte file
         assert_snapshot!(snapshot_lint(""), @"
         warning: empty_file
-        --> <test>:1:1
-         |
-         |
-         = help: Consider deleting the file.
+         --> <test>:1:1
+          |
+        1 |
+          | - This file is empty or only contains comments.
+          |
+          = help: Consider deleting the file.
         Found 1 error.
         ");
 
@@ -26,8 +28,8 @@ mod tests {
         warning: empty_file
          --> <test>:1:1
           |
-        1 | ...
-         -| This file is empty or only contains comments.
+        1 |    
+          | - This file is empty or only contains comments.
           |
           = help: Consider deleting the file.
         Found 1 error.
@@ -48,10 +50,12 @@ mod tests {
         // Case 4: mixed whitespace + plain comments
         assert_snapshot!(snapshot_lint("\n  # a note\n\n"), @"
         warning: empty_file
-        --> <test>:1:1
-         |
-         |
-         = help: Consider deleting the file.
+         --> <test>:1:1
+          |
+        1 |
+          | - This file is empty or only contains comments.
+          |
+          = help: Consider deleting the file.
         Found 1 error.
         ");
     }

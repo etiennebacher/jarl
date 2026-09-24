@@ -1,4 +1,5 @@
 # matrix_apply
+
 ::: {.callout-note title="Added in 0.0.16" .low-opacity}
 :::
 

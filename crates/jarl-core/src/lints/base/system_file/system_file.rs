@@ -5,6 +5,7 @@ use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 pub struct SystemFile;
 
+/// <!-- docs: start -->
 /// Version added: 0.1.2
 ///
 /// ## What it does
@@ -32,6 +33,7 @@ pub struct SystemFile;
 /// ## References
 ///
 /// See `?system.file`
+/// <!-- docs: end -->
 impl Violation for SystemFile {
     fn rule(&self) -> Rule {
         Rule::SystemFile

@@ -5,13 +5,14 @@ use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::{AstNode, Direction, TextRange};
 
+/// <!-- docs: start -->
 /// Version added: 0.6.0
 ///
 /// ## What it does
 ///
 /// Reports cases where both pipes (`%>%` or `|>`) are used. By default, the
 /// base pipe `|>` is preferred but this can be changed in the configuration
-/// file.
+/// file, see details of the configuration options below.
 ///
 /// ## Why is this bad?
 ///
@@ -50,6 +51,7 @@ use biome_rowan::{AstNode, Direction, TextRange};
 /// ## References
 ///
 /// See `?pipeOp`
+/// <!-- docs: end -->
 pub fn pipe_consistency(
     ast: &RBinaryExpression,
     preferred: PreferredPipe,
@@ -109,11 +111,25 @@ pub fn pipe_consistency(
     };
 
     let bin_range = ast.syntax().text_trimmed_range();
+    let op_range = operator.text_trimmed_range();
+
+    let rhs_is_identifier = right.as_r_identifier().is_some();
+    if preferred_is_base && right.as_r_call().is_none() && !rhs_is_identifier {
+        return Ok(Some(Diagnostic::new(
+            ViolationData::new(
+                Rule::PipeConsistency,
+                body.to_string(),
+                Some(suggestion.to_string()),
+            ),
+            op_range,
+            Fix::empty(),
+        )));
+    }
+
     let bin_start: u32 = bin_range.start().into();
     let mut content = ast.to_trimmed_string();
 
-    let op_range = operator.text_trimmed_range();
-    let mut edits: Vec<(usize, usize, &str)> = Vec::with_capacity(2);
+    let mut edits: Vec<(usize, usize, &str)> = Vec::with_capacity(3);
     edits.push((
         (u32::from(op_range.start()) - bin_start) as usize,
         (u32::from(op_range.end()) - bin_start) as usize,
@@ -125,6 +141,11 @@ pub fn pipe_consistency(
             (u32::from(r.end()) - bin_start) as usize,
             new_placeholder,
         ));
+    }
+    if preferred_is_base && rhs_is_identifier {
+        let rhs_end = right.syntax().text_trimmed_range().end();
+        let rhs_end = (u32::from(rhs_end) - bin_start) as usize;
+        edits.push((rhs_end, rhs_end, "()"));
     }
     // Apply edits from the back so earlier offsets remain valid.
     edits.sort_by_key(|e| std::cmp::Reverse(e.0));

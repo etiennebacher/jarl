@@ -26,9 +26,6 @@ pub struct LinterSettings {
     pub fix_roxygen: Option<bool>,
     pub fixable: Option<Vec<String>>,
     pub unfixable: Option<Vec<String>>,
-    /// Whether the deprecated `assignment = "<-"` top-level string form was
-    /// used in `[lint]`. When `true`, a deprecation warning should be emitted.
-    pub deprecated_assignment_syntax: bool,
     pub rule_options: ResolvedRuleOptions,
     /// Per-file rule ignores resolved from `[lint.per-file-ignores]`.
     pub per_file_ignores: PerFileIgnores,

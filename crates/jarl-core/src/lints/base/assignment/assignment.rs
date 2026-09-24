@@ -3,6 +3,7 @@ use crate::rule_set::Rule;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.8
 ///
 /// ## What it does
@@ -14,13 +15,6 @@ use biome_rowan::AstNode;
 /// In most cases using `=` and `<-` is equivalent. Some very popular packages
 /// use `=` without problems. This rule only ensures the consistency of the
 /// assignment operator in a project.
-///
-/// Set the following option in `jarl.toml` to use `=` as the preferred operator:
-///
-/// ```toml
-/// [lint.assignment]
-/// operator = "=" # or "<-"
-/// ```
 ///
 /// ## Example
 ///
@@ -50,6 +44,7 @@ use biome_rowan::AstNode;
 /// See:
 ///
 /// - [https://style.tidyverse.org/syntax.html#assignment-1](https://style.tidyverse.org/syntax.html#assignment-1)
+/// <!-- docs: end -->
 pub fn assignment(
     ast: &RBinaryExpression,
     assignment: RSyntaxKind,

@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use crate::namespace::parse_namespace_exports;
 use crate::package::{FileScope, SharedFileData};
 
+/// <!-- docs: start -->
 /// Version added: 0.5.0
 ///
 /// ## What it does
@@ -20,9 +21,10 @@ use crate::package::{FileScope, SharedFileData};
 ///
 /// ## Why is this bad?
 ///
-/// An internal function that is never called is likely dead code left over from
-/// refactoring. Removing it keeps the codebase easier to understand and
-/// maintain.
+/// Functions must be documented in NAMESPACE to be exported to end users. A
+/// function that is never called nor exported is likely dead code left over
+/// from refactoring. Removing unused internal functions keeps the codebase
+/// easier to understand and maintain.
 ///
 /// ## Limitations
 ///
@@ -57,6 +59,7 @@ use crate::package::{FileScope, SharedFileData};
 /// # `check_length()` isn't exported but and isn't used anywhere, so it is
 /// # reported.
 /// ```
+/// <!-- docs: end -->
 // ## Implementation
 //
 // Operates on the already-scanned `SharedFileData` of a package rather than
@@ -197,7 +200,7 @@ pub(crate) fn compute_unused_from_shared(
 
                 if occurrences <= definitions && !extra_symbol_set.contains(name.as_str()) {
                     let help = format!(
-                        "Defined at {path}:{line}:{col} but never called",
+                        "Defined at {path}:{line}:{col}.",
                         path = file.rel_path.display()
                     );
                     unused.push((name.clone(), *range, help));
