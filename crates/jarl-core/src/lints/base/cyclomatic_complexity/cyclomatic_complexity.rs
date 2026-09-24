@@ -8,6 +8,7 @@ use crate::diagnostic::*;
 use crate::rule_set::Rule;
 use crate::utils::{argument_name, get_function_name};
 
+/// <!-- docs: start -->
 /// Version added: 0.7.0
 ///
 /// ## What it does
@@ -66,6 +67,7 @@ use crate::utils::{argument_name, get_function_name};
 /// ## Options
 ///
 /// * `max-complexity`
+/// <!-- docs: end -->
 pub fn cyclomatic_complexity(
     ast: &RFunctionDefinition,
     checker: &Checker,

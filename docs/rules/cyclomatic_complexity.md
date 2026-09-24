@@ -1,4 +1,5 @@
 # cyclomatic_complexity
+
 ::: {.callout-note title="Added in 0.7.0" .low-opacity}
 :::
 
@@ -27,6 +28,30 @@ The score counts the paths through the code, which is also the number of
 tests needed to cover it. A function with a high score is hard to read, hard
 to test exhaustively, and hard to change without breaking one of the paths
 nobody had in mind.
+
+## Configuration options
+
+The operation of the `cyclomatic_complexity` rule can be customised in the [configuration file](../reference/config-file.md).
+
+Use `max-complexity` to set the highest score a function (or the top-level code
+of a file) is allowed to reach before it is reported. It must be at least 1.
+
+### Default values
+
+```toml
+max-complexity = 15
+```
+
+### TOML settings
+
+```toml
+[lint]
+...
+
+[lint.cyclomatic_complexity]
+# Only report the functions that are really tangled.
+max-complexity = 25
+```
 
 ## Example
 
