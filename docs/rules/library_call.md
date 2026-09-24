@@ -23,6 +23,9 @@ rule has several special cases:
 - this rule is skipped in R Markdown and Quarto documents, where it is more
   common to have `library()` calls in various chunks.
 
+Comments located on the same line as the `library()` call are moved with it,
+but comments preceding it are not.
+
 This rule has an unsafe fix that moves `library()` calls towards the top.
 This is unsafe because code that would initially run before some `library()`
 calls would run after and therefore could be affected by new namespace
