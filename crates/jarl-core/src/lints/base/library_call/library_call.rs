@@ -22,7 +22,7 @@ struct LibraryStatement {
 ///
 /// Scripts where `library()` calls are scattered between the code are hard to
 /// read: a reader cannot tell at a glance which packages the script needs. This
-/// rule has several exceptions:
+/// rule has several special cases:
 ///
 /// - an `if` statement that only contains `library()` calls is considered
 ///   equivalent to a simple `library()` call;
