@@ -11,6 +11,7 @@ struct LibraryStatement {
     range: TextRange,
 }
 
+/// <!-- docs: start -->
 /// Version added: 0.7.0
 ///
 /// ## What it does
@@ -54,6 +55,7 @@ struct LibraryStatement {
 /// library(purrr)
 /// x <- 1
 /// ```
+/// <!-- docs: end -->
 pub fn library_call(expressions: &[RSyntaxNode], contents: &str) -> Vec<Diagnostic> {
     let mut diagnostics = Vec::new();
 
@@ -63,7 +65,10 @@ pub fn library_call(expressions: &[RSyntaxNode], contents: &str) -> Vec<Diagnost
     // The library block may only be preceded by `options()`/`Sys.setenv()`
     // calls. Misplaced calls are moved right after the block, or at the very
     // top of the file (before any comment) if there is no such block.
-    let preamble_len = expressions.iter().take_while(|expr| is_setup_call(expr)).count();
+    let preamble_len = expressions
+        .iter()
+        .take_while(|expr| is_setup_call(expr))
+        .count();
     let block_len = statements[preamble_len..]
         .iter()
         .take_while(|s| s.is_some())

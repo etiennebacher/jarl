@@ -11,6 +11,7 @@ use biome_rowan::{AstNode, AstSeparatedList};
 const FORMALS_EXPECT_EQUAL: Formals = &["object", "expected"];
 const FORMALS_LENGTH: Formals = &["x"];
 
+/// <!-- docs: start -->
 /// Version added: 0.2.0
 ///
 /// ## What it does
@@ -38,6 +39,7 @@ const FORMALS_LENGTH: Formals = &["x"];
 /// expect_length(x, 2)
 /// expect_length(x, n)
 /// ```
+/// <!-- docs: end -->
 pub fn expect_length(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     // Only check expect_equal and expect_identical
     if fn_name != "expect_equal" && fn_name != "expect_identical" {

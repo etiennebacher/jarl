@@ -15,10 +15,29 @@ impl PreferredQuote {
     }
 }
 
-/// TOML options for `[lint.quotes]`.
+/// <!-- docs: start -->
+/// The `quote`` option takes a single value (`"single"` or `"double"`)
+/// indicating the preferred quote style in the files to check. If
+/// `quote = "double"` and if the `"quotes"` rule is enabled, then any use of
+/// single quotes `'` will be reported, and vice-versa.
 ///
-/// Use `quote` to specify which quote delimiter to enforce for string
-/// literals. Valid values are `"double"` (the default) and `"single"`.
+/// ### Default values
+///
+/// ```toml
+/// quote = "double"
+/// ```
+///
+/// ### TOML settings
+///
+/// ```toml
+/// [lint]
+/// ...
+///
+/// [lint.quotes]
+/// # Prefer single quotes instead
+/// quote = "single"
+/// ```
+/// <!-- docs: end -->
 #[derive(Clone, Debug, PartialEq, Eq, Default, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]

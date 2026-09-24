@@ -5,11 +5,28 @@ use crate::rule_options::resolve_with_extend;
 /// Default operators that are considered undesirable.
 const DEFAULT_OPERATORS: &[&str] = &["->>", ":::", "<<-"];
 
-/// TOML options for `[lint.undesirable_operator]`.
-///
+/// <!-- docs: start -->
 /// Use `operators` to fully replace the default list of undesirable operators.
 /// Use `extend-operators` to add to the default list.
 /// Specifying both is an error.
+///
+/// ### Default values
+///
+/// ```toml
+/// operators = ["->>", ":::", "<<-"]
+/// ```
+///
+/// ### TOML settings
+///
+/// ```toml
+/// [lint.undesirable_operator]
+/// # Replace the default list entirely:
+/// operators = [":::", "%in%"]
+///
+/// # Or add to the defaults:
+/// extend-operators = ["%in%"]
+/// ```
+/// <!-- docs: end -->
 #[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]

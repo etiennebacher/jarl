@@ -1,4 +1,5 @@
 # unreachable_code
+
 ::: {.callout-note title="Added in 0.4.0" .low-opacity}
 :::
 
@@ -50,6 +51,42 @@ f <- function() {
 
 A chunk whose evaluation is decided at render time (e.g. `#| eval: run_it`)
 is considered evaluated.
+
+## Configuration options
+
+The operation of the `unreachable_code` rule can be customised in the [configuration file](../reference/config-file.md).
+
+Use `stopping-functions` to fully replace the default list of functions that are
+considered to stop execution (never return). Use `extend-stopping-functions` to
+add to the default list. Specifying both is an error.
+
+Function names in `stopping-functions` or `extend-stopping-functions` also match
+namespaced calls, e.g. `stopping-functions = ["abort"]` will consider `abort()`
+and `rlang::abort()` as stopping functions.
+
+### Default values
+
+```toml
+stopping-functions = [
+    "stop",
+    ".Defunct",
+    "abort",
+    "cli_abort",
+    "q",
+    "quit"
+]
+```
+
+### TOML settings
+
+```toml
+[lint]
+...
+
+[lint.unreachable_code]
+# Add a custom function to the list of stopping functions
+extend-stopping-functions = ["my_custom_stop"]
+```
 
 ## Examples
 

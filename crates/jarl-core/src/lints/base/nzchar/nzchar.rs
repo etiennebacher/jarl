@@ -7,6 +7,7 @@ use jarl_semantic::strings::get_string_literal_contents;
 
 const FORMALS_NCHAR: Formals = &["x"];
 
+/// <!-- docs: start -->
 /// Version added: 0.5.0
 ///
 /// ## What it does
@@ -44,6 +45,7 @@ const FORMALS_NCHAR: Formals = &["x"];
 /// ## References
 ///
 /// See `?nzchar`
+/// <!-- docs: end -->
 pub fn nzchar(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     // Check for comparisons of `nchar(x)` with zero, such as `nchar(x) == 0`
     if let Some(diagnostic) = nchar_zero_comparison(ast)? {

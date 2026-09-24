@@ -1,4 +1,5 @@
 # quotes
+
 ::: {.callout-note title="Added in 0.5.0" .low-opacity}
 :::
 
@@ -15,13 +16,9 @@ However, inconsistent use of quote styles decreases readability.
 
 Base R documentation and the Tidyverse style guide recommend using double
 quotes for all strings, except for when the string already contains double
-quotes. Therefore, by default, this rule expects double quotes (`"`).
-
-To prefer single quotes, set this in `jarl.toml`:
-```toml
-[lint.quotes]
-quote = "single"
-```
+quotes. Therefore, by default, this rule expects double quotes (`"`). See
+configuration options (below) for details about how to configure Jarl to
+prefer single quotes.
 
 For regular strings, this rule allows the opposite quote when needed to
 avoid escaping the preferred quote. For example,
@@ -54,6 +51,32 @@ is valid R, but
 r"(abc)"def)"
 ```
 results in early termination and a syntax error.
+
+## Configuration options
+
+The operation of the `quotes` rule can be customised in the [configuration file](../reference/config-file.md).
+
+The `quote`` option takes a single value (`"single"` or `"double"`)
+indicating the preferred quote style in the files to check. If
+`quote = "double"` and if the `"quotes"` rule is enabled, then any use of
+single quotes `'` will be reported, and vice-versa.
+
+### Default values
+
+```toml
+quote = "double"
+```
+
+### TOML settings
+
+```toml
+[lint]
+...
+
+[lint.quotes]
+# Prefer single quotes instead
+quote = "single"
+```
 
 ## Example
 

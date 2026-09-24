@@ -1,4 +1,5 @@
 # undesirable_operator
+
 ::: {.callout-note title="Added in 0.7.0" .low-opacity}
 :::
 
@@ -14,26 +15,31 @@ internal functions, meaning that they may disappear or behave differently withou
 notice if the package changes. `<<-` and `->>` assign outside the current environment
 and may lead to code that is harder to predict.
 
-## Configuration
 
-By default, only `->>`, `:::`, and `<<-` are flagged. You can customize the
-list in `jarl.toml`:
+## Configuration options
 
-To replace the default list entirely:
+The operation of the `undesirable_operator` rule can be customised in the [configuration file](../reference/config-file.md).
+
+Use `operators` to fully replace the default list of undesirable operators.
+Use `extend-operators` to add to the default list.
+Specifying both is an error.
+
+### Default values
+
+```toml
+operators = ["->>", ":::", "<<-"]
+```
+
+### TOML settings
 
 ```toml
 [lint.undesirable_operator]
-operators = ["%notin%", "&&"]
+# Replace the default list entirely:
+operators = [":::", "%in%"]
+
+# Or add to the defaults:
+extend-operators = ["%in%"]
 ```
-
-To add to the defaults:
-
-```toml
-[lint.undesirable_operator]
-extend-operators = ["&&", "%in%"]
-```
-
-Specifying both `operators` and `extend-operators` is an error.
 
 ## Example
 

@@ -8,6 +8,7 @@ const FORMALS_DOWNLOAD_FILE: Formals = &[
     "url", "destfile", "method", "quiet", "mode", "cacheOK", "extra", "headers",
 ];
 
+/// <!-- docs: start -->
 /// Version added: 0.0.24
 ///
 /// ## What it does
@@ -36,6 +37,7 @@ const FORMALS_DOWNLOAD_FILE: Formals = &[
 /// ## References
 ///
 /// See `?download.file`
+/// <!-- docs: end -->
 pub fn download_file(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     if fn_name != "download.file" {
         return Ok(None);

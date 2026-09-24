@@ -1,4 +1,5 @@
 # for_loop_dup_index
+
 ::: {.callout-note title="Added in 0.4.0" .low-opacity}
 :::
 

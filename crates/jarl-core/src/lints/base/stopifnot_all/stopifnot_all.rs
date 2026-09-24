@@ -6,6 +6,7 @@ use biome_rowan::AstNode;
 
 pub struct StopifnotAll;
 
+/// <!-- docs: start -->
 /// Version added: 0.6.0
 ///
 /// ## What it does
@@ -37,6 +38,7 @@ pub struct StopifnotAll;
 /// ## References
 ///
 /// See `?stopifnot`.
+/// <!-- docs: end -->
 impl Violation for StopifnotAll {
     fn rule(&self) -> Rule {
         Rule::StopifnotAll

@@ -7,6 +7,7 @@ use biome_rowan::{AstNode, SyntaxResult};
 
 pub struct NestedPipe;
 
+/// <!-- docs: start -->
 /// Version added: 0.6.0
 ///
 /// ## What it does
@@ -38,6 +39,7 @@ pub struct NestedPipe;
 ///
 /// print(out)
 /// ```
+/// <!-- docs: end -->
 impl Violation for NestedPipe {
     fn rule(&self) -> Rule {
         Rule::NestedPipe

@@ -5,6 +5,7 @@ use biome_rowan::{AstNode, SyntaxToken};
 
 pub struct NumericLeadingZero;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.19
 ///
 /// ## What it does
@@ -27,6 +28,7 @@ pub struct NumericLeadingZero;
 /// ```r
 /// x <- 0.1
 /// ```
+/// <!-- docs: end -->
 impl Violation for NumericLeadingZero {
     fn rule(&self) -> Rule {
         Rule::NumericLeadingZero

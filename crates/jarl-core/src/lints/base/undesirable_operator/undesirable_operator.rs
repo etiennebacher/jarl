@@ -8,6 +8,7 @@ pub struct UndesirableOperator {
     pub operator: String,
 }
 
+/// <!-- docs: start -->
 /// Version added: 0.7.0
 ///
 /// ## What it does
@@ -22,26 +23,6 @@ pub struct UndesirableOperator {
 /// notice if the package changes. `<<-` and `->>` assign outside the current environment
 /// and may lead to code that is harder to predict.
 ///
-/// ## Configuration
-///
-/// By default, only `->>`, `:::`, and `<<-` are flagged. You can customize the
-/// list in `jarl.toml`:
-///
-/// To replace the default list entirely:
-///
-/// ```toml
-/// [lint.undesirable_operator]
-/// operators = ["%notin%", "&&"]
-/// ```
-///
-/// To add to the defaults:
-///
-/// ```toml
-/// [lint.undesirable_operator]
-/// extend-operators = ["&&", "%in%"]
-/// ```
-///
-/// Specifying both `operators` and `extend-operators` is an error.
 ///
 /// ## Example
 ///
@@ -49,6 +30,7 @@ pub struct UndesirableOperator {
 /// package:::internal_function()  # flagged by default
 /// value <<- 1                    # flagged by default
 /// ```
+/// <!-- docs: end -->
 impl Violation for UndesirableOperator {
     fn rule(&self) -> Rule {
         Rule::UndesirableOperator

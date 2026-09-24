@@ -6,6 +6,7 @@ use biome_rowan::AstNode;
 
 pub struct EqualsNaN;
 
+/// <!-- docs: start -->
 /// Version added: 0.4.0
 ///
 /// ## What it does
@@ -35,6 +36,7 @@ pub struct EqualsNaN;
 /// x <- c(1, 2, 3, NaN)
 /// is.nan(x)
 /// ```
+/// <!-- docs: end -->
 impl Violation for EqualsNaN {
     fn rule(&self) -> Rule {
         Rule::EqualsNaN
