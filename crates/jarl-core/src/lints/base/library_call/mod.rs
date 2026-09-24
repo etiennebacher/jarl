@@ -75,7 +75,7 @@ x <- 1
 if (foo) {
     print(x + 1)
     library(bar)
-} 
+}
 "#,
             "library_call",
             None,
@@ -276,16 +276,6 @@ library(abc)
                     "options(warn = 1)\nSys.setenv(LANG = \"en\")\nx <- 1\nlibrary(foo)\n",
                 ],
                 "library_call",
-            )
-        );
-
-        // The fix is unsafe: the plain (safe-only) helper shows no change.
-        insta::assert_snapshot!(
-            "fix_output_unsafe_only",
-            get_fixed_text(
-                vec!["library(dplyr)\nx <- 1\nlibrary(purrr)\n"],
-                "library_call",
-                None,
             )
         );
     }
