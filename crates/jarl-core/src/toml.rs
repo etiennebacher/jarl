@@ -16,6 +16,7 @@ use std::path::PathBuf;
 
 use crate::config::resolve_rule_names;
 use crate::lints::base::assignment::options::AssignmentOptions;
+use crate::lints::base::cyclomatic_complexity::options::CyclomaticComplexityOptions;
 use crate::lints::base::duplicated_arguments::options::DuplicatedArgumentsOptions;
 use crate::lints::base::if_not_else::options::IfNotElseOptions;
 use crate::lints::base::implicit_assignment::options::ImplicitAssignmentOptions;
@@ -310,6 +311,13 @@ pub struct LinterTomlOptions {
     /// Use `operator` to specify which assignment operator to enforce.
     /// Valid values are `"<-"` (the default) and `"="`.
     pub assignment: Option<AssignmentOptions>,
+
+    /// # Options for the `cyclomatic_complexity` rule
+    ///
+    /// Use `max-complexity` to set the highest score a function (or the
+    /// top-level code of a file) is allowed to reach before it is reported.
+    #[serde(rename = "cyclomatic_complexity")]
+    pub cyclomatic_complexity: Option<CyclomaticComplexityOptions>,
 
     /// # Options for the `duplicated_arguments` rule
     ///
