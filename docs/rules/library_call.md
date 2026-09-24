@@ -7,9 +7,9 @@
 Reports `library()` calls that are not grouped at the top of the script,
 and moves them there.
 
-A preamble of setup code is allowed before the first `library()` call;
-what matters is that every `library()` call in the script forms a single
-consecutive block starting at the first one.
+Every `library()` call in the script must be part of a single consecutive
+block at the top of the script. Only `options()` and `Sys.setenv()` calls
+are allowed before this block.
 
 Only `library()` is considered: `require()` returns a value that is
 routinely used for its result, so it is out of scope for this rule.

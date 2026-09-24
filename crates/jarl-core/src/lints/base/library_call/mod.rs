@@ -21,10 +21,23 @@ x <- 1
             None,
         );
 
-        // Block after a preamble.
+        // Leading comments before the block.
+        expect_no_lint(
+            r#"
+# Setup
+library(dplyr)
+library(purrr)
+x <- 1
+"#,
+            "library_call",
+            None,
+        );
+
+        // `options()` and `Sys.setenv()` calls before the block.
         expect_no_lint(
             r#"
 options(stringsAsFactors = FALSE)
+Sys.setenv(LANG = "en")
 library(dplyr)
 library(purrr)
 x <- 1
@@ -119,6 +132,49 @@ x <- 1
 
     #[test]
     fn test_lint_library_call() {
+        // No `library()` call at the top.
+        insta::assert_snapshot!(
+            snapshot_lint(
+                r#"
+x <- 1
+
+library(foo)
+"#
+            ),
+            @"
+        warning: library_call
+         --> <test>:4:1
+          |
+        4 | library(foo)
+          | ------------ `library()` calls should be grouped at the top of the script.
+          |
+          = help: Move this call next to the other `library()` calls.
+        Found 1 error.
+        "
+        );
+
+        // Setup code other than `options()`/`Sys.setenv()` before the first
+        // `library()` call.
+        insta::assert_snapshot!(
+            snapshot_lint(
+                r#"
+options(stringsAsFactors = FALSE)
+x <- 1
+library(dplyr)
+"#
+            ),
+            @"
+        warning: library_call
+         --> <test>:4:1
+          |
+        4 | library(dplyr)
+          | -------------- `library()` calls should be grouped at the top of the script.
+          |
+          = help: Move this call next to the other `library()` calls.
+        Found 1 error.
+        "
+        );
+
         insta::assert_snapshot!(
             snapshot_lint(
                 r#"
@@ -204,6 +260,20 @@ library(abc)
                 vec![
                     "options(stringsAsFactors = FALSE)\nlibrary(dplyr)\nif (interactive()) {\n  library(rlang)\n}\nsuppressPackageStartupMessages(library(zoo))\nx <- 1\nlibrary(purrr)\nlibrary(abc)\n",
                     "library(baz)\nx <- 1\nif (foo) {\n    library(bar)\n} else {\n    library(bar2)\n}"
+                ],
+                "library_call",
+            )
+        );
+
+        // No `library()` call at the top: calls are moved at the very top of
+        // the file, before leading comments.
+        insta::assert_snapshot!(
+            "fix_output_no_block_at_top",
+            get_unsafe_fixed_text(
+                vec![
+                    "x <- 1\n\nlibrary(foo)\n",
+                    "# Header\nx <- 1\nlibrary(foo)\ny <- 2\nlibrary(bar)\n",
+                    "options(warn = 1)\nSys.setenv(LANG = \"en\")\nx <- 1\nlibrary(foo)\n",
                 ],
                 "library_call",
             )

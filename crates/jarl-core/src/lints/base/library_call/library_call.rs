@@ -18,9 +18,9 @@ struct LibraryStatement {
 /// Reports `library()` calls that are not grouped at the top of the script,
 /// and moves them there.
 ///
-/// A preamble of setup code is allowed before the first `library()` call;
-/// what matters is that every `library()` call in the script forms a single
-/// consecutive block starting at the first one.
+/// Every `library()` call in the script must be part of a single consecutive
+/// block at the top of the script. Only `options()` and `Sys.setenv()` calls
+/// are allowed before this block.
 ///
 /// Only `library()` is considered: `require()` returns a value that is
 /// routinely used for its result, so it is out of scope for this rule.
@@ -60,27 +60,36 @@ pub fn library_call(expressions: &[RSyntaxNode], contents: &str) -> Vec<Diagnost
     let statements: Vec<Option<LibraryStatement>> =
         expressions.iter().map(classify_library_statement).collect();
 
-    let Some(first) = statements.iter().position(Option::is_some) else {
-        return diagnostics;
+    // The library block may only be preceded by `options()`/`Sys.setenv()`
+    // calls. Misplaced calls are moved right after the block, or at the very
+    // top of the file (before any comment) if there is no such block.
+    let preamble_len = expressions.iter().take_while(|expr| is_setup_call(expr)).count();
+    let block_len = statements[preamble_len..]
+        .iter()
+        .take_while(|s| s.is_some())
+        .count();
+    let insertion_point = match preamble_len + block_len {
+        0 => 0,
+        n => next_line_start(
+            contents,
+            usize::from(expressions[n - 1].text_trimmed_range().end()),
+        ),
     };
+    let insertion_point = TextSize::from(insertion_point as u32);
 
-    let mut block_end = first;
-    while block_end + 1 < statements.len() && statements[block_end + 1].is_some() {
-        block_end += 1;
-    }
-
-    let block_end_range = statements[block_end]
-        .as_ref()
-        .expect("block_end is a library statement")
-        .range;
-    let insertion_point =
-        TextSize::from(next_line_start(contents, usize::from(block_end_range.end())) as u32);
-
-    for stmt in statements.iter().skip(block_end + 1).flatten() {
+    for stmt in statements.iter().skip(preamble_len + block_len).flatten() {
         diagnostics.push(misplaced_diagnostic(stmt, contents, insertion_point));
     }
 
     diagnostics
+}
+
+/// Whether `stmt` is an `options()` or `Sys.setenv()` call.
+fn is_setup_call(stmt: &RSyntaxNode) -> bool {
+    RCall::cast(stmt.clone())
+        .and_then(|call| call.function().ok())
+        .map(get_function_name)
+        .is_some_and(|name| name == "options" || name == "Sys.setenv")
 }
 
 /// Classify a top-level statement as a library statement, if it is one.
