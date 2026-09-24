@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-const DEFAULT_MAX_COMPLEXITY: usize = 15;
+const DEFAULT_MAX_COMPLEXITY: usize = 20;
 
 /// Calls that leave the function without returning a value. Kept in sync with
 /// the defaults of `unreachable_code`, but not configurable here: the score is
@@ -14,7 +14,7 @@ const STOPPING_FUNCTIONS: &[&str] = &["stop", ".Defunct", "abort", "cli_abort", 
 /// ### Default values
 ///
 /// ```toml
-/// max-complexity = 15
+/// max-complexity = 20
 /// ```
 ///
 /// ### TOML settings
