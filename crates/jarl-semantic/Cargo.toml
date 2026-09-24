@@ -1,7 +1,7 @@
 [package]
 name = "jarl-semantic"
 description = "Per-file semantic info for jarl R linter rules"
-version = "0.6.0"
+version = "0.7.0-alpha.1"
 authors.workspace = true
 edition.workspace = true
 license-file.workspace = true

@@ -1118,7 +1118,7 @@ dependencies = [
 
 [[package]]
 name = "jarl-semantic"
-version = "0.6.0"
+version = "0.7.0-alpha.1"
 dependencies = [
  "air_r_parser",
  "air_r_syntax",
