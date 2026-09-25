@@ -151,7 +151,8 @@ dat <- as.data.frame(
     c("unused_function", "correctness", "❌", ""),
     c("unused_object", "correctness", "❌", "Disabled by default"),
     c("vector_logic", "performance", "❌", ""),
-    c("which_grepl", "performance, readability", "✅", "")
+    c("which_grepl", "performance, readability", "✅", ""),
+    c("yoda_test", "testthat", "✅", "Disabled by default")
   )
 )
 names(dat) <- c("Rule name", "Group", "Has fix", "Conditions")

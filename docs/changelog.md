@@ -25,6 +25,7 @@
 
   * `library_call` (#701)
   * `undesirable_operator` (#657, @christopherkenny)
+  * `yoda_test` (#733, @Yousa-Mirage).
 
 * The config file can be named `.jarl.toml` as well as `jarl.toml`. Both names
   are equivalent, and a directory containing both is now an error instead of

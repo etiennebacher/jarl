@@ -1,0 +1,95 @@
+---
+source: crates/jarl-core/src/lints/testthat/yoda_test/mod.rs
+expression: "get_fixed_text(vec![\"expect_equal(42, calculate_total(items))\",\n\"testthat::expect_identical('ready', get_status(job))\",\n\"testthat:::expect_setequal(1L, x)\", \"expect_equal(-1, x)\",\n\"expect_equal((2 + 1i), x)\", \"expect_equal(r\\\"(a\\\\b)\\\", x)\",\n\"expect_equal(\\n  \\\"你好\\\",\\n  foo(x)\\n)\",\n\"# leading comment\\nexpect_equal(  2 ,  foo(x)  ) # trailing comment\",\n\"x %$% expect_equal(2, value)\", \"x %>% { expect_equal(2, .) }\",\n\"expect_equal(2, x |> foo())\", \"expect_equal(2, expect_identical('a', x))\",],\n\"yoda_test\", None)"
+---
+OLD:
+====
+expect_equal(42, calculate_total(items))
+NEW:
+====
+expect_equal(calculate_total(items), 42)
+
+OLD:
+====
+testthat::expect_identical('ready', get_status(job))
+NEW:
+====
+testthat::expect_identical(get_status(job), 'ready')
+
+OLD:
+====
+testthat:::expect_setequal(1L, x)
+NEW:
+====
+testthat:::expect_setequal(x, 1L)
+
+OLD:
+====
+expect_equal(-1, x)
+NEW:
+====
+expect_equal(x, -1)
+
+OLD:
+====
+expect_equal((2 + 1i), x)
+NEW:
+====
+expect_equal(x, (2 + 1i))
+
+OLD:
+====
+expect_equal(r"(a\b)", x)
+NEW:
+====
+expect_equal(x, r"(a\b)")
+
+OLD:
+====
+expect_equal(
+  "你好",
+  foo(x)
+)
+NEW:
+====
+expect_equal(
+  foo(x),
+  "你好"
+)
+
+OLD:
+====
+# leading comment
+expect_equal(  2 ,  foo(x)  ) # trailing comment
+NEW:
+====
+# leading comment
+expect_equal(  foo(x) ,  2  ) # trailing comment
+
+OLD:
+====
+x %$% expect_equal(2, value)
+NEW:
+====
+x %$% expect_equal(value, 2)
+
+OLD:
+====
+x %>% { expect_equal(2, .) }
+NEW:
+====
+x %>% { expect_equal(., 2) }
+
+OLD:
+====
+expect_equal(2, x |> foo())
+NEW:
+====
+expect_equal(x |> foo(), 2)
+
+OLD:
+====
+expect_equal(2, expect_identical('a', x))
+NEW:
+====
+expect_equal(expect_identical(x, 'a'), 2)

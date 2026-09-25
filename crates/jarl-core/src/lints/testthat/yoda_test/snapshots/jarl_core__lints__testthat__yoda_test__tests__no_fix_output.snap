@@ -1,0 +1,56 @@
+---
+source: crates/jarl-core/src/lints/testthat/yoda_test/mod.rs
+expression: "get_fixed_text(vec![\"expect_equal(1, 1)\", \"expect_identical(1, 2)\",\n\"expect_equal(expected = total, object = 42)\",\n\"expect_equal(42, expected = total)\",\n\"expect_equal(7.5, calculate_mean(values), tolerance = 0.1)\",\n\"expect_equal(2, # expected\\nx)\", \"expect_equal(2, foo( # actual\\nx))\",],\n\"yoda_test\", None)"
+---
+OLD:
+====
+expect_equal(1, 1)
+NEW:
+====
+expect_equal(1, 1)
+
+OLD:
+====
+expect_identical(1, 2)
+NEW:
+====
+expect_identical(1, 2)
+
+OLD:
+====
+expect_equal(expected = total, object = 42)
+NEW:
+====
+expect_equal(expected = total, object = 42)
+
+OLD:
+====
+expect_equal(42, expected = total)
+NEW:
+====
+expect_equal(42, expected = total)
+
+OLD:
+====
+expect_equal(7.5, calculate_mean(values), tolerance = 0.1)
+NEW:
+====
+expect_equal(7.5, calculate_mean(values), tolerance = 0.1)
+
+OLD:
+====
+expect_equal(2, # expected
+x)
+NEW:
+====
+expect_equal(2, # expected
+x)
+
+OLD:
+====
+expect_equal(2, foo( # actual
+x))
+NEW:
+====
+expect_equal(2, foo( # actual
+x))

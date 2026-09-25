@@ -49,6 +49,7 @@ use crate::lints::testthat::expect_s3_class::expect_s3_class::expect_s3_class;
 use crate::lints::testthat::expect_s4_class::expect_s4_class::expect_s4_class;
 use crate::lints::testthat::expect_true_false::expect_true_false::expect_true_false;
 use crate::lints::testthat::expect_type::expect_type::expect_type;
+use crate::lints::testthat::yoda_test::yoda_test::yoda_test;
 
 pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     // Extract function name and namespace prefix once and pass this info to the
@@ -204,6 +205,9 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
         }
         if checker.is_rule_enabled(Rule::TestthatExpectTrueFalse) {
             checker.report_diagnostic(expect_true_false(r_expr, fn_name)?);
+        }
+        if checker.is_rule_enabled(Rule::TestthatYodaTest) {
+            checker.report_diagnostic(yoda_test(r_expr, fn_name)?);
         }
     }
     Ok(())

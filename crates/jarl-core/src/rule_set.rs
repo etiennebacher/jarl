@@ -867,6 +867,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    TestthatYodaTest => {
+        name: "yoda_test",
+        categories: [Testthat],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
 
 }
 

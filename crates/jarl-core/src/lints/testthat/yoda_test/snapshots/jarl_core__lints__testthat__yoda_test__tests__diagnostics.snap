@@ -1,0 +1,86 @@
+---
+source: crates/jarl-core/src/lints/testthat/yoda_test/mod.rs
+expression: "snapshot_lint(&[\"expect_equal(42, calculate_total(items))\",\n\"testthat::expect_identical(\\\"ready\\\", get_status(job))\",\n\"expect_setequal(3L, unique(values))\", \"expect_equal(1, 1)\",\n\"expect_identical(1, 2)\", \"expect_setequal('a', TRUE)\",\n\"expect_equal(expected = total, object = 42)\",\n\"expect_equal(7.5, calculate_mean(values), tolerance = 0.1)\",\n\"expect_equal(2, # expected\\nx)\",\n\"test_that(\\\"你好\\\", {\\n  expect_equal(\\n    \\\"你好\\\",\\n    foo(x)\\n  )\\n})\",\n\"x |> foo(expect_equal(2, y))\",].join(\"\\n\"))"
+---
+warning: yoda_test
+ --> <test>:1:1
+  |
+1 | expect_equal(42, calculate_total(items))
+  | ---------------------------------------- The actual result should be supplied as `object`, and the expected literal as `expected`.
+  |
+  = help: Use `expect_equal(calculate_total(items), 42)` instead.
+warning: yoda_test
+ --> <test>:2:1
+  |
+2 | testthat::expect_identical("ready", get_status(job))
+  | ---------------------------------------------------- The actual result should be supplied as `object`, and the expected literal as `expected`.
+  |
+  = help: Use `testthat::expect_identical(get_status(job), "ready")` instead.
+warning: yoda_test
+ --> <test>:3:1
+  |
+3 | expect_setequal(3L, unique(values))
+  | ----------------------------------- The actual result should be supplied as `object`, and the expected literal as `expected`.
+  |
+  = help: Use `expect_setequal(unique(values), 3L)` instead.
+warning: yoda_test
+ --> <test>:4:1
+  |
+4 | expect_equal(1, 1)
+  | ------------------ Comparing two literals does not test an actual result.
+  |
+  = help: Compare an actual result with the expected literal instead.
+warning: yoda_test
+ --> <test>:5:1
+  |
+5 | expect_identical(1, 2)
+  | ---------------------- Comparing two literals does not test an actual result.
+  |
+  = help: Compare an actual result with the expected literal instead.
+warning: yoda_test
+ --> <test>:6:1
+  |
+6 | expect_setequal('a', TRUE)
+  | -------------------------- Comparing two literals does not test an actual result.
+  |
+  = help: Compare an actual result with the expected literal instead.
+warning: yoda_test
+ --> <test>:7:1
+  |
+7 | expect_equal(expected = total, object = 42)
+  | ------------------------------------------- The actual result should be supplied as `object`, and the expected literal as `expected`.
+  |
+  = help: Use `expect_equal(total, 42)` instead.
+warning: yoda_test
+ --> <test>:8:1
+  |
+8 | expect_equal(7.5, calculate_mean(values), tolerance = 0.1)
+  | ---------------------------------------------------------- The actual result should be supplied as `object`, and the expected literal as `expected`.
+  |
+  = help: Use `expect_equal(calculate_mean(values), 7.5)` instead.
+warning: yoda_test
+  --> <test>:9:1
+   |
+ 9 | / expect_equal(2, # expected
+10 | | x)
+   | |__- The actual result should be supplied as `object`, and the expected literal as `expected`.
+   |
+   = help: Use `expect_equal(x, 2)` instead.
+warning: yoda_test
+  --> <test>:12:3
+   |
+12 | /   expect_equal(
+13 | |     "你好",
+14 | |     foo(x)
+15 | |   )
+   | |___- The actual result should be supplied as `object`, and the expected literal as `expected`.
+   |
+   = help: Use `expect_equal(foo(x), "你好")` instead.
+warning: yoda_test
+  --> <test>:17:10
+   |
+17 | x |> foo(expect_equal(2, y))
+   |          ------------------ The actual result should be supplied as `object`, and the expected literal as `expected`.
+   |
+   = help: Use `expect_equal(y, 2)` instead.
+Found 11 errors.

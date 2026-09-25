@@ -170,3 +170,4 @@ website:
             - rules/unused_object.md
             - rules/vector_logic.md
             - rules/which_grepl.md
+            - rules/yoda_test.md
