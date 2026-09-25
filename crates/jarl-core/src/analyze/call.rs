@@ -147,7 +147,7 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
         checker.report_diagnostic(system_file(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::UndesirableFunction) {
-        checker.report_diagnostic(undesirable_function(r_expr, fn_name, checker)?);
+        checker.report_diagnostic(undesirable_function(r_expr, fn_name, ns_prefix, checker)?);
     }
     if checker.is_rule_enabled(Rule::UndesirableOperator) {
         checker.report_diagnostic(undesirable_operator_call(

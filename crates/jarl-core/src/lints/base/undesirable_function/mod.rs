@@ -4,6 +4,7 @@ pub(crate) mod undesirable_function;
 #[cfg(test)]
 mod tests {
     use crate::lints::base::undesirable_function::options::ResolvedUndesirableFunctionOptions;
+    use crate::lints::base::undesirable_function::options::UndesirableFunctionEntry;
     use crate::lints::base::undesirable_function::options::UndesirableFunctionOptions;
     use crate::rule_options::ResolvedRuleOptions;
     use crate::settings::{LinterSettings, Settings};
@@ -66,7 +67,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | utils::browser()
-          | ---------------- `browser()` is listed as an undesirable function.
+          | ---------------- `utils::browser()` is listed as an undesirable function.
           |
         Found 1 error.
         "
@@ -76,7 +77,7 @@ mod tests {
     #[test]
     fn test_custom_functions() {
         let settings = settings_with_options(UndesirableFunctionOptions {
-            functions: Some(vec!["debug".to_string()]),
+            functions: Some(vec![UndesirableFunctionEntry::Name("debug".to_string())]),
             extend_functions: None,
         });
 
@@ -102,7 +103,7 @@ mod tests {
     fn test_extend_functions() {
         let settings = settings_with_options(UndesirableFunctionOptions {
             functions: None,
-            extend_functions: Some(vec!["debug".to_string()]),
+            extend_functions: Some(vec![UndesirableFunctionEntry::Name("debug".to_string())]),
         });
 
         // "browser" is still in the defaults -> lints
@@ -132,5 +133,97 @@ mod tests {
         Found 1 error.
         "
         );
+    }
+
+    #[test]
+    fn test_custom_messages() {
+        let options: UndesirableFunctionOptions = toml::from_str(
+            r#"
+            extend-functions = [
+                { setwd = 'Use here::here().' },
+                "sprintf",
+                { transmute = 'Use mutate(.keep = "none").' },
+            ]
+            "#,
+        )
+        .unwrap();
+
+        let settings = settings_with_options(options);
+
+        assert_snapshot!(
+            snapshot_lint_with_settings("setwd()", settings.clone()),
+            @"
+        warning: undesirable_function
+         --> <test>:1:1
+          |
+        1 | setwd()
+          | ------- `setwd()` is listed as an undesirable function.
+          |
+          = help: Use here::here().
+        Found 1 error.
+        "
+        );
+
+        assert_snapshot!(
+            snapshot_lint_with_settings("transmute()", settings),
+            @r#"
+        warning: undesirable_function
+         --> <test>:1:1
+          |
+        1 | transmute()
+          | ----------- `transmute()` is listed as an undesirable function.
+          |
+          = help: Use mutate(.keep = "none").
+        Found 1 error.
+        "#
+        );
+    }
+
+    #[test]
+    fn test_namespaced_function_matches_exactly() {
+        let options: UndesirableFunctionOptions =
+            toml::from_str(r#"extend-functions = [{ "base::setwd" = "Use here::here()." }]"#)
+                .unwrap();
+        let settings = settings_with_options(options);
+        expect_no_lint_with_settings("setwd()", "undesirable_function", None, settings.clone());
+        assert!(snapshot_lint_with_settings("base::setwd()", settings).contains("base::setwd()"));
+    }
+
+    #[test]
+    fn test_invalid_custom_function_entries_are_rejected() {
+        for (config, message) in [
+            (
+                "extend-functions = [{ 1 = 'Use here::here().' }]",
+                "Function name `1` must be a valid R identifier or use the form `package::name` in `[lint.undesirable_function]`.",
+            ),
+            (
+                "extend-functions = [{ true = 'Use here::here().' }]",
+                "Function name `true` must be a valid R identifier or use the form `package::name` in `[lint.undesirable_function]`.",
+            ),
+            (
+                "extend-functions = [{ setwd = 1 }]",
+                "Suggestion for `setwd` in `[lint.undesirable_function]` must be a string.",
+            ),
+            (
+                "extend-functions = [{ setwd = true }]",
+                "Suggestion for `setwd` in `[lint.undesirable_function]` must be a string.",
+            ),
+            (
+                "extend-functions = [{ \"\" = true }]",
+                "Function name cannot be empty in `[lint.undesirable_function]`.",
+            ),
+            (
+                "extend-functions = [{ \"  setwd  \" = true }]",
+                "Function name `  setwd  ` cannot have leading or trailing whitespace in `[lint.undesirable_function]`.",
+            ),
+        ] {
+            let options: UndesirableFunctionOptions = toml::from_str(config).unwrap();
+            assert_eq!(
+                ResolvedUndesirableFunctionOptions::resolve(Some(&options))
+                    .unwrap_err()
+                    .to_string(),
+                message
+            );
+        }
     }
 }

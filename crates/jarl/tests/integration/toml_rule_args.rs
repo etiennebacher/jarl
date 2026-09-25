@@ -768,6 +768,87 @@ quote = "foo"
     Ok(())
 }
 
+// undesirable_function ----------------------------------------
+
+#[test]
+fn test_undesirable_function_both_functions_and_extend_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.undesirable_function]
+functions = ["setwd"]
+extend-functions = ["sprintf"]
+"#,
+        ),
+        ("test.R", "setwd(\"data\")"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Cannot specify both `functions` and `extend-functions` in `[lint.undesirable_function]`.
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_undesirable_function_unknown_field_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.undesirable_function]
+unknown-option = ["setwd"]
+"#,
+        ),
+        ("test.R", "setwd(\"data\")"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 3, column 1
+      |
+    3 | unknown-option = ["setwd"]
+      | ^^^^^^^^^^^^^^
+    unknown field `unknown-option`, expected `functions` or `extend-functions`
+    "#
+    );
+
+    Ok(())
+}
+
 // unreachable_code ----------------------------------------
 
 #[test]

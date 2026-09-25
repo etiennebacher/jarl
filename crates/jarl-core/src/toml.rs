@@ -381,6 +381,8 @@ pub struct LinterTomlOptions {
     ///
     /// Use `functions` to fully replace the default list of undesirable functions.
     /// Use `extend-functions` to add to the default list.
+    /// Entries in `functions` and `extend-functions` can be strings or inline
+    /// tables mapping a function to a custom suggestion.
     /// Specifying both is an error.
     #[serde(rename = "undesirable_function")]
     pub undesirable_function: Option<UndesirableFunctionOptions>,

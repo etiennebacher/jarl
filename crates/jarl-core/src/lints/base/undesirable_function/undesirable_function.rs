@@ -6,6 +6,7 @@ use biome_rowan::AstNode;
 
 pub struct UndesirableFunction {
     pub fn_name: String,
+    pub message: Option<String>,
 }
 
 /// <!-- docs: start -->
@@ -20,6 +21,27 @@ pub struct UndesirableFunction {
 /// Some functions should not appear in production code. For example,
 /// `browser()` is a debugging tool that interrupts execution, and should be
 /// removed before committing.
+///
+/// ## Configuration
+///
+/// By default, only `browser` is flagged. You can customise the list in
+/// `jarl.toml`:
+///
+/// ```toml
+/// [lint.undesirable_function]
+/// # Replace the default list entirely:
+/// functions = ["browser", "debug"]
+///
+/// # Or add to the defaults, with optional suggestions:
+/// extend-functions = [
+///   { setwd = 'Use `here::here()`.' },
+///   "sprintf",
+///   { transmute = 'Use `mutate(.keep = "none")`.' },
+/// ]
+/// ```
+///
+/// Names can be qualified with a package, such as `base::setwd`; qualified
+/// names only match calls with the same package prefix.
 ///
 /// ## Example
 ///
@@ -38,25 +60,41 @@ impl Violation for UndesirableFunction {
     fn body(&self) -> String {
         format!("`{}()` is listed as an undesirable function.", self.fn_name)
     }
+    fn suggestion(&self) -> Option<String> {
+        self.message.clone()
+    }
 }
 
 pub fn undesirable_function(
     ast: &RCall,
     fn_name: &str,
+    ns_prefix: Option<&str>,
     checker: &Checker,
 ) -> anyhow::Result<Option<Diagnostic>> {
-    if !checker
-        .rule_options
-        .undesirable_function
-        .functions
-        .contains(fn_name)
-    {
+    let full_name = format!("{}{}", ns_prefix.unwrap_or_default(), fn_name);
+    let functions = &checker.rule_options.undesirable_function.functions;
+    if !functions.contains(&full_name) && !(ns_prefix.is_some() && functions.contains(fn_name)) {
         return Ok(None);
     }
 
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
-        UndesirableFunction { fn_name: fn_name.to_string() },
+        UndesirableFunction {
+            fn_name: full_name.clone(),
+            message: checker
+                .rule_options
+                .undesirable_function
+                .messages
+                .get(&full_name)
+                .or_else(|| {
+                    checker
+                        .rule_options
+                        .undesirable_function
+                        .messages
+                        .get(fn_name)
+                })
+                .cloned(),
+        },
         range,
         Fix::empty(),
     );

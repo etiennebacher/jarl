@@ -321,7 +321,7 @@
         },
         "undesirable_function": {
           "title": "Options for the `undesirable_function` rule",
-          "description": "Use `functions` to fully replace the default list of undesirable functions.\nUse `extend-functions` to add to the default list.\nSpecifying both is an error.",
+          "description": "Use `functions` to fully replace the default list of undesirable functions.\nUse `extend-functions` to add to the default list.\nEntries in `functions` and `extend-functions` can be strings or inline\ntables mapping a function to a custom suggestion.\nSpecifying both is an error.",
           "anyOf": [
             {
               "$ref": "#/$defs/UndesirableFunctionOptions"
@@ -484,8 +484,22 @@
       },
       "additionalProperties": false
     },
+    "UndesirableFunctionEntry": {
+      "description": "A function name, or a map from one or more function names to suggestions.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      ]
+    },
     "UndesirableFunctionOptions": {
-      "description": "TOML options for `[lint.undesirable_function]`.\n\nUse `functions` to fully replace the default list of undesirable functions.\nUse `extend-functions` to add to the default list.\nSpecifying both is an error.",
+      "description": "TOML options for `[lint.undesirable_function]`.\n\nUse `functions` to fully replace the default list of undesirable functions.\nUse `extend-functions` to add to the default list.\nEntries can be strings or inline tables mapping a function to a custom\nsuggestion.\nSpecifying both is an error.",
       "type": "object",
       "properties": {
         "extend-functions": {
@@ -494,7 +508,7 @@
             "null"
           ],
           "items": {
-            "type": "string"
+            "$ref": "#/$defs/UndesirableFunctionEntry"
           }
         },
         "functions": {
@@ -503,7 +517,7 @@
             "null"
           ],
           "items": {
-            "type": "string"
+            "$ref": "#/$defs/UndesirableFunctionEntry"
           }
         }
       },
