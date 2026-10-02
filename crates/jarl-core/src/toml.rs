@@ -37,7 +37,7 @@ use crate::settings::Settings;
 #[derive(Debug)]
 pub enum ParseTomlError {
     Read(PathBuf, io::Error),
-    Deserialize(PathBuf, toml::de::Error),
+    Deserialize(PathBuf, Box<toml::de::Error>),
     Invalid(PathBuf, String),
 }
 
@@ -84,7 +84,8 @@ pub fn parse_jarl_toml(path: &Path) -> Result<TomlOptions, ParseTomlError> {
         ));
     }
 
-    toml::from_str(&toml).map_err(|err| ParseTomlError::Deserialize(path.to_path_buf(), err))
+    toml::from_str(&toml)
+        .map_err(|err| ParseTomlError::Deserialize(path.to_path_buf(), Box::new(err)))
 }
 
 /// The primary `[lint]` options, i.e. everything but the per-rule sub-tables.

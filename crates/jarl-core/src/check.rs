@@ -629,49 +629,60 @@ fn get_checks_roxygen(
             check_expression(&expr, &mut checker)?;
         }
 
-        // Objects created by an example live in the throwaway environment that
-        // `example()` runs it in, so each section is its own universe: nothing
-        // it binds can be exported or read by another file, which is why
-        // `namespace_exports` and `cross_file_used` stay empty here.
-        //
-        // Run before `check_document` so that suppression filtering there
-        // covers these diagnostics too.
-        if checker.is_rule_enabled(crate::rule_set::Rule::UnusedObject) {
-            let semantic = oak_semantic::build_index(
+        let needs_semantic = checker.is_rule_enabled(crate::rule_set::Rule::UnusedObject)
+            || checker.is_rule_enabled(crate::rule_set::Rule::AssignmentOnIfNoElse);
+        let semantic = needs_semantic.then(|| {
+            oak_semantic::build_index(
                 &parsed.tree(),
                 jarl_semantic::JarlImportsResolver::with_cache(
                     file,
                     checker.source_index_cache.clone(),
                 ),
-            );
+            )
+        });
+
+        if let Some(semantic) = semantic.as_ref() {
             // What the example inherits from the package, plus whatever it
             // attaches itself (`library(glue)` on the first line is common).
             checker.loaded_packages = context.loaded_packages.to_vec();
             checker
                 .loaded_packages
-                .extend(top_level_attached_packages(&semantic));
+                .extend(top_level_attached_packages(semantic));
+        }
 
+        // Objects created by an example live in the throwaway environment that
+        // `example()` runs it in, so each section is its own universe: nothing
+        // it binds can be exported or read by another file, which is why
+        // `namespace_exports` and `cross_file_used` stay empty here.
+        //
+        // Run before `check_document` when it is not already covered by the
+        // semantic document pass, so suppression filtering there covers these
+        // diagnostics too.
+        if checker.is_rule_enabled(crate::rule_set::Rule::UnusedObject)
+            && !checker.is_rule_enabled(crate::rule_set::Rule::AssignmentOnIfNoElse)
+            && let Some(semantic) = semantic.as_ref()
+        {
             let owned: Vec<RSyntaxNode> = expressions.iter().map(|e| e.syntax().clone()).collect();
             crate::lints::base::unused_object::unused_object::unused_object(
                 &owned,
-                &semantic,
+                semantic,
                 &std::collections::HashSet::new(),
                 &mut checker,
             )?;
         }
 
-        // Only run document-level checks if the examples code has inline
-        // suppression comments. Most examples don't, and check_document is
-        // otherwise unnecessary here (no package-level analysis, no
-        // suppression-related diagnostics to report).
-        if has_suppressions {
+        // The incomplete-if rule is document-level because it needs semantic
+        // information. Other document-level checks are only needed here when
+        // the example contains inline suppression comments.
+        if has_suppressions || checker.is_rule_enabled(crate::rule_set::Rule::AssignmentOnIfNoElse)
+        {
             check_document(
                 expressions,
                 &syntax,
                 &chunk.code,
                 &mut checker,
                 &PackageFileAnalysis::default(),
-                None,
+                semantic.as_ref(),
             )?;
         }
 
