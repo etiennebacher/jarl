@@ -39,6 +39,7 @@ pub(crate) mod notin;
 pub(crate) mod numeric_leading_zero;
 pub(crate) mod nzchar;
 pub(crate) mod outer_negation;
+pub(crate) mod pipe_call;
 pub(crate) mod pipe_consistency;
 pub(crate) mod pipe_return;
 pub(crate) mod quotes;

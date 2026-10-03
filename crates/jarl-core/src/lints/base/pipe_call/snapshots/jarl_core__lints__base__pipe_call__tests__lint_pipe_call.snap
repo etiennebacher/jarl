@@ -1,0 +1,40 @@
+---
+source: crates/jarl-core/src/lints/base/pipe_call/mod.rs
+expression: "format_diagnostics(\"x %>% sum %>% mean\\nx %T>% print\\nx %<>% sort\\nx %!>% summary\",\n\"pipe_call\", None,)"
+---
+warning: pipe_call
+ --> <test>:1:15
+  |
+1 | x %>% sum %>% mean
+  |               ---- Use an explicit call on the right-hand side of a magrittr pipe.
+  |
+  = help: Use `mean()` instead.
+warning: pipe_call
+ --> <test>:1:7
+  |
+1 | x %>% sum %>% mean
+  |       --- Use an explicit call on the right-hand side of a magrittr pipe.
+  |
+  = help: Use `sum()` instead.
+warning: pipe_call
+ --> <test>:2:8
+  |
+2 | x %T>% print
+  |        ----- Use an explicit call on the right-hand side of a magrittr pipe.
+  |
+  = help: Use `print()` instead.
+warning: pipe_call
+ --> <test>:3:8
+  |
+3 | x %<>% sort
+  |        ---- Use an explicit call on the right-hand side of a magrittr pipe.
+  |
+  = help: Use `sort()` instead.
+warning: pipe_call
+ --> <test>:4:8
+  |
+4 | x %!>% summary
+  |        ------- Use an explicit call on the right-hand side of a magrittr pipe.
+  |
+  = help: Use `summary()` instead.
+Found 5 errors.

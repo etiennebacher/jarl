@@ -142,6 +142,7 @@ website:
             - rules/nzchar.md
             - rules/outdated_suppression.md
             - rules/outer_negation.md
+            - rules/pipe_call.md
             - rules/pipe_consistency.md
             - rules/pipe_return.md
             - rules/quotes.md
