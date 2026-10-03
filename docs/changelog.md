@@ -46,6 +46,9 @@
 
 ### Bug fixes
 
+* Fix `string_boundary` false positives for mismatched substring widths and
+  reordered named arguments, and mark its fixes as unsafe (#698, @Yousa-Mirage).
+
 * Prevent `unused_function` and `unused_object` from falsely reporting non-ASCII
   names (#706, @Yousa-Mirage).
 
