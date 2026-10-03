@@ -140,7 +140,7 @@ pub fn get_arg_by_name(args: &RArgumentList, name: &str) -> Option<RArgument> {
 
 /// The name an argument is written with (`name = value`), unquoted, or `None`
 /// for a positional argument.
-fn argument_name(arg: &RArgument) -> Option<String> {
+pub fn argument_name(arg: &RArgument) -> Option<String> {
     match arg.name_clause()?.name().ok()? {
         AnyRArgumentName::RIdentifier(ident) => Some(ident.name_text()),
         AnyRArgumentName::RStringValue(s) => s.string_text(),
