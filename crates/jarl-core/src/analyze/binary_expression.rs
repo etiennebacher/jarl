@@ -20,6 +20,7 @@ use crate::lints::base::seq::seq::seq;
 use crate::lints::base::string_boundary::string_boundary::string_boundary;
 use crate::lints::base::undesirable_operator::undesirable_operator::undesirable_operator_binary;
 use crate::lints::base::vector_logic::vector_logic::vector_logic;
+use crate::lints::base::yoda_condition::yoda_condition::yoda_condition;
 
 pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::AnyIsNa) {
@@ -84,6 +85,9 @@ pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> a
             r_expr,
             &checker.rule_options.undesirable_operator,
         )?);
+    }
+    if checker.is_rule_enabled(Rule::YodaCondition) {
+        checker.report_diagnostic(yoda_condition(r_expr)?);
     }
     Ok(())
 }
