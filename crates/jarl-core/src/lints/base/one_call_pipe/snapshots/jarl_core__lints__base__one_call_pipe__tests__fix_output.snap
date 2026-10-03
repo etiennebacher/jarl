@@ -1,0 +1,75 @@
+---
+source: crates/jarl-core/src/lints/base/one_call_pipe/mod.rs
+expression: "get_fixed_text(vec![\"x |> sum()\", \"1:10 %>% sum()\", \"(x + 1) |> abs()\",\n\"x |> # preserve comment\\n  f()\", \"x %T>% sum()\", \"x %<>% sum()\",\n\"x %!>% sum()\", \"x %>% { sum(.) }\", \"x %>% .()\", \"x |> _()\",],\n\"one_call_pipe\", None,)"
+---
+OLD:
+====
+x |> sum()
+NEW:
+====
+sum(x)
+
+OLD:
+====
+1:10 %>% sum()
+NEW:
+====
+sum(1:10)
+
+OLD:
+====
+(x + 1) |> abs()
+NEW:
+====
+abs((x + 1))
+
+OLD:
+====
+x |> # preserve comment
+  f()
+NEW:
+====
+x |> # preserve comment
+  f()
+
+OLD:
+====
+x %T>% sum()
+NEW:
+====
+x %T>% sum()
+
+OLD:
+====
+x %<>% sum()
+NEW:
+====
+x %<>% sum()
+
+OLD:
+====
+x %!>% sum()
+NEW:
+====
+x %!>% sum()
+
+OLD:
+====
+x %>% { sum(.) }
+NEW:
+====
+x %>% { sum(.) }
+
+OLD:
+====
+x %>% .()
+NEW:
+====
+x %>% .()
+
+OLD:
+====
+x |> _()
+NEW:
+====
+x |> _()
