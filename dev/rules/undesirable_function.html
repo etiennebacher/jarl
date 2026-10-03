@@ -967,6 +967,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="configuration-options">Configuration options</h2>
 <p>The operation of the <code>undesirable_function</code> rule can be customised in the <a href="../reference/config-file.html" target="_blank">configuration file</a>.</p>
 <p>Use <code>functions</code> to fully replace the default list of undesirable functions. Use <code>extend-functions</code> to add to the default list. Specifying both is an error.</p>
+<p>Entries can be strings or inline tables mapping a function to a custom suggestion. Function names in inline tables must be quoted. Names can be qualified with a package, such as <code>base::setwd</code>, in which case they only match calls with the same package prefix.</p>
 <section id="default-values" class="level3">
 <h3 class="anchored" data-anchor-id="default-values">Default values</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="dt">functions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"browser"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -978,7 +979,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="dt">functions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"browser"</span><span class="op">,</span> <span class="st">"debug"</span><span class="op">]</span></span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Or add to the defaults:</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="dt">extend-functions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"debug"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="dt">extend-functions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"debug"</span><span class="op">]</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Or add to the defaults, with optional suggestions:</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="dt">extend-functions</span> <span class="op">=</span> <span class="op">[</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="op">{ </span><span class="dt">"setwd"</span><span class="op"> =</span> <span class="st">'</span><span class="vs">Use `here::here()`.</span><span class="st">'</span><span class="op"> },</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="st">"sprintf"</span><span class="op">,</span>  <span class="co"># No suggestion for this case</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  <span class="op">{ </span><span class="dt">"transmute"</span><span class="op"> =</span> <span class="st">'</span><span class="vs">Use `mutate(.keep = "none")`.</span><span class="st">'</span><span class="op"> },</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 </section>
 <section id="example" class="level2">
