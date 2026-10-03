@@ -645,6 +645,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    TodoComment => {
+        name: "todo_comment",
+        categories: [Read],
+        default: Disabled,
+        fix: None,
+        min_r_version: None,
+    },
     TrueFalseSymbol => {
         name: "true_false_symbol",
         categories: [Read],

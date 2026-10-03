@@ -158,6 +158,7 @@ website:
             - rules/string_boundary.md
             - rules/strings_as_factors.md
             - rules/system_file.md
+            - rules/todo_comment.md
             - rules/true_false_symbol.md
             - rules/undesirable_function.md
             - rules/undesirable_operator.md
