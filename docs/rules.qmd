@@ -66,6 +66,7 @@ dat <- as.data.frame(
     c("comparison_negation", "readability", "❗", ""),
     c("condition_call", "readability", "❗", "Disabled by default"),
     c("condition_message", "readability", "✅", "Disabled by default"),
+    c("cyclomatic_complexity", "readability", "❌", "Disabled by default"),
     c("dplyr_filter_out", "dplyr", "✅", "Disabled by default"),
     c("dplyr_group_by_ungroup", "dplyr", "✅", "Disabled by default"),
     c("download_file", "suspicious", "❌", ""),

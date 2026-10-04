@@ -43,6 +43,86 @@ unknown-option = "foo"
     Ok(())
 }
 
+// cyclomatic_complexity ----------------------------------------
+
+#[test]
+fn test_cyclomatic_complexity_unknown_field_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.cyclomatic_complexity]
+unknown-option = 3
+"#,
+        ),
+        ("test.R", "x <- 1"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 3, column 1
+      |
+    3 | unknown-option = 3
+      | ^^^^^^^^^^^^^^
+    unknown field `unknown-option`, expected `max-complexity`
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_cyclomatic_complexity_zero_maximum_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.cyclomatic_complexity]
+max-complexity = 0
+"#,
+        ),
+        ("test.R", "x <- 1"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    `max-complexity` in `[lint.cyclomatic_complexity]` must be at least 1.
+    "
+    );
+
+    Ok(())
+}
+
 // duplicated_arguments ----------------------------------------
 
 #[test]
