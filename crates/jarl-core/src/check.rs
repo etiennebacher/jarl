@@ -619,7 +619,9 @@ fn get_checks_roxygen(
         let suppression = SuppressionManager::from_node(&syntax, &chunk.code);
         let has_suppressions = suppression.has_any_suppressions;
         let mut checker = Checker::new(suppression, config.rule_options.clone());
-        checker.rule_set = effective_rules_for_file(config, file, minimum_r_version);
+        // Check TODO markers only in the original roxygen comments.
+        checker.rule_set = effective_rules_for_file(config, file, minimum_r_version)
+            .filter(|rule| *rule != crate::rule_set::Rule::TodoComment);
         checker.minimum_r_version = minimum_r_version;
         checker.file_path = file.to_path_buf();
         checker.source_index_cache = context.source_cache.clone();
@@ -963,6 +965,32 @@ mod tests {
 
     const DESC_IMPORTS_DPLYR: &str = "Package: fixture\nVersion: 1.0.0\nImports: dplyr\n";
     const COMPLEX_FILTER: &str = "x |> filter(a > 1 | is.na(a))\n";
+
+    #[test]
+    fn test_todo_comment_roxygen_examples() {
+        // Check markers in the original comments, without rechecking extracted examples.
+        assert_snapshot!(
+            lint_in_package(
+                &[
+                    ("DESCRIPTION", "Package: fixture\nVersion: 0.0.1\n"),
+                    (
+                        "R/example.R",
+                        "\
+#' TODO: finish docs
+#' @examples
+#' # jarl-ignore unused_object: illustrative code
+#' x <- 1 # TODO: example code
+#' # FIXME: example comment
+f <- function() NULL
+",
+                    ),
+                ],
+                "R/example.R",
+                "todo_comment",
+            ),
+            @"todo_comment"
+        );
+    }
 
     #[test]
     fn test_description_imports_does_not_attach() {

@@ -140,6 +140,7 @@ dat <- as.data.frame(
     c("string_boundary", "performance, readability", "✅", ""),
     c("strings_as_factors", "suspicious", "❌", "R < 4.0"),
     c("system_file", "readability", "✅", ""),
+    c("todo_comment", "readability", "❌", "Disabled by default"),
     c("true_false_symbol", "readability", "❌", ""),
     c("undesirable_function", "correctness", "❌", ""),
     c("undesirable_operator", "correctness", "❌", ""),
