@@ -24,6 +24,7 @@
 * New rules:
 
   * `library_call` (#701)
+  * `one_call_pipe` (#737, @Yousa-Mirage)
   * `undesirable_operator` (#657, @christopherkenny)
 
 * The config file can be named `.jarl.toml` as well as `jarl.toml`. Both names

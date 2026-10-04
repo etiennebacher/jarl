@@ -140,6 +140,7 @@ website:
             - rules/notin.md
             - rules/numeric_leading_zero.md
             - rules/nzchar.md
+            - rules/one_call_pipe.md
             - rules/outdated_suppression.md
             - rules/outer_negation.md
             - rules/pipe_consistency.md

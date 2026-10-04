@@ -547,6 +547,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    OneCallPipe => {
+        name: "one_call_pipe",
+        categories: [Read],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
     Quotes => {
         name: "quotes",
         categories: [Read],

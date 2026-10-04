@@ -38,6 +38,7 @@ pub(crate) mod nested_pipe;
 pub(crate) mod notin;
 pub(crate) mod numeric_leading_zero;
 pub(crate) mod nzchar;
+pub(crate) mod one_call_pipe;
 pub(crate) mod outer_negation;
 pub(crate) mod pipe_consistency;
 pub(crate) mod pipe_return;

@@ -1,0 +1,54 @@
+---
+source: crates/jarl-core/src/lints/base/one_call_pipe/mod.rs
+expression: "snapshot_lint(\"x |> sum()\\n1:10 %>% sum()\\n(x + 1) |> abs()\\nx %T>% sum()\\nx %>% { sum(.) }\\nx %>% .()\\nx |> _()\")"
+---
+warning: one_call_pipe
+ --> <test>:1:1
+  |
+1 | x |> sum()
+  | ---------- Avoid using a pipe for an expression with only one function call.
+  |
+  = help: Replace with `sum(x)`.
+warning: one_call_pipe
+ --> <test>:2:1
+  |
+2 | 1:10 %>% sum()
+  | -------------- Avoid using a pipe for an expression with only one function call.
+  |
+  = help: Replace with `sum(1:10)`.
+warning: one_call_pipe
+ --> <test>:3:1
+  |
+3 | (x + 1) |> abs()
+  | ---------------- Avoid using a pipe for an expression with only one function call.
+  |
+  = help: Replace with `abs((x + 1))`.
+warning: one_call_pipe
+ --> <test>:4:1
+  |
+4 | x %T>% sum()
+  | ------------ Avoid using a pipe for an expression with only one function call.
+  |
+  = help: Use a regular function call instead.
+warning: one_call_pipe
+ --> <test>:5:1
+  |
+5 | x %>% { sum(.) }
+  | ---------------- Avoid using a pipe for an expression with only one function call.
+  |
+  = help: Use a regular function call instead.
+warning: one_call_pipe
+ --> <test>:6:1
+  |
+6 | x %>% .()
+  | --------- Avoid using a pipe for an expression with only one function call.
+  |
+  = help: Use a regular function call instead.
+warning: one_call_pipe
+ --> <test>:7:1
+  |
+7 | x |> _()
+  | -------- Avoid using a pipe for an expression with only one function call.
+  |
+  = help: Use a regular function call instead.
+Found 7 errors.
