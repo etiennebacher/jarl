@@ -65,3 +65,4 @@ pub(crate) mod unused_function;
 pub(crate) mod unused_object;
 pub(crate) mod vector_logic;
 pub(crate) mod which_grepl;
+pub(crate) mod yoda_condition;

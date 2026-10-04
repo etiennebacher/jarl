@@ -35,6 +35,7 @@ use crate::lints::base::system_file::system_file::system_file;
 use crate::lints::base::undesirable_function::undesirable_function::undesirable_function;
 use crate::lints::base::undesirable_operator::undesirable_operator::undesirable_operator_call;
 use crate::lints::base::which_grepl::which_grepl::which_grepl;
+use crate::lints::base::yoda_condition::yoda_condition::yoda_test;
 
 use crate::lints::dplyr::dplyr_filter_out::dplyr_filter_out::dplyr_filter_out;
 use crate::lints::dplyr::dplyr_group_by_ungroup::dplyr_group_by_ungroup::dplyr_group_by_ungroup;
@@ -204,6 +205,9 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
         }
         if checker.is_rule_enabled(Rule::TestthatExpectTrueFalse) {
             checker.report_diagnostic(expect_true_false(r_expr, fn_name)?);
+        }
+        if checker.is_rule_enabled(Rule::YodaCondition) {
+            checker.report_diagnostic(yoda_test(r_expr, fn_name)?);
         }
     }
     Ok(())

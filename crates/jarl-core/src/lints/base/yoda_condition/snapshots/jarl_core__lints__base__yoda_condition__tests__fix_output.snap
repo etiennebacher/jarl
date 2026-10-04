@@ -1,0 +1,181 @@
+---
+source: crates/jarl-core/src/lints/base/yoda_condition/mod.rs
+expression: "get_unsafe_fixed_text(vec![\"1 == total\\n'a' != name\\n10L < quantity\\n2 <= length(x)\\n3 > value\\n4 >= value\",\n\"if (1 == x) foo()\\nwhile (0 < remaining) remaining <- remaining - 1\",\n\"dplyr::filter(data, 'ready' == status)\",\n\"(1) + 1 == x + 1\\n1 == -x\\n1 == x * 2\\n1 == (x > y)\",\n\"1 == !x\\n1 == x + !y\\n1 == -!x\\n1 == if (flag) x else y\\n1 == function(x) x\",\n\"# leading comment\\n'你好'  !=\\n  get_name(x) # trailing comment\",\n\"expect_equal(TRUE, 1 == total)\", \"expect_equal(42, calculate_total(items))\",\n\"testthat::expect_identical('ready', get_status(job))\",\n\"testthat:::expect_setequal(1L, x)\", \"expect_equal(-1, x)\",\n\"expect_equal((2 + 1i), x)\", \"expect_equal(r\\\"(a\\\\b)\\\", x)\",\n\"expect_equal(\\n  \\\"你好\\\",\\n  foo(x)\\n)\",\n\"# leading comment\\nexpect_equal(  2 ,  foo(x)  ) # trailing comment\",\n\"x %$% expect_equal(2, value)\", \"x %>% { expect_equal(2, .) }\",\n\"expect_equal(2, x |> foo())\", \"expect_equal(2, x) |> identity()\",\n\"expect_equal(2, expect_identical('a', x))\",], \"yoda_condition\")"
+---
+OLD:
+====
+1 == total
+'a' != name
+10L < quantity
+2 <= length(x)
+3 > value
+4 >= value
+NEW:
+====
+total == 1
+name != 'a'
+quantity > 10L
+length(x) >= 2
+value < 3
+value <= 4
+
+OLD:
+====
+if (1 == x) foo()
+while (0 < remaining) remaining <- remaining - 1
+NEW:
+====
+if (x == 1) foo()
+while (remaining > 0) remaining <- remaining - 1
+
+OLD:
+====
+dplyr::filter(data, 'ready' == status)
+NEW:
+====
+dplyr::filter(data, status == 'ready')
+
+OLD:
+====
+(1) + 1 == x + 1
+1 == -x
+1 == x * 2
+1 == (x > y)
+NEW:
+====
+x + 1 == (1) + 1
+-x == 1
+x * 2 == 1
+(x > y) == 1
+
+OLD:
+====
+1 == !x
+1 == x + !y
+1 == -!x
+1 == if (flag) x else y
+1 == function(x) x
+NEW:
+====
+(!x) == 1
+(x + !y) == 1
+(-!x) == 1
+(if (flag) x else y) == 1
+(function(x) x) == 1
+
+OLD:
+====
+# leading comment
+'你好'  !=
+  get_name(x) # trailing comment
+NEW:
+====
+# leading comment
+get_name(x)  !=
+  '你好' # trailing comment
+
+OLD:
+====
+expect_equal(TRUE, 1 == total)
+NEW:
+====
+expect_equal(total == 1, TRUE)
+
+OLD:
+====
+expect_equal(42, calculate_total(items))
+NEW:
+====
+expect_equal(calculate_total(items), 42)
+
+OLD:
+====
+testthat::expect_identical('ready', get_status(job))
+NEW:
+====
+testthat::expect_identical(get_status(job), 'ready')
+
+OLD:
+====
+testthat:::expect_setequal(1L, x)
+NEW:
+====
+testthat:::expect_setequal(x, 1L)
+
+OLD:
+====
+expect_equal(-1, x)
+NEW:
+====
+expect_equal(x, -1)
+
+OLD:
+====
+expect_equal((2 + 1i), x)
+NEW:
+====
+expect_equal(x, (2 + 1i))
+
+OLD:
+====
+expect_equal(r"(a\b)", x)
+NEW:
+====
+expect_equal(x, r"(a\b)")
+
+OLD:
+====
+expect_equal(
+  "你好",
+  foo(x)
+)
+NEW:
+====
+expect_equal(
+  foo(x),
+  "你好"
+)
+
+OLD:
+====
+# leading comment
+expect_equal(  2 ,  foo(x)  ) # trailing comment
+NEW:
+====
+# leading comment
+expect_equal(  foo(x) ,  2  ) # trailing comment
+
+OLD:
+====
+x %$% expect_equal(2, value)
+NEW:
+====
+x %$% expect_equal(value, 2)
+
+OLD:
+====
+x %>% { expect_equal(2, .) }
+NEW:
+====
+x %>% { expect_equal(., 2) }
+
+OLD:
+====
+expect_equal(2, x |> foo())
+NEW:
+====
+expect_equal(x |> foo(), 2)
+
+OLD:
+====
+expect_equal(2, x) |> identity()
+NEW:
+====
+expect_equal(x, 2) |> identity()
+
+OLD:
+====
+expect_equal(2, expect_identical('a', x))
+NEW:
+====
+expect_equal(expect_identical(x, 'a'), 2)
