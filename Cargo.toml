@@ -46,7 +46,7 @@ strsim = "0.11"
 tempfile = "3.27.0"
 # Same as in Air to reduce compile time
 toml = "0.8.23"
-toml_edit = "0.22.27"
+toml_edit = "0.25.15"
 tracing = "0.1.41"
 
 [profile.release]
