@@ -683,6 +683,389 @@ extend-operators = ["@"]
     Ok(())
 }
 
+#[test]
+fn test_undesirable_operator_custom_messages() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+select = ["undesirable_operator"]
+
+[lint.undesirable_operator]
+extend-operators = [
+    { "%notin%" = 'Use `!(x %in% y)` instead.' },
+    { "$" = "Use `[[` for extraction." },
+]
+"#,
+        ),
+        ("test.R", "x %notin% y\nx$name\nx <<- 1\n"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: undesirable_operator
+     --> test.R:1:3
+      |
+    1 | x %notin% y
+      |   ------- `%notin%` is listed as an undesirable operator.
+      |
+      = help: Use `!(x %in% y)` instead.
+
+    warning: undesirable_operator
+     --> test.R:2:2
+      |
+    2 | x$name
+      |  - `$` is listed as an undesirable operator.
+      |
+      = help: Use `[[` for extraction.
+
+    warning: undesirable_operator
+     --> test.R:3:3
+      |
+    3 | x <<- 1
+      |   --- `<<-` is listed as an undesirable operator.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 3 errors.
+
+    ----- stderr -----
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_undesirable_operator_custom_message_with_replacement_list() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+select = ["undesirable_operator"]
+
+[lint.undesirable_operator]
+operators = [
+    { "%notin%" = 'Use `!(x %in% y)` instead.' },
+    "$",
+]
+"#,
+        ),
+        ("test.R", "x %notin% y\nx$name\nx <<- 1\n"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: undesirable_operator
+     --> test.R:1:3
+      |
+    1 | x %notin% y
+      |   ------- `%notin%` is listed as an undesirable operator.
+      |
+      = help: Use `!(x %in% y)` instead.
+
+    warning: undesirable_operator
+     --> test.R:2:2
+      |
+    2 | x$name
+      |  - `$` is listed as an undesirable operator.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+
+    ----- stderr -----
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_undesirable_operator_unquoted_name_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.undesirable_operator]
+extend-operators = [{ foo = "Use another operator." }]
+"#,
+        ),
+        ("test.R", "x %in% y"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Key `foo` in `extend-operators` of `[lint.undesirable_operator]` must be quoted. Use `"foo"` instead.
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_undesirable_operator_unquoted_name_in_operators_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.undesirable_operator]
+operators = [{ foo = "Use another operator." }]
+"#,
+        ),
+        ("test.R", "x %in% y"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Key `foo` in `operators` of `[lint.undesirable_operator]` must be quoted. Use `"foo"` instead.
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_undesirable_operator_non_string_message_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.undesirable_operator]
+extend-operators = [{ "$" = 1 }]
+"#,
+        ),
+        ("test.R", "x$name"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Message for `$` in `[lint.undesirable_operator]` must be a string.
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_undesirable_operator_boolean_message_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.undesirable_operator]
+extend-operators = [{ "$" = true }]
+"#,
+        ),
+        ("test.R", "x$name"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Message for `$` in `[lint.undesirable_operator]` must be a string.
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_undesirable_operator_empty_name_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.undesirable_operator]
+extend-operators = [{ "" = "Use another operator." }]
+"#,
+        ),
+        ("test.R", "x %in% y"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Operator name cannot be empty in `[lint.undesirable_operator]`.
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_undesirable_operator_whitespace_name_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.undesirable_operator]
+extend-operators = [{ "  %in%  " = "Use another operator." }]
+"#,
+        ),
+        ("test.R", "x %in% y"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Operator name `  %in%  ` cannot have leading or trailing whitespace in `[lint.undesirable_operator]`.
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_undesirable_operator_empty_message_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.undesirable_operator]
+extend-operators = [{ "$" = "  " }]
+"#,
+        ),
+        ("test.R", "x$name"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Message for `$` in `[lint.undesirable_operator]` cannot be empty.
+    "#
+    );
+
+    Ok(())
+}
+
 // quotes ----------------------------------------
 
 #[test]
