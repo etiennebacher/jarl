@@ -2,6 +2,7 @@ pub(crate) mod all_equal;
 pub(crate) mod any_duplicated;
 pub(crate) mod any_is_na;
 pub(crate) mod assignment;
+pub(crate) mod assignment_on_if_no_else;
 pub(crate) mod browser;
 pub(crate) mod class_equals;
 pub(crate) mod coalesce;
