@@ -23,6 +23,7 @@
 
 * New rules:
 
+  * `consecutive_signs` (@Yousa-Mirage)
   * `library_call` (#701)
   * `undesirable_operator` (#657, @christopherkenny)
 

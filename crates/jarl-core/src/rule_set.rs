@@ -315,6 +315,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    ConsecutiveSigns => {
+        name: "consecutive_signs",
+        categories: [Susp],
+        default: Disabled,
+        fix: None,
+        min_r_version: None,
+    },
     DownloadFile => {
         name: "download_file",
         categories: [Susp],
