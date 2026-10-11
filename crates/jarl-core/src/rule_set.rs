@@ -392,6 +392,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    FunctionArgument => {
+        name: "function_argument",
+        categories: [Read],
+        default: Disabled,
+        fix: None,
+        min_r_version: None,
+    },
     Glue => {
         name: "glue",
         categories: [Corr, Susp],

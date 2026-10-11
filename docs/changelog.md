@@ -23,6 +23,7 @@
 
 * New rules:
 
+  * `function_argument` (#738, @Yousa-Mirage).
   * `library_call` (#701)
   * `undesirable_operator` (#657, @christopherkenny)
 
