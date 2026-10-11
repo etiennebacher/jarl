@@ -45,6 +45,9 @@
 * The CLI now prints a message suggesting `fix-roxygen = true` when some fixes
   cannot be applied because the violation is in part of `@examples` (#702).
 
+* The JSON output now contains information on the fix ("safe", "unsafe", or "none")
+  (#747).
+
 ### Bug fixes
 
 * Prevent `unused_function` and `unused_object` from falsely reporting non-ASCII
