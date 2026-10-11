@@ -318,7 +318,7 @@ declare_rules! {
     ConsecutiveSigns => {
         name: "consecutive_signs",
         categories: [Susp],
-        default: Disabled,
+        default: Enabled,
         fix: None,
         min_r_version: None,
     },

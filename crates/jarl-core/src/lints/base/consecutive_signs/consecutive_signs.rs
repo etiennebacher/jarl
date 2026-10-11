@@ -14,9 +14,6 @@ pub struct ConsecutiveSigns;
 /// string contents are not checked. Whitespace and comments between operators
 /// do not break a sequence, but parentheses do.
 ///
-/// This rule is disabled by default. Enable it with
-/// `--select consecutive_signs` or by selecting the `SUSP` category.
-///
 /// ## Why is this bad?
 ///
 /// R accepts expressions such as `x + + - y` and `--x`, but consecutive signs can
