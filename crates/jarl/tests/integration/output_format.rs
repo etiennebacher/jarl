@@ -713,3 +713,116 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn test_output_json_fix_safety() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        ("safe.R", "any(is.na(x))"),
+        ("unsafe.R", "!all.equal(x, y)"),
+        ("none.R", "1 + + + 1"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("json")
+            .run()
+            .normalize_os_executable_name(),
+        @r#"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    {
+      "diagnostics": [
+        {
+          "message": {
+            "name": "consecutive_signs",
+            "body": "Consecutive `+` and `-` operators are usually unnecessary and look like a typo.",
+            "suggestion": "Consider removing the unnecessary operators or using parentheses to show that this is intentional."
+          },
+          "filename": "none.R",
+          "range": [
+            2,
+            7
+          ],
+          "location": {
+            "row": 1,
+            "column": 2
+          },
+          "fix": {
+            "edits": [],
+            "to_skip": true,
+            "safety": "none"
+          }
+        },
+        {
+          "message": {
+            "name": "any_is_na",
+            "body": "`any(is.na(...))` is inefficient.",
+            "suggestion": "Use `anyNA(...)` instead."
+          },
+          "filename": "safe.R",
+          "range": [
+            0,
+            13
+          ],
+          "location": {
+            "row": 1,
+            "column": 0
+          },
+          "fix": {
+            "edits": [
+              {
+                "range": [
+                  0,
+                  13
+                ],
+                "content": "anyNA(x)"
+              }
+            ],
+            "to_skip": false,
+            "safety": "safe"
+          }
+        },
+        {
+          "message": {
+            "name": "all_equal",
+            "body": "If `all.equal()` is false, it will return a string and not `FALSE`.",
+            "suggestion": "Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required."
+          },
+          "filename": "unsafe.R",
+          "range": [
+            0,
+            16
+          ],
+          "location": {
+            "row": 1,
+            "column": 0
+          },
+          "fix": {
+            "edits": [
+              {
+                "range": [
+                  0,
+                  16
+                ],
+                "content": "!isTRUE(all.equal(x, y))"
+              }
+            ],
+            "to_skip": false,
+            "safety": "unsafe"
+          }
+        }
+      ],
+      "errors": []
+    }
+    ----- stderr -----
+    "#
+    );
+
+    Ok(())
+}
