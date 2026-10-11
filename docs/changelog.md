@@ -48,6 +48,9 @@
 * The JSON output now contains information on the fix ("safe", "unsafe", or "none")
   (#747).
 
+* The JSON output now reports more information on syntax errors
+  (`message`, `range`, `location`) (#748).
+
 ### Bug fixes
 
 * Prevent `unused_function` and `unused_object` from falsely reporting non-ASCII

@@ -17,6 +17,7 @@ fn make_hyperlink(text: &str) -> String {
 }
 
 use jarl_core::diagnostic::{Diagnostic, render_diagnostic};
+use jarl_core::location::Location;
 
 /// Prints a section header like `── Summary ──────────────────────────────────`
 /// padded to 57 characters total.
@@ -130,6 +131,17 @@ struct JsonOutput {
 struct JsonError {
     file: String,
     error: String,
+    /// Individual syntax errors, empty for errors that aren't parse errors.
+    syntax_errors: Vec<JsonSyntaxError>,
+}
+
+/// Same conventions as diagnostics: `range` is a pair of byte offsets and
+/// `location.column` is 0-based.
+#[derive(Debug, Serialize)]
+struct JsonSyntaxError {
+    message: String,
+    range: [u32; 2],
+    location: Location,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, ValueEnum, Serialize, Deserialize)]
@@ -288,7 +300,25 @@ impl Emitter for JsonEmitter {
         // Convert errors to a serializable format
         let json_errors: Vec<JsonError> = errors
             .iter()
-            .map(|(path, err)| JsonError { file: path.clone(), error: format!("{:#}", err) })
+            .map(|(path, err)| {
+                let syntax_errors = match err.downcast_ref::<jarl_core::error::ParseError>() {
+                    Some(parse_error) => parse_error
+                        .syntax_errors
+                        .iter()
+                        .map(|e| JsonSyntaxError {
+                            message: e.message.clone(),
+                            range: [e.range.start().into(), e.range.end().into()],
+                            location: e.location,
+                        })
+                        .collect(),
+                    None => Vec::new(),
+                };
+                JsonError {
+                    file: path.clone(),
+                    error: format!("{:#}", err),
+                    syntax_errors,
+                }
+            })
             .collect();
 
         // Add `fix.safety` to each diagnostic: `safe`, `unsafe` (needs

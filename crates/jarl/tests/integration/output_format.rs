@@ -666,7 +666,20 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
       "errors": [
         {
           "file": "test2.R",
-          "error": "Failed to parse test2.R due to syntax errors."
+          "error": "Failed to parse test2.R due to syntax errors.",
+          "syntax_errors": [
+            {
+              "message": "expected `)` but instead the file ends",
+              "range": [
+                4,
+                4
+              ],
+              "location": {
+                "row": 1,
+                "column": 4
+              }
+            }
+          ]
         }
       ]
     }
