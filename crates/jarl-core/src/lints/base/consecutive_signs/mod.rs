@@ -60,8 +60,9 @@ mod tests {
          --> <test>:1:3
           |
         1 | x + +y
-          |   --- Consecutive `+` and `-` operators may be a typo.
+          |   --- Consecutive `+` and `-` operators are usually unnecessary and look like a typo.
           |
+          = help: Consider removing the unnecessary operators or using parentheses to show that this is intentional.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("x + -y"), @"
@@ -69,8 +70,9 @@ mod tests {
          --> <test>:1:3
           |
         1 | x + -y
-          |   --- Consecutive `+` and `-` operators may be a typo.
+          |   --- Consecutive `+` and `-` operators are usually unnecessary and look like a typo.
           |
+          = help: Consider removing the unnecessary operators or using parentheses to show that this is intentional.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("x - +y"), @"
@@ -78,8 +80,9 @@ mod tests {
          --> <test>:1:3
           |
         1 | x - +y
-          |   --- Consecutive `+` and `-` operators may be a typo.
+          |   --- Consecutive `+` and `-` operators are usually unnecessary and look like a typo.
           |
+          = help: Consider removing the unnecessary operators or using parentheses to show that this is intentional.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("x - -y"), @"
@@ -87,8 +90,9 @@ mod tests {
          --> <test>:1:3
           |
         1 | x - -y
-          |   --- Consecutive `+` and `-` operators may be a typo.
+          |   --- Consecutive `+` and `-` operators are usually unnecessary and look like a typo.
           |
+          = help: Consider removing the unnecessary operators or using parentheses to show that this is intentional.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("x++y"), @"
@@ -96,8 +100,9 @@ mod tests {
          --> <test>:1:2
           |
         1 | x++y
-          |  -- Consecutive `+` and `-` operators may be a typo.
+          |  -- Consecutive `+` and `-` operators are usually unnecessary and look like a typo.
           |
+          = help: Consider removing the unnecessary operators or using parentheses to show that this is intentional.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("x--y"), @"
@@ -105,8 +110,9 @@ mod tests {
          --> <test>:1:2
           |
         1 | x--y
-          |  -- Consecutive `+` and `-` operators may be a typo.
+          |  -- Consecutive `+` and `-` operators are usually unnecessary and look like a typo.
           |
+          = help: Consider removing the unnecessary operators or using parentheses to show that this is intentional.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("++x"), @"
@@ -114,8 +120,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | ++x
-          | -- Consecutive `+` and `-` operators may be a typo.
+          | -- Consecutive `+` and `-` operators are usually unnecessary and look like a typo.
           |
+          = help: Consider removing the unnecessary operators or using parentheses to show that this is intentional.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("--x"), @"
@@ -123,8 +130,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | --x
-          | -- Consecutive `+` and `-` operators may be a typo.
+          | -- Consecutive `+` and `-` operators are usually unnecessary and look like a typo.
           |
+          = help: Consider removing the unnecessary operators or using parentheses to show that this is intentional.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("+-x"), @"
@@ -132,8 +140,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | +-x
-          | -- Consecutive `+` and `-` operators may be a typo.
+          | -- Consecutive `+` and `-` operators are usually unnecessary and look like a typo.
           |
+          = help: Consider removing the unnecessary operators or using parentheses to show that this is intentional.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("-+x"), @"
@@ -141,8 +150,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | -+x
-          | -- Consecutive `+` and `-` operators may be a typo.
+          | -- Consecutive `+` and `-` operators are usually unnecessary and look like a typo.
           |
+          = help: Consider removing the unnecessary operators or using parentheses to show that this is intentional.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("1 + + - - + 1"), @"
@@ -150,8 +160,9 @@ mod tests {
          --> <test>:1:3
           |
         1 | 1 + + - - + 1
-          |   --------- Consecutive `+` and `-` operators may be a typo.
+          |   --------- Consecutive `+` and `-` operators are usually unnecessary and look like a typo.
           |
+          = help: Consider removing the unnecessary operators or using parentheses to show that this is intentional.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("+-+-x"), @"
@@ -159,8 +170,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | +-+-x
-          | ---- Consecutive `+` and `-` operators may be a typo.
+          | ---- Consecutive `+` and `-` operators are usually unnecessary and look like a typo.
           |
+          = help: Consider removing the unnecessary operators or using parentheses to show that this is intentional.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("x + -y * z"), @"
@@ -168,8 +180,9 @@ mod tests {
          --> <test>:1:3
           |
         1 | x + -y * z
-          |   --- Consecutive `+` and `-` operators may be a typo.
+          |   --- Consecutive `+` and `-` operators are usually unnecessary and look like a typo.
           |
+          = help: Consider removing the unnecessary operators or using parentheses to show that this is intentional.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("x - -y^2"), @"
@@ -177,8 +190,9 @@ mod tests {
          --> <test>:1:3
           |
         1 | x - -y^2
-          |   --- Consecutive `+` and `-` operators may be a typo.
+          |   --- Consecutive `+` and `-` operators are usually unnecessary and look like a typo.
           |
+          = help: Consider removing the unnecessary operators or using parentheses to show that this is intentional.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("f(--x, y + +z)"), @"
@@ -186,14 +200,16 @@ mod tests {
          --> <test>:1:3
           |
         1 | f(--x, y + +z)
-          |   -- Consecutive `+` and `-` operators may be a typo.
+          |   -- Consecutive `+` and `-` operators are usually unnecessary and look like a typo.
           |
+          = help: Consider removing the unnecessary operators or using parentheses to show that this is intentional.
         warning: consecutive_signs
          --> <test>:1:10
           |
         1 | f(--x, y + +z)
-          |          --- Consecutive `+` and `-` operators may be a typo.
+          |          --- Consecutive `+` and `-` operators are usually unnecessary and look like a typo.
           |
+          = help: Consider removing the unnecessary operators or using parentheses to show that this is intentional.
         Found 2 errors.
         ");
         assert_snapshot!(snapshot_lint("--x\n++y"), @"
@@ -201,14 +217,16 @@ mod tests {
          --> <test>:1:1
           |
         1 | --x
-          | -- Consecutive `+` and `-` operators may be a typo.
+          | -- Consecutive `+` and `-` operators are usually unnecessary and look like a typo.
           |
+          = help: Consider removing the unnecessary operators or using parentheses to show that this is intentional.
         warning: consecutive_signs
          --> <test>:2:1
           |
         2 | ++y
-          | -- Consecutive `+` and `-` operators may be a typo.
+          | -- Consecutive `+` and `-` operators are usually unnecessary and look like a typo.
           |
+          = help: Consider removing the unnecessary operators or using parentheses to show that this is intentional.
         Found 2 errors.
         ");
         assert_snapshot!(snapshot_lint("x + (- -y)"), @"
@@ -216,8 +234,9 @@ mod tests {
          --> <test>:1:6
           |
         1 | x + (- -y)
-          |      --- Consecutive `+` and `-` operators may be a typo.
+          |      --- Consecutive `+` and `-` operators are usually unnecessary and look like a typo.
           |
+          = help: Consider removing the unnecessary operators or using parentheses to show that this is intentional.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("igraph::graph_from_literal(A--B)"), @"
@@ -225,8 +244,9 @@ mod tests {
          --> <test>:1:29
           |
         1 | igraph::graph_from_literal(A--B)
-          |                             -- Consecutive `+` and `-` operators may be a typo.
+          |                             -- Consecutive `+` and `-` operators are usually unnecessary and look like a typo.
           |
+          = help: Consider removing the unnecessary operators or using parentheses to show that this is intentional.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("x + # -- ++\n  -y"), @"
@@ -236,8 +256,9 @@ mod tests {
         1 |   x + # -- ++
           |  ___-
         2 | |   -y
-          | |___- Consecutive `+` and `-` operators may be a typo.
+          | |___- Consecutive `+` and `-` operators are usually unnecessary and look like a typo.
           |
+          = help: Consider removing the unnecessary operators or using parentheses to show that this is intentional.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("x +\n  +y"), @"
@@ -247,8 +268,9 @@ mod tests {
         1 |   x +
           |  ___-
         2 | |   +y
-          | |___- Consecutive `+` and `-` operators may be a typo.
+          | |___- Consecutive `+` and `-` operators are usually unnecessary and look like a typo.
           |
+          = help: Consider removing the unnecessary operators or using parentheses to show that this is intentional.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint(r#""++ --"; x - -y # ++ --"#), @r#"
@@ -256,8 +278,9 @@ mod tests {
          --> <test>:1:12
           |
         1 | "++ --"; x - -y # ++ --
-          |            --- Consecutive `+` and `-` operators may be a typo.
+          |            --- Consecutive `+` and `-` operators are usually unnecessary and look like a typo.
           |
+          = help: Consider removing the unnecessary operators or using parentheses to show that this is intentional.
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("# ++ --\nx + +y"), @"
@@ -265,21 +288,18 @@ mod tests {
          --> <test>:2:3
           |
         2 | x + +y
-          |   --- Consecutive `+` and `-` operators may be a typo.
+          |   --- Consecutive `+` and `-` operators are usually unnecessary and look like a typo.
           |
+          = help: Consider removing the unnecessary operators or using parentheses to show that this is intentional.
         Found 1 error.
         ");
     }
 
     #[test]
     fn test_consecutive_signs_byte_ranges_and_no_fix() {
-        assert_snapshot!(get_fixed_text(vec!["x + +y"], "consecutive_signs", None), @"
-        OLD:
-        ====
-        x + +y
-        NEW:
-        ====
-        x + +y
-        ");
+        assert_snapshot!(
+            "no_fix_output",
+            get_fixed_text(vec!["x + +y"], "consecutive_signs", None)
+        );
     }
 }

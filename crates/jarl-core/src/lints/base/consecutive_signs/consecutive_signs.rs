@@ -42,7 +42,15 @@ impl Violation for ConsecutiveSigns {
     }
 
     fn body(&self) -> String {
-        "Consecutive `+` and `-` operators may be a typo.".to_string()
+        "Consecutive `+` and `-` operators are usually unnecessary and look like a typo."
+            .to_string()
+    }
+
+    fn suggestion(&self) -> Option<String> {
+        Some(
+            "Consider removing the unnecessary operators or using parentheses to show that this is intentional."
+                .to_string(),
+        )
     }
 }
 
