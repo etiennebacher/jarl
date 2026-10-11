@@ -58,10 +58,12 @@ fn is_sign(token: &RSyntaxToken) -> bool {
     matches!(token.kind(), RSyntaxKind::PLUS | RSyntaxKind::MINUS)
 }
 
-pub fn consecutive_signs(ast: &RUnaryExpression) -> Option<Diagnostic> {
-    let operator = ast.operator().ok()?;
+pub fn consecutive_signs(ast: &RUnaryExpression) -> anyhow::Result<Option<Diagnostic>> {
+    let Ok(operator) = ast.operator() else {
+        return Ok(None);
+    };
     if !is_sign(&operator) {
-        return None;
+        return Ok(None);
     }
 
     let previous = operator.prev_token().filter(is_sign);
@@ -72,7 +74,7 @@ pub fn consecutive_signs(ast: &RUnaryExpression) -> Option<Diagnostic> {
         .and_then(|token| token.parent())
         .is_some_and(|parent| RUnaryExpression::can_cast(parent.kind()))
     {
-        return None;
+        return Ok(None);
     }
 
     let start = previous.as_ref().unwrap_or(&operator);
@@ -81,12 +83,12 @@ pub fn consecutive_signs(ast: &RUnaryExpression) -> Option<Diagnostic> {
         end = next;
     }
     if start == &end {
-        return None;
+        return Ok(None);
     }
 
     let range = TextRange::new(
         start.text_trimmed_range().start(),
         end.text_trimmed_range().end(),
     );
-    Some(Diagnostic::new(ConsecutiveSigns, range, Fix::empty()))
+    Ok(Some(Diagnostic::new(ConsecutiveSigns, range, Fix::empty())))
 }
