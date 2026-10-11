@@ -100,8 +100,10 @@ pub fn parse_jarl_toml(path: &Path) -> Result<TomlOptions, ParseTomlError> {
 
 /// `[lint.<rule>]` options holding inline tables whose keys must be quoted,
 /// as `(rule, options)` pairs.
-const QUOTED_KEY_OPTIONS: &[(&str, &[&str])] =
-    &[("undesirable_function", &["functions", "extend-functions"])];
+const QUOTED_KEY_OPTIONS: &[(&str, &[&str])] = &[
+    ("undesirable_function", &["functions", "extend-functions"]),
+    ("undesirable_operator", &["operators", "extend-operators"]),
+];
 
 /// Find an unquoted key in an inline table listed in [QUOTED_KEY_OPTIONS] and
 /// return the error message for it.
@@ -440,6 +442,8 @@ pub struct LinterTomlOptions {
     ///
     /// Use `operators` to fully replace the default list of undesirable operators.
     /// Use `extend-operators` to add to the default list.
+    /// Entries in `operators` and `extend-operators` can be strings or inline
+    /// tables mapping an operator to a custom message.
     /// Specifying both is an error.
     #[serde(rename = "undesirable_operator")]
     pub undesirable_operator: Option<UndesirableOperatorOptions>,

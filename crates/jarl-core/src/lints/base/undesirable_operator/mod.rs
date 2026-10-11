@@ -4,6 +4,7 @@ pub(crate) mod undesirable_operator;
 #[cfg(test)]
 mod tests {
     use crate::lints::base::undesirable_operator::options::ResolvedUndesirableOperatorOptions;
+    use crate::lints::base::undesirable_operator::options::UndesirableOperatorEntry;
     use crate::lints::base::undesirable_operator::options::UndesirableOperatorOptions;
     use crate::rule_options::ResolvedRuleOptions;
     use crate::settings::{LinterSettings, Settings};
@@ -99,7 +100,7 @@ mod tests {
     #[test]
     fn test_custom_operators_replace_defaults() {
         let settings = settings_with_options(UndesirableOperatorOptions {
-            operators: Some(vec!["%notin%".to_string()]),
+            operators: Some(vec![UndesirableOperatorEntry::Name("%notin%".to_string())]),
             extend_operators: None,
         });
 
@@ -123,7 +124,10 @@ mod tests {
     fn test_extend_operators() {
         let settings = settings_with_options(UndesirableOperatorOptions {
             operators: None,
-            extend_operators: Some(vec!["%notin%".to_string(), "$".to_string()]),
+            extend_operators: Some(vec![
+                UndesirableOperatorEntry::Name("%notin%".to_string()),
+                UndesirableOperatorEntry::Name("$".to_string()),
+            ]),
         });
 
         assert_snapshot!(

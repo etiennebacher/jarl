@@ -44,6 +44,11 @@
 * The CLI now prints a message suggesting `fix-roxygen = true` when some fixes
   cannot be applied because the violation is in part of `@examples` (#702).
 
+### TOML improvements
+
+* `undesirable_operator` now accepts inline tables in `operators` and
+  `extend-operators` to attach custom messages to undesirable operators (#742).
+
 ### Bug fixes
 
 * Prevent `unused_function` and `unused_object` from falsely reporting non-ASCII

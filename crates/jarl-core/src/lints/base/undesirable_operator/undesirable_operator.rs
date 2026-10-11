@@ -6,6 +6,7 @@ use biome_rowan::{AstNode, TextRange};
 
 pub struct UndesirableOperator {
     pub operator: String,
+    pub message: Option<String>,
 }
 
 /// <!-- docs: start -->
@@ -39,11 +40,22 @@ impl Violation for UndesirableOperator {
     fn body(&self) -> String {
         format!("`{}` is listed as an undesirable operator.", self.operator)
     }
+
+    fn suggestion(&self) -> Option<String> {
+        self.message.clone()
+    }
 }
 
-fn undesirable_operator(operator: &str, range: TextRange) -> Option<Diagnostic> {
+fn undesirable_operator(
+    operator: &str,
+    range: TextRange,
+    options: &ResolvedUndesirableOperatorOptions,
+) -> Option<Diagnostic> {
     Some(Diagnostic::new(
-        UndesirableOperator { operator: operator.to_string() },
+        UndesirableOperator {
+            operator: operator.to_string(),
+            message: options.messages.get(operator).cloned(),
+        },
         range,
         Fix::empty(),
     ))
@@ -58,7 +70,7 @@ fn check_operator(
         return None;
     }
 
-    undesirable_operator(operator_text, operator.text_trimmed_range())
+    undesirable_operator(operator_text, operator.text_trimmed_range(), options)
 }
 
 pub fn undesirable_operator_binary(
@@ -102,5 +114,6 @@ pub fn undesirable_operator_call(
     Ok(undesirable_operator(
         operator_text,
         function.syntax().text_trimmed_range(),
+        options,
     ))
 }

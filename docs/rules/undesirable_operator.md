@@ -24,6 +24,9 @@ Use `operators` to fully replace the default list of undesirable operators.
 Use `extend-operators` to add to the default list.
 Specifying both is an error.
 
+Entries can be strings or inline tables mapping an operator to a custom
+message. Operator names in inline tables must be quoted.
+
 ### Default values
 
 ```toml
@@ -39,6 +42,12 @@ operators = [":::", "%in%"]
 
 # Or add to the defaults:
 extend-operators = ["%in%"]
+
+# Or add to the defaults, with an optional message:
+extend-operators = [
+  { "%notin%" = 'Use `!(x %in% y)` instead.' },
+  "$",
+]
 ```
 
 ## Example
