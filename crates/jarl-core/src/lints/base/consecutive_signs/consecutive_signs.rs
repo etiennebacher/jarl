@@ -10,9 +10,7 @@ pub struct ConsecutiveSigns;
 ///
 /// ## What it does
 ///
-/// Reports two or more consecutive `+` or `-` operators in code. Comments and
-/// string contents are not checked. Whitespace and comments between operators
-/// do not break a sequence, but parentheses do.
+/// Reports two or more consecutive `+` or `-` operators in code.
 ///
 /// ## Why is this bad?
 ///
@@ -25,14 +23,15 @@ pub struct ConsecutiveSigns;
 /// ## Example
 ///
 /// ```r
-/// x + + - y
+/// x + - y
 /// --x
 /// ```
 ///
-/// If intentional, make the grouping explicit:
+/// Either 1) remove the unnecessary sign, 2) make the grouping more explicit
+/// using parenthesis, or 3) add a comment explaining why this is needed.
 ///
 /// ```r
-/// x + (+(-y))
+/// x - y
 /// -(-x)
 /// ```
 /// <!-- docs: end -->
