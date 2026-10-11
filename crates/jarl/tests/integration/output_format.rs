@@ -839,3 +839,61 @@ fn test_output_json_fix_safety() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn test_output_json_multiple_syntax_errors() -> anyhow::Result<()> {
+    let case = CliTest::with_files([("test.R", "x <- (1 +\ny <- function(,) 1\nz <- [\n")])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("json")
+            .run()
+            .normalize_os_executable_name(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+    {
+      "diagnostics": [],
+      "errors": [
+        {
+          "file": "test.R",
+          "error": "Failed to parse test.R due to syntax errors.",
+          "syntax_errors": [
+            {
+              "message": "expected an identifier",
+              "range": [
+                24,
+                25
+              ],
+              "location": {
+                "row": 2,
+                "column": 14
+              }
+            },
+            {
+              "message": "expected an expression",
+              "range": [
+                34,
+                35
+              ],
+              "location": {
+                "row": 3,
+                "column": 5
+              }
+            }
+          ]
+        }
+      ]
+    }
+    ----- stderr -----
+    "#
+    );
+
+    Ok(())
+}
