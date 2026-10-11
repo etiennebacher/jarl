@@ -19,9 +19,6 @@ pub struct ConsecutiveSigns;
 /// R accepts expressions such as `x + + - y` and `--x`, but consecutive signs can
 /// be accidental and make the intended operation harder to read.
 ///
-/// Some domain-specific languages intentionally use consecutive signs, such as
-/// `igraph::graph_from_literal(A--B)`. Suppress the rule for intentional uses.
-///
 /// No automatic fix is provided because the intended operation is ambiguous,
 /// and arithmetic operators can dispatch to custom methods.
 ///
