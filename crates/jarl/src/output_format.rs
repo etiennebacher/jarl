@@ -121,8 +121,8 @@ pub fn print_notes(notes: &[String]) {
 }
 
 #[derive(Debug, Serialize)]
-struct JsonOutput<'a> {
-    diagnostics: Vec<&'a Diagnostic>,
+struct JsonOutput {
+    diagnostics: Vec<serde_json::Value>,
     errors: Vec<JsonError>,
 }
 
@@ -291,10 +291,25 @@ impl Emitter for JsonEmitter {
             .map(|(path, err)| JsonError { file: path.clone(), error: format!("{:#}", err) })
             .collect();
 
-        let output = JsonOutput {
-            diagnostics: diagnostics.to_vec(),
-            errors: json_errors,
-        };
+        // Add `fix.safety` to each diagnostic: `safe`, `unsafe` (needs
+        // `--unsafe-fixes`), or `none` (no fix available).
+        let json_diagnostics = diagnostics
+            .iter()
+            .map(|d| {
+                let mut value = serde_json::to_value(d)?;
+                let safety = if d.has_safe_fix() {
+                    "safe"
+                } else if d.has_unsafe_fix() {
+                    "unsafe"
+                } else {
+                    "none"
+                };
+                value["fix"]["safety"] = safety.into();
+                Ok(value)
+            })
+            .collect::<anyhow::Result<Vec<_>>>()?;
+
+        let output = JsonOutput { diagnostics: json_diagnostics, errors: json_errors };
 
         serde_json::to_writer_pretty(&mut writer, &output)?;
         writer.flush()?;
