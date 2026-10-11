@@ -32,8 +32,8 @@ pub struct ConsecutiveSigns;
 /// If intentional, make the grouping explicit:
 ///
 /// ```r
-/// x + (+y)
-/// x - (-y)
+/// x + (+(-y))
+/// -(-x)
 /// ```
 /// <!-- docs: end -->
 impl Violation for ConsecutiveSigns {
@@ -68,7 +68,7 @@ pub fn consecutive_signs(ast: &RUnaryExpression) -> anyhow::Result<Option<Diagno
 
     let previous = operator.prev_token().filter(is_sign);
     // Only the first unary sign reports the chain, including a preceding
-    // binary sign. Token adjacency also catches `x + -y * z` across AST levels.
+    // binary sign.
     if previous
         .as_ref()
         .and_then(|token| token.parent())
