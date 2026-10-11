@@ -75,6 +75,64 @@ pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Err
         .collect()
 }
 
+/// Lint `contents` as if they were the file at `path`, without reading `path`
+/// itself. The path doesn't need to exist: it only drives per-file settings,
+/// package detection and the file name reported in diagnostics. Sibling files
+/// of an R package are still read from disk for cross-file analysis.
+pub fn check_contents(
+    contents: &str,
+    path: &Path,
+    config: Config,
+) -> Result<Vec<Diagnostic>, anyhow::Error> {
+    // A package's other files give cross-file rules their context; `path`
+    // itself is always replaced by `contents`.
+    let analysis_paths = match crate::package::is_in_r_package(path) {
+        Some(true) => {
+            let mut files: Vec<PathBuf> = path
+                .parent()
+                .and_then(|dir| fs::read_dir(dir).ok())
+                .into_iter()
+                .flatten()
+                .filter_map(|e| e.ok())
+                .map(|e| e.path())
+                .filter(|p| crate::fs::has_r_extension(p))
+                .collect();
+            if !files.iter().any(|f| f == path) {
+                files.push(path.to_path_buf());
+            }
+            files
+        }
+        _ => vec![path.to_path_buf()],
+    };
+
+    let (pkg_contexts, file_pkg_info) = summarize_package_info(&analysis_paths);
+    let namespace_contents: HashMap<PathBuf, String> = pkg_contexts
+        .iter()
+        .filter_map(|(root, ctx)| {
+            ctx.namespace_content
+                .as_ref()
+                .map(|c| (root.clone(), c.clone()))
+        })
+        .collect();
+    let pkg = make_package_analysis(&analysis_paths, &config, &namespace_contents);
+
+    if crate::fs::looks_generated(contents) {
+        return Ok(Vec::new());
+    }
+
+    // The cached indices were built from the on-disk contents, which can
+    // differ from `contents`.
+    get_checks(
+        contents,
+        path,
+        &config,
+        &pkg,
+        &pkg_contexts,
+        &file_pkg_info,
+        false,
+    )
+}
+
 pub fn check_path(
     path: &PathBuf,
     config: Arc<Config>,

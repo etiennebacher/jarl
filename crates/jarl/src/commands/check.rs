@@ -54,7 +54,13 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     // override each discovered settings' `default_exclude` to `false` so the
     // default patterns from `DEFAULT_EXCLUDE_PATTERNS` are not applied during
     // discovery.
-    let discovered = discover_settings(&args.files)?;
+    let stdin = read_stdin_source(&args)?;
+    let files: Vec<String> = match &stdin {
+        Some((path, _)) => vec![path.to_string_lossy().into_owned()],
+        None => args.files.clone(),
+    };
+
+    let discovered = discover_settings(&files)?;
     let single_config = discovered.len() == 1;
 
     for mut ds in discovered {
@@ -74,16 +80,19 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         resolver.add(&ds.directory, ds.settings);
     }
 
-    let paths = discover_r_file_paths(
-        &args.files,
-        &args.exclude,
-        &resolver,
-        true,
-        args.no_default_exclude,
-    )
-    .into_iter()
-    .filter_map(Result::ok)
-    .collect::<Vec<_>>();
+    let paths = match &stdin {
+        Some((path, _)) => vec![path.clone()],
+        None => discover_r_file_paths(
+            &args.files,
+            &args.exclude,
+            &resolver,
+            true,
+            args.no_default_exclude,
+        )
+        .into_iter()
+        .filter_map(Result::ok)
+        .collect::<Vec<_>>(),
+    };
 
     if paths.is_empty() {
         println!(
@@ -95,7 +104,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     }
 
     let check_config = ArgsConfig {
-        files: args.files.iter().map(|s| s.into()).collect(),
+        files: files.iter().map(|s| s.into()).collect(),
         fix: args.fix,
         unsafe_fixes: args.unsafe_fixes,
         fix_only: args.fix_only,
@@ -133,7 +142,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         let config = build_config(&check_config, settings, group_paths.clone())?;
 
         if !config.rules_to_apply.has_package_specific_rules() {
-            file_results.extend(jarl_core::check::check(config));
+            file_results.extend(run_check(config, stdin.as_ref()));
             continue;
         }
 
@@ -171,7 +180,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
             config.rules_to_apply = config
                 .rules_to_apply
                 .filter(|r| !r.categories().iter().any(|c| c.is_package_specific()));
-            file_results.extend(jarl_core::check::check(config));
+            file_results.extend(run_check(config, stdin.as_ref()));
             continue;
         }
 
@@ -194,7 +203,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
                 .clone();
 
             config.package_cache = cache;
-            file_results.extend(jarl_core::check::check(config));
+            file_results.extend(run_check(config, stdin.as_ref()));
         }
     }
 
@@ -578,4 +587,46 @@ fn hide_unused_function_if_needed(
     }
 
     (hidden, unused_fn_count)
+}
+
+/// With `jarl check - --stdin-filename <PATH>`, read the code from stdin and
+/// return it with the (absolute) virtual path it stands for. `None` when not
+/// reading from stdin.
+fn read_stdin_source(args: &CheckCommand) -> Result<Option<(PathBuf, String)>> {
+    if args.files != ["-"] {
+        if args.stdin_filename.is_some() {
+            return Err(anyhow::anyhow!(
+                "`--stdin-filename` can only be used when checking stdin with `jarl check -`."
+            ));
+        }
+        return Ok(None);
+    }
+    let Some(filename) = &args.stdin_filename else {
+        return Err(anyhow::anyhow!(
+            "Checking stdin requires a virtual path: `jarl check - --stdin-filename <PATH>`."
+        ));
+    };
+
+    let mut contents = String::new();
+    std::io::Read::read_to_string(&mut std::io::stdin(), &mut contents)
+        .map_err(|e| anyhow::anyhow!("Failed to read from stdin: {e}"))?;
+
+    let path = air_fs::normalize_path(PathBuf::from(filename));
+    Ok(Some((path, contents)))
+}
+
+/// Check the files of `config`, or the stdin buffer standing in for its only
+/// path when there is one.
+fn run_check(
+    config: jarl_core::config::Config,
+    stdin: Option<&(PathBuf, String)>,
+) -> Vec<(String, Result<Vec<Diagnostic>>)> {
+    let Some((path, contents)) = stdin else {
+        return jarl_core::check::check(config);
+    };
+    let name = air_fs::relativize_path(path);
+    vec![(
+        name,
+        jarl_core::check::check_contents(contents, path, config),
+    )]
 }

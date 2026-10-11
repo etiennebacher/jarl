@@ -80,6 +80,14 @@ pub struct CheckCommand {
     pub files: Vec<String>,
     #[arg(
         long,
+        value_name = "PATH",
+        conflicts_with_all = ["fix", "unsafe_fixes", "fix_only", "add_jarl_ignore"],
+        help_heading = "File selection",
+        help = "Virtual path of the code read from stdin when the file is `-`, for example `jarl check - --stdin-filename R/foo.R`. Used to find the configuration and package, and as file name in diagnostics."
+    )]
+    pub stdin_filename: Option<String>,
+    #[arg(
+        long,
         value_name = "FILES",
         value_delimiter = ',',
         require_equals = true,
