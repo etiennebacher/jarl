@@ -69,3 +69,29 @@ fn test_stdin_respects_exclude_in_config() -> anyhow::Result<()> {
     assert_eq!(out.status.code(), Some(1));
     Ok(())
 }
+
+#[test]
+fn test_stdin_applies_default_exclude_without_config() -> anyhow::Result<()> {
+    let case = CliTest::new()?;
+    let out = check_stdin(&case, "any(is.na(x))\n", &["--stdin-file-path", "renv/a.R"])?;
+    assert_eq!(out.status.code(), Some(0));
+
+    let out = check_stdin(
+        &case,
+        "any(is.na(x))\n",
+        &["--stdin-file-path", "renv/a.R", "--no-default-exclude"],
+    )?;
+    assert_eq!(out.status.code(), Some(1));
+    Ok(())
+}
+
+#[test]
+fn test_stdin_snippet_comes_from_stdin_not_disk() -> anyhow::Result<()> {
+    let case = CliTest::with_file("a.R", "# on disk\n")?;
+    let out = check_stdin(&case, "any(is.na(x))\n", &["--stdin-file-path", "a.R"])?;
+    let stdout = String::from_utf8(out.stdout)?;
+    let stderr = String::from_utf8(out.stderr)?;
+    assert!(stdout.contains("any(is.na(x))"), "{stdout}");
+    assert!(!stderr.contains("Could not read"), "{stderr}");
+    Ok(())
+}

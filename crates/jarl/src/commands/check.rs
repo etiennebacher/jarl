@@ -1,7 +1,7 @@
 use air_workspace::resolve::PathResolver;
 use jarl_core::discovery::{
-    discover_r_file_paths, discover_settings, should_exclude_file_based_on_settings,
-    validate_exclude_patterns,
+    discover_r_file_paths, discover_settings, excluded_by_settings,
+    should_exclude_file_based_on_settings, validate_exclude_patterns,
 };
 use jarl_core::library_paths::is_r_available;
 use jarl_core::package_cache::{PackageCache, any_file_references_packages, find_r_project_root};
@@ -58,6 +58,9 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     // default patterns from `DEFAULT_EXCLUDE_PATTERNS` are not applied during
     // discovery.
     let stdin = read_stdin_source(&args)?;
+    if let Some((path, contents)) = &stdin {
+        output_format::set_stdin_source(path, contents.clone());
+    }
     let files: Vec<String> = match &stdin {
         Some((path, _)) => vec![path.to_string_lossy().into_owned()],
         None => args.files.clone(),
@@ -84,11 +87,21 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     }
 
     // Like a file found on disk, stdin code is not linted when the settings
-    // exclude its path.
-    if let Some((path, _)) = &stdin
-        && should_exclude_file_based_on_settings(path, &resolver)
-    {
-        return Ok(ExitStatus::Success);
+    // exclude its path. Without any `jarl.toml`, the default settings still
+    // apply (e.g. `renv/` is excluded).
+    if let Some((path, _)) = &stdin {
+        let excluded = if resolver.items().is_empty() {
+            let mut settings = Settings::default();
+            if args.no_default_exclude {
+                settings.linter.default_exclude = Some(false);
+            }
+            excluded_by_settings(path, &settings, &cwd.clone().unwrap_or_default())
+        } else {
+            should_exclude_file_based_on_settings(path, &resolver)
+        };
+        if excluded {
+            return Ok(ExitStatus::Success);
+        }
     }
 
     let paths = match &stdin {

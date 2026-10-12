@@ -19,6 +19,26 @@ fn make_hyperlink(text: &str) -> String {
 use jarl_core::diagnostic::{Diagnostic, render_diagnostic};
 use jarl_core::location::Location;
 
+/// Code read from stdin together with the virtual path it stands for, which
+/// emitters must use instead of reading that path from disk.
+static STDIN_SOURCE: std::sync::OnceLock<(String, String)> = std::sync::OnceLock::new();
+
+/// Register the code linted from stdin as the source of `path`.
+pub fn set_stdin_source(path: &std::path::Path, contents: String) {
+    let _ = STDIN_SOURCE.set((relativize_path(path), contents));
+}
+
+/// Read the source of a file mentioned in a diagnostic: the stdin buffer for
+/// the virtual path, the file on disk otherwise.
+fn read_source(path: &std::path::Path) -> std::io::Result<String> {
+    match STDIN_SOURCE.get() {
+        Some((stdin_path, contents)) if *stdin_path == relativize_path(path) => {
+            Ok(contents.clone())
+        }
+        _ => fs::read_to_string(path),
+    }
+}
+
 /// Prints a section header like `── Summary ──────────────────────────────────`
 /// padded to 57 characters total.
 pub fn print_section_header(title: &str) {
@@ -203,7 +223,7 @@ fn emit_errors_full(errors: &[(String, anyhow::Error)], renderer: &Renderer) {
     for (path, err) in errors {
         match err.downcast_ref::<jarl_core::error::ParseError>() {
             Some(parse_error) if !parse_error.syntax_errors.is_empty() => {
-                match fs::read_to_string(&parse_error.filename) {
+                match read_source(&parse_error.filename) {
                     Ok(source) => {
                         for syntax_error in &parse_error.syntax_errors {
                             let rendered = jarl_core::diagnostic::render_syntax_error(
@@ -608,7 +628,7 @@ impl Emitter for SarifEmitter {
             let content = match content_cache.entry(diagnostic.filename.clone()) {
                 std::collections::hash_map::Entry::Occupied(entry) => entry.into_mut(),
                 std::collections::hash_map::Entry::Vacant(entry) => {
-                    let Ok(content) = fs::read_to_string(&diagnostic.filename) else {
+                    let Ok(content) = read_source(&diagnostic.filename) else {
                         continue;
                     };
                     entry.insert(content)
@@ -750,7 +770,7 @@ impl Emitter for FullEmitter {
         // Pre-load all files into cache
         for diagnostic in diagnostics {
             if !file_cache.contains_key(diagnostic.filename.as_path()) {
-                match fs::read_to_string(&diagnostic.filename) {
+                match read_source(&diagnostic.filename) {
                     Ok(content) => {
                         file_cache.insert(diagnostic.filename.as_path(), content);
                     }
