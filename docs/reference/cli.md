@@ -42,6 +42,27 @@ jarl check . --exclude=folder_1,folder_2/*.R
 
 Do not apply the default set of file patterns that should be excluded.
 
+---
+
+**`--stdin-file-path <PATH>`**
+
+Read the code to check from stdin and report diagnostics over stdout, for instance:
+
+```
+cat R/foo.R | jarl check --stdin-file-path R/foo.R
+```
+
+`<PATH>` is the path of the file being linted. It is not read and doesn't need to
+exist. It is used to find the `jarl.toml` that applies, to detect the R package
+the file belongs to, to apply the `exclude` and `default-exclude` patterns (an
+excluded path produces no diagnostics), and as the file name in diagnostics. A
+relative path is resolved from the current working directory. This is useful for
+linting unsaved editor buffers.
+
+When `--stdin-file-path` is used, no files or directories can be passed, and the
+fix options (`--fix`, `--unsafe-fixes`, `--fix-only`) and `--add-jarl-ignore`
+are not available.
+
 #### Rule selection
 
 **`-s, --select <SELECT>`**

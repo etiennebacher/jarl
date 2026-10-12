@@ -27,6 +27,9 @@
   * `library_call` (#701)
   * `undesirable_operator` (#657, @christopherkenny)
 
+* `jarl check --stdin-file-path <PATH>` lints code read from stdin, using `<PATH>`
+  for config discovery, package detection, `exclude` patterns and diagnostics (#749).
+
 * The config file can be named `.jarl.toml` as well as `jarl.toml`. Both names
   are equivalent, and a directory containing both is now an error instead of
   silently using `jarl.toml` (#717).
