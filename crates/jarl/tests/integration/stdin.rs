@@ -32,10 +32,7 @@ fn check_stdin(case: &CliTest, code: &str, args: &[&str]) -> anyhow::Result<Outp
 
 #[test]
 fn test_stdin_uses_virtual_path_and_config() -> anyhow::Result<()> {
-    let case = CliTest::with_files([
-        ("jarl.toml", "[lint]\nselect = [\"any_is_na\"]\n"),
-        ("R/foo.R", "x <- 1\n"),
-    ])?;
+    let case = CliTest::with_file("jarl.toml", "[lint]\nignore = [\"any_is_na\"]\n")?;
 
     // The buffer is linted, not the file on disk, and `jarl.toml` applies.
     insta::assert_snapshot!(check_stdin(
@@ -47,13 +44,13 @@ fn test_stdin_uses_virtual_path_and_config() -> anyhow::Result<()> {
     success: false
     exit_code: 1
     ----- stdout -----
-    warning: any_is_na
-     --> R/foo.R:1:1
+    warning: any_duplicated
+     --> R/foo.R:2:1
       |
-    1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+      = help: Use `anyDuplicated(...) > 0` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -69,14 +66,24 @@ fn test_stdin_uses_virtual_path_and_config() -> anyhow::Result<()> {
 fn test_stdin_virtual_file_does_not_need_to_exist() -> anyhow::Result<()> {
     let case = CliTest::new()?;
     insta::assert_snapshot!(
-        check_stdin(&case, "x <- 1\n", &["--stdin-file-path", "nope/new.R"])?,
+        check_stdin(&case, "any(is.na(x))\n", &["--stdin-file-path", "nope/new.R"])?,
         @"
 
-    success: true
-    exit_code: 0
+    success: false
+    exit_code: 1
     ----- stdout -----
+    warning: any_is_na
+     --> nope/new.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
     ── Summary ──────────────────────────────────────
-    All checks passed!
+    Found 1 error.
+    1 fixable with the `--fix` option.
 
     ----- stderr -----
     "
@@ -97,6 +104,72 @@ fn test_stdin_filename_rejects_fix() -> anyhow::Result<()> {
 
     ----- stderr -----
     error: the argument '--stdin-file-path <PATH>' cannot be used with '--fix'
+
+    Usage: jarl check --stdin-file-path <PATH> [FILES]...
+
+    For more information, try '--help'.
+    "
+    );
+    Ok(())
+}
+
+#[test]
+fn test_stdin_rejects_unsafe_fixes() -> anyhow::Result<()> {
+    let case = CliTest::new()?;
+    insta::assert_snapshot!(
+        check_stdin(&case, "x <- 1\n", &["--stdin-file-path", "a.R", "--unsafe-fixes"])?,
+        @"
+
+    success: false
+    exit_code: 2
+    ----- stdout -----
+
+    ----- stderr -----
+    error: the argument '--stdin-file-path <PATH>' cannot be used with '--unsafe-fixes'
+
+    Usage: jarl check --stdin-file-path <PATH> [FILES]...
+
+    For more information, try '--help'.
+    "
+    );
+    Ok(())
+}
+
+#[test]
+fn test_stdin_rejects_fix_only() -> anyhow::Result<()> {
+    let case = CliTest::new()?;
+    insta::assert_snapshot!(
+        check_stdin(&case, "x <- 1\n", &["--stdin-file-path", "a.R", "--fix-only"])?,
+        @"
+
+    success: false
+    exit_code: 2
+    ----- stdout -----
+
+    ----- stderr -----
+    error: the argument '--stdin-file-path <PATH>' cannot be used with '--fix-only'
+
+    Usage: jarl check --stdin-file-path <PATH> [FILES]...
+
+    For more information, try '--help'.
+    "
+    );
+    Ok(())
+}
+
+#[test]
+fn test_stdin_rejects_add_jarl_ignore() -> anyhow::Result<()> {
+    let case = CliTest::new()?;
+    insta::assert_snapshot!(
+        check_stdin(&case, "x <- 1\n", &["--stdin-file-path", "a.R", "--add-jarl-ignore"])?,
+        @"
+
+    success: false
+    exit_code: 2
+    ----- stdout -----
+
+    ----- stderr -----
+    error: the argument '--stdin-file-path <PATH>' cannot be used with '--add-jarl-ignore[=<REASON>]'
 
     Usage: jarl check --stdin-file-path <PATH> [FILES]...
 
