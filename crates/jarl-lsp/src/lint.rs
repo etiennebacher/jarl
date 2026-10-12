@@ -16,12 +16,10 @@ use crate::utils::should_exclude_file_based_on_settings;
 
 use air_fs::relativize_path;
 use air_workspace::resolve::PathResolver;
-use jarl_core::check::get_checks;
+use jarl_core::check::{analyze_packages, get_checks, package_sibling_r_files};
 use jarl_core::config::{ArgsConfig, build_config};
 use jarl_core::diagnostic::Diagnostic as JarlDiagnostic;
 use jarl_core::discovery::{DiscoveredSettings, discover_settings};
-use jarl_core::fs::has_r_extension;
-use jarl_core::package::{is_in_r_package, make_package_analysis, summarize_package_info};
 use jarl_core::rule_set::Rule;
 use jarl_core::settings::Settings;
 
@@ -172,17 +170,8 @@ fn run_jarl_linting(
 
     // Compute package-level analysis using the real file's sibling R files.
     let analysis_paths =
-        collect_sibling_r_files(file_path).unwrap_or_else(|| vec![file_path.to_path_buf()]);
-    let (pkg_contexts, file_pkg_info) = summarize_package_info(&analysis_paths);
-    let namespace_contents: std::collections::HashMap<PathBuf, String> = pkg_contexts
-        .iter()
-        .filter_map(|(root, ctx)| {
-            ctx.namespace_content
-                .as_ref()
-                .map(|c| (root.clone(), c.clone()))
-        })
-        .collect();
-    let pkg = make_package_analysis(&analysis_paths, &config, &namespace_contents);
+        package_sibling_r_files(file_path).unwrap_or_else(|| vec![file_path.to_path_buf()]);
+    let (pkg, pkg_contexts, file_pkg_info) = analyze_packages(&analysis_paths, &config);
 
     // Call get_checks directly with the in-memory content and the real
     // (relativized) file path, avoiding the old tempfile round-trip.
@@ -246,22 +235,6 @@ fn run_jarl_linting(
         unused_fn_hidden_count,
         refreshed_packages,
     })
-}
-
-/// If `file_path` lives inside an R package's `R/` directory, return all
-/// `.R` files in that directory. Returns `None` otherwise.
-fn collect_sibling_r_files(file_path: &Path) -> Option<Vec<PathBuf>> {
-    if !is_in_r_package(file_path).unwrap_or(false) {
-        return None;
-    }
-    let r_dir = file_path.parent()?;
-    let entries = std::fs::read_dir(r_dir).ok()?;
-    let files = entries
-        .filter_map(|e| e.ok())
-        .map(|e| e.path())
-        .filter(|p| has_r_extension(p))
-        .collect();
-    Some(files)
 }
 
 /// Convert a Jarl diagnostic to LSP diagnostic format with fix information
