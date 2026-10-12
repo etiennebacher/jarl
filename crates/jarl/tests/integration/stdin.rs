@@ -41,13 +41,20 @@ fn test_stdin_uses_virtual_path_and_config() -> anyhow::Result<()> {
     insta::assert_snapshot!(check_stdin(
         &case,
         "any(is.na(x))\nany(duplicated(x))\n",
-        &["--stdin-file-path", "R/foo.R", "--output-format", "concise"],
+        &["--stdin-file-path", "R/foo.R"],
     )?, @"
 
     success: false
     exit_code: 1
     ----- stdout -----
-    R/foo.R [1:1] any_is_na `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
+    warning: any_is_na
+     --> R/foo.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
 
     ── Summary ──────────────────────────────────────
     Found 1 error.
