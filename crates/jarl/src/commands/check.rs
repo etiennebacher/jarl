@@ -58,9 +58,10 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     // default patterns from `DEFAULT_EXCLUDE_PATTERNS` are not applied during
     // discovery.
     let stdin = read_stdin_source(&args)?;
-    if let Some((path, contents)) = &stdin {
-        output_format::set_stdin_source(path, contents.clone());
-    }
+    let sources = match &stdin {
+        Some((path, contents)) => output_format::Sources::with_stdin(path, contents.clone()),
+        None => output_format::Sources::default(),
+    };
     let files: Vec<String> = match &stdin {
         Some((path, _)) => vec![path.to_string_lossy().into_owned()],
         None => args.files.clone(),
@@ -280,7 +281,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         // Statistics must still report parse errors and preserve a failing exit status.
         let has_errors = !all_errors.is_empty();
         if has_errors {
-            FullEmitter.emit(&mut stdout, &[], &all_errors)?;
+            FullEmitter.emit(&mut stdout, &[], &all_errors, &sources)?;
         }
 
         return print_statistics(&all_diagnostics_flat, has_errors, parent_config_path);
@@ -288,19 +289,19 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
 
     match args.output_format {
         OutputFormat::Concise => {
-            ConciseEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
+            ConciseEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors, &sources)?;
         }
         OutputFormat::Json => {
-            JsonEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
+            JsonEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors, &sources)?;
         }
         OutputFormat::Github => {
-            GithubEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
+            GithubEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors, &sources)?;
         }
         OutputFormat::Sarif => {
-            SarifEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
+            SarifEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors, &sources)?;
         }
         OutputFormat::Full => {
-            FullEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
+            FullEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors, &sources)?;
         }
     }
 
