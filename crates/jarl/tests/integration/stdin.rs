@@ -313,3 +313,58 @@ fn test_stdin_snippet_comes_from_stdin_not_disk() -> anyhow::Result<()> {
     );
     Ok(())
 }
+
+#[test]
+fn test_stdin_file_path_cannot_be_repeated() -> anyhow::Result<()> {
+    let case = CliTest::new()?;
+    insta::assert_snapshot!(
+        check_stdin(
+            &case,
+            "any(is.na(x))\n",
+            &["--stdin-file-path", "a.R", "--stdin-file-path", "b.R"],
+        )?,
+        @"
+
+    success: false
+    exit_code: 2
+    ----- stdout -----
+
+    ----- stderr -----
+    error: the argument '--stdin-file-path <PATH>' cannot be used multiple times
+
+    Usage: jarl check [OPTIONS] [FILES]...
+
+    For more information, try '--help'.
+    "
+    );
+    Ok(())
+}
+
+#[test]
+fn test_stdin_file_path_is_not_split_on_commas() -> anyhow::Result<()> {
+    let case = CliTest::new()?;
+    insta::assert_snapshot!(
+        check_stdin(&case, "any(is.na(x))\n", &["--stdin-file-path", "a.R,b.R"])?,
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> a.R,b.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
+    );
+    Ok(())
+}
