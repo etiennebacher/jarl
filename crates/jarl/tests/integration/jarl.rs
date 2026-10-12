@@ -24,7 +24,7 @@ fn test_must_pass_path() -> anyhow::Result<()> {
       [FILES]...  List of files or directories to check or fix lints, for example `jarl check .`.
 
     File selection:
-          --stdin-file-path <PATH>  Read the code to lint from stdin. The path is not read and need not exist: it is used to find the configuration and package, to apply `exclude` patterns, and as file name in diagnostics, e.g. `jarl check --stdin-file-path R/foo.R`.
+          --stdin-file-path <PATH>  Read the code to check from stdin. The path is not read and doesn't have to exist: it is used to find the configuration and package, to apply `exclude` patterns, and as file name in diagnostics, e.g. `jarl check --stdin-file-path R/foo.R`.
           --exclude=<FILES>         List of file patterns to exclude from linting, separated by a comma (no spaces). Must be passed with an equals sign, e.g. `--exclude=R/*.R`, so the shell does not expand glob patterns.
           --no-default-exclude      Do not apply the default set of file patterns that should be excluded.
 

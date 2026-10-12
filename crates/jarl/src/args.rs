@@ -84,7 +84,7 @@ pub struct CheckCommand {
         value_name = "PATH",
         conflicts_with_all = ["fix", "unsafe_fixes", "fix_only", "add_jarl_ignore"],
         help_heading = "File selection",
-        help = "Read the code to lint from stdin. The path is not read and need not exist: it is used to find the configuration and package, to apply `exclude` patterns, and as file name in diagnostics, e.g. `jarl check --stdin-file-path R/foo.R`."
+        help = "Read the code to check from stdin. The path is not read and doesn't have to exist: it is used to find the configuration and package, to apply `exclude` patterns, and as file name in diagnostics, e.g. `jarl check --stdin-file-path R/foo.R`."
     )]
     pub stdin_file_path: Option<String>,
     #[arg(
