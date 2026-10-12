@@ -1,5 +1,8 @@
 use air_workspace::resolve::PathResolver;
-use jarl_core::discovery::{discover_r_file_paths, discover_settings, validate_exclude_patterns};
+use jarl_core::discovery::{
+    discover_r_file_paths, discover_settings, should_exclude_file_based_on_settings,
+    validate_exclude_patterns,
+};
 use jarl_core::library_paths::is_r_available;
 use jarl_core::package_cache::{PackageCache, any_file_references_packages, find_r_project_root};
 use jarl_core::rule_set::Rule;
@@ -78,6 +81,14 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         }
 
         resolver.add(&ds.directory, ds.settings);
+    }
+
+    // Like a file found on disk, stdin code is not linted when the settings
+    // exclude its path.
+    if let Some((path, _)) = &stdin
+        && should_exclude_file_based_on_settings(path, &resolver)
+    {
+        return Ok(ExitStatus::Success);
     }
 
     let paths = match &stdin {
@@ -589,30 +600,22 @@ fn hide_unused_function_if_needed(
     (hidden, unused_fn_count)
 }
 
-/// With `jarl check - --stdin-filename <PATH>`, read the code from stdin and
+/// With `jarl check --stdin-file-path <PATH>`, read the code from stdin and
 /// return it with the (absolute) virtual path it stands for. `None` when not
 /// reading from stdin.
 fn read_stdin_source(args: &CheckCommand) -> Result<Option<(PathBuf, String)>> {
-    if args.files != ["-"] {
-        if args.stdin_filename.is_some() {
-            return Err(anyhow::anyhow!(
-                "`--stdin-filename` can only be used when checking stdin with `jarl check -`."
-            ));
-        }
+    let Some(file_path) = &args.stdin_file_path else {
         return Ok(None);
-    }
-    let Some(filename) = &args.stdin_filename else {
-        return Err(anyhow::anyhow!(
-            "Checking stdin requires a virtual path: `jarl check - --stdin-filename <PATH>`."
-        ));
     };
 
     let mut contents = String::new();
     std::io::Read::read_to_string(&mut std::io::stdin(), &mut contents)
         .map_err(|e| anyhow::anyhow!("Failed to read from stdin: {e}"))?;
 
-    let path = air_fs::normalize_path(PathBuf::from(filename));
-    Ok(Some((path, contents)))
+    Ok(Some((
+        air_fs::normalize_path(PathBuf::from(file_path)),
+        contents,
+    )))
 }
 
 /// Check the files of `config`, or the stdin buffer standing in for its only

@@ -6,7 +6,6 @@ fn check_stdin(case: &CliTest, code: &str, args: &[&str]) -> anyhow::Result<Outp
     let mut child = case
         .command()
         .arg("check")
-        .arg("-")
         .args(args)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -27,7 +26,7 @@ fn test_stdin_uses_virtual_path_and_config() -> anyhow::Result<()> {
     let out = check_stdin(
         &case,
         "any(is.na(x))\nany(duplicated(x))\n",
-        &["--stdin-filename", "R/foo.R", "--output-format", "concise"],
+        &["--stdin-file-path", "R/foo.R", "--output-format", "concise"],
     )?;
     let stdout = String::from_utf8(out.stdout)?;
     assert_eq!(out.status.code(), Some(1));
@@ -40,24 +39,33 @@ fn test_stdin_uses_virtual_path_and_config() -> anyhow::Result<()> {
 #[test]
 fn test_stdin_virtual_file_does_not_need_to_exist() -> anyhow::Result<()> {
     let case = CliTest::new()?;
-    let out = check_stdin(&case, "x <- 1\n", &["--stdin-filename", "nope/new.R"])?;
+    let out = check_stdin(&case, "x <- 1\n", &["--stdin-file-path", "nope/new.R"])?;
     assert_eq!(out.status.code(), Some(0));
-    Ok(())
-}
-
-#[test]
-fn test_stdin_requires_filename() -> anyhow::Result<()> {
-    let case = CliTest::new()?;
-    let out = check_stdin(&case, "x <- 1\n", &[])?;
-    assert_eq!(out.status.code(), Some(255));
-    assert!(String::from_utf8(out.stderr)?.contains("--stdin-filename"));
     Ok(())
 }
 
 #[test]
 fn test_stdin_filename_rejects_fix() -> anyhow::Result<()> {
     let case = CliTest::new()?;
-    let out = check_stdin(&case, "x <- 1\n", &["--stdin-filename", "a.R", "--fix"])?;
+    let out = check_stdin(&case, "x <- 1\n", &["--stdin-file-path", "a.R", "--fix"])?;
     assert_eq!(out.status.code(), Some(2));
+    Ok(())
+}
+
+#[test]
+fn test_stdin_file_path_conflicts_with_files() -> anyhow::Result<()> {
+    let case = CliTest::new()?;
+    let out = check_stdin(&case, "x <- 1\n", &["folder/", "--stdin-file-path", "a.R"])?;
+    assert_eq!(out.status.code(), Some(2));
+    Ok(())
+}
+
+#[test]
+fn test_stdin_respects_exclude_in_config() -> anyhow::Result<()> {
+    let case = CliTest::with_file("jarl.toml", "[lint]\nexclude = [\"R/skip.R\"]\n")?;
+    let out = check_stdin(&case, "any(is.na(x))\n", &["--stdin-file-path", "R/skip.R"])?;
+    assert_eq!(out.status.code(), Some(0));
+    let out = check_stdin(&case, "any(is.na(x))\n", &["--stdin-file-path", "R/keep.R"])?;
+    assert_eq!(out.status.code(), Some(1));
     Ok(())
 }
