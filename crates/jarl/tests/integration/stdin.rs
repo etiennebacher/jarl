@@ -30,7 +30,11 @@ fn test_stdin_uses_virtual_path_and_config() -> anyhow::Result<()> {
     )?;
     let stdout = String::from_utf8(out.stdout)?;
     assert_eq!(out.status.code(), Some(1));
-    assert!(stdout.contains("R/foo.R [1:1]"), "{stdout}");
+    // Windows prints the path with backslashes.
+    assert!(
+        stdout.replace('\\', "/").contains("R/foo.R [1:1]"),
+        "{stdout}"
+    );
     assert!(stdout.contains("any_is_na"), "{stdout}");
     assert!(!stdout.contains("any_duplicated"), "{stdout}");
     Ok(())
