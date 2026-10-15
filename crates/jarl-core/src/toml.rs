@@ -37,7 +37,7 @@ use crate::settings::Settings;
 #[derive(Debug)]
 pub enum ParseTomlError {
     Read(PathBuf, io::Error),
-    Deserialize(PathBuf, toml::de::Error),
+    Deserialize(PathBuf, Box<toml::de::Error>),
     Invalid(PathBuf, String),
 }
 
@@ -85,7 +85,7 @@ pub fn parse_jarl_toml(path: &Path) -> Result<TomlOptions, ParseTomlError> {
     }
 
     let options = toml::from_str(&toml)
-        .map_err(|err| ParseTomlError::Deserialize(path.to_path_buf(), err))?;
+        .map_err(|err| ParseTomlError::Deserialize(path.to_path_buf(), Box::new(err)))?;
 
     // We need to run this here because then serde loses the information on
     // whether a key was quoted.
