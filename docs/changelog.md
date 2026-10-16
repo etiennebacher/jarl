@@ -57,6 +57,9 @@
 
 ### Bug fixes
 
+* Recognize parenthesized `TRUE` conditions in `repeat` and preserve loop body
+  comments when applying fixes (#754, @Yousa-Mirage).
+
 * Prevent `unused_function` and `unused_object` from falsely reporting non-ASCII
   names (#706, @Yousa-Mirage).
 
