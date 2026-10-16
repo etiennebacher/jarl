@@ -2,6 +2,7 @@ use crate::diagnostic::*;
 use crate::rule_set::Rule;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
+use oak_core::syntax_ext::RIdentifierExt;
 
 pub struct ForLoopDupIndex;
 
@@ -18,7 +19,7 @@ pub struct ForLoopDupIndex;
 /// In nested loops, using the same index symbol for several loops can lead to
 /// unexpected and incorrect results.
 ///
-/// This rules doesn't have an automatic fix.
+/// This rule doesn't have an automatic fix.
 ///
 /// ## Example
 ///
@@ -30,6 +31,7 @@ pub struct ForLoopDupIndex;
 /// }
 /// ```
 ///
+/// Use instead:
 /// ```r
 /// for (x_outer in 1:3) {
 ///   for (x_inner in 1:4) {
@@ -51,28 +53,25 @@ impl Violation for ForLoopDupIndex {
 }
 
 pub fn for_loop_dup_index(ast: &RForStatement) -> anyhow::Result<Option<Diagnostic>> {
-    let index = ast.variable()?.to_trimmed_string();
+    let variable = ast.variable()?;
+    let name = variable.name_text();
+    let loop_range = ast.syntax().text_trimmed_range();
 
-    let has_duplicate_in_ancestor = ast
-        .syntax()
-        .ancestors()
-        // Skip self, otherwise the `for` loop compares to itself.
-        .skip(1)
-        .filter_map(RForStatement::cast)
-        .any(|ancestor_for| {
-            ancestor_for
-                .variable()
-                .map(|v| v.to_trimmed_string() == index)
-                .unwrap_or(false)
-        });
+    // Skip self and stop at functions, whose loop variables have their own scope.
+    for ancestor in ast.syntax().ancestors().skip(1) {
+        if RFunctionDefinition::can_cast(ancestor.kind()) {
+            break;
+        }
 
-    if has_duplicate_in_ancestor {
-        let range_start = ast.variable()?.range().start();
-        let range_end = ast.sequence()?.range().end();
-        let range = TextRange::new(range_start, range_end);
-        let diagnostic = Diagnostic::new(ForLoopDupIndex, range, Fix::empty());
-        Ok(Some(diagnostic))
-    } else {
-        Ok(None)
+        if let Some(outer) = RForStatement::cast(ancestor)
+            && outer.variable()?.name_text() == name
+            // Loops in the sequence run before this outer loop starts iterating.
+            && outer.body()?.range().contains_range(loop_range)
+        {
+            let range = TextRange::new(variable.range().start(), ast.sequence()?.range().end());
+            return Ok(Some(Diagnostic::new(ForLoopDupIndex, range, Fix::empty())));
+        }
     }
+
+    Ok(None)
 }

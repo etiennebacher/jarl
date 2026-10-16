@@ -57,6 +57,9 @@
 
 ### Bug fixes
 
+* Fix scope handling and backtick-quoted names in `for_loop_dup_index`
+  (#753, @Yousa-Mirage).
+
 * Prevent `unused_function` and `unused_object` from falsely reporting non-ASCII
   names (#706, @Yousa-Mirage).
 
