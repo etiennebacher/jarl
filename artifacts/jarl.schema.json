@@ -30,7 +30,7 @@
       "additionalProperties": false
     },
     "CyclomaticComplexityOptions": {
-      "description": "TOML options for `[lint.cyclomatic_complexity]`.\n\nUse `max-complexity` to set the highest score a function (or the top-level\ncode of a file) is allowed to reach before it is reported.",
+      "description": "TOML options for `[lint.cyclomatic_complexity]`.\n\nUse `max-complexity` to set the highest score an expression is allowed to\nreach before it is reported.",
       "type": "object",
       "properties": {
         "max-complexity": {
@@ -144,7 +144,7 @@
         },
         "cyclomatic_complexity": {
           "title": "Options for the `cyclomatic_complexity` rule",
-          "description": "Use `max-complexity` to set the highest score a function (or the\ntop-level code of a file) is allowed to reach before it is reported.",
+          "description": "Use `max-complexity` to set the highest score an expression is allowed to\nreach before it is reported.",
           "anyOf": [
             {
               "$ref": "#/$defs/CyclomaticComplexityOptions"

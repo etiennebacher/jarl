@@ -1,41 +1,44 @@
-use std::collections::HashSet;
-
 use air_r_syntax::*;
-use biome_rowan::{AstNode, TextRange, WalkEvent};
+use biome_rowan::AstNode;
 
+use super::flowgraph::{Lang, cyclocomp};
 use crate::checker::Checker;
 use crate::diagnostic::*;
 use crate::rule_set::Rule;
-use crate::utils::{argument_name, get_function_name};
 
 /// <!-- docs: start -->
 /// Version added: 0.7.0
 ///
 /// ## What it does
 ///
-/// Measures the cyclomatic complexity of each function, and of the top-level
-/// code of a file, and reports the ones above `max-complexity` (15 by default).
+/// Measures the cyclomatic complexity of each function, and of each top-level
+/// expression of a file, and reports the ones above `max-complexity` (20 by
+/// default).
 ///
-/// The score starts at 1 and gains a point for every place the code can take a
-/// different path:
+/// The score is the one computed by the
+/// [cyclocomp](https://cran.r-project.org/package=cyclocomp) package, which is
+/// also the one used by `lintr::cyclocomp_linter()`: it is the number of
+/// edges minus the number of nodes plus 2 of the control-flow graph of the
+/// code. In practice, `if`, `for`, `while`, `repeat`, `break`, `next`, `&&`,
+/// `||` and `return()` (unless it is the last expression) add paths. `stop()`,
+/// `tryCatch()` and `try()` do not.
 ///
-/// * each `if` (an `else if` is an `if` too, but a bare `else` adds nothing);
-/// * each `for`, `while` and `repeat` loop;
-/// * each `&&` and `||`. The vectorized `&` and `|` always evaluate both sides,
-///   so they add nothing;
-/// * each `switch()` arm after the first;
-/// * each handler of `tryCatch()` and `withCallingHandlers()`, and each `try()`;
-/// * each `return()` or `stop()` that isn't the value the function ends on.
+/// There are a few differences with cyclocomp, where it gives a score that
+/// doesn't match the number of paths through the code:
 ///
-/// Nested functions are scored on their own and don't count towards the
-/// function that contains them.
+/// * a chain of `&&` or `||` adds one path per operator. cyclocomp scores
+///   `if (a || b || c || d) stop()` as 11, this rule as 5;
+/// * `switch()` adds one path per arm, while cyclocomp ignores it;
+/// * a function defined inside another one is scored on its own and counts as
+///   a single node in the function that contains it, while cyclocomp adds all
+///   of its paths to the ones of the outer function.
 ///
 /// ## Why is this bad?
 ///
 /// The score counts the paths through the code, which is also the number of
-/// tests needed to cover it. A function with a high score is hard to read, hard
-/// to test exhaustively, and hard to change without breaking one of the paths
-/// nobody had in mind.
+/// tests needed to cover it. A function with a high score is hard to read,
+/// hard to test exhaustively, and hard to change without breaking one of the
+/// paths nobody had in mind.
 ///
 /// ## Example
 ///
@@ -43,47 +46,85 @@ use crate::utils::{argument_name, get_function_name};
 /// summarize <- function(x, na.rm, kind) {
 ///   if (!is.numeric(x)) stop("`x` must be numeric.")
 ///   if (na.rm && anyNA(x)) x <- x[!is.na(x)]
-///   switch(kind,
-///     mean = mean(x),
-///     median = median(x),
-///     stop("Unknown `kind`.")
-///   )
+///   for (i in seq_along(x)) {
+///     if (x[i] < 0) next
+///     if (kind == "mean") return(mean(x))
+///   }
+///   median(x)
 /// }
 /// ```
 ///
-/// Use instead:
-/// ```r
-/// check_input <- function(x) {
-///   if (!is.numeric(x)) stop("`x` must be numeric.")
-/// }
-///
-/// summarize <- function(x, na.rm, kind) {
-///   check_input(x)
-///   if (na.rm && anyNA(x)) x <- x[!is.na(x)]
-///   summary_fun(kind)(x)
-/// }
-/// ```
+/// Use instead: split the function in smaller ones, each with a few branches.
 ///
 /// ## Options
 ///
 /// * `max-complexity`
 /// <!-- docs: end -->
+/// Score a top-level expression. Functions defined in it are scored on their
+/// own and count as a single node here.
 pub fn cyclomatic_complexity(
-    ast: &RFunctionDefinition,
+    expression: &AnyRExpression,
     checker: &Checker,
 ) -> anyhow::Result<Option<Diagnostic>> {
-    let options = &checker.rule_options.cyclomatic_complexity;
-    let body = ast.body()?;
+    let max_complexity = checker.rule_options.cyclomatic_complexity.max_complexity;
 
-    let mut tails = HashSet::new();
-    collect_tail_positions(&body, &mut tails);
+    let Some(score) = cyclocomp(&lower(expression)) else {
+        return Ok(None);
+    };
+    if score <= max_complexity {
+        return Ok(None);
+    }
 
-    let score = compute_complexity(
-        std::slice::from_ref(body.syntax()),
-        &options.stopping_functions,
-        &tails,
-    );
-    if score <= options.max_complexity {
+    // Point at the first token: the expression can span hundreds of lines.
+    let Some(first_token) = expression.syntax().first_token() else {
+        return Ok(None);
+    };
+
+    Ok(Some(Diagnostic::new(
+        ViolationData::new(
+            Rule::CyclomaticComplexity,
+            format!(
+                "This expression has a cyclomatic complexity of {score}, above the maximum of {max_complexity}."
+            ),
+            Some("Consider replacing high-complexity sections like loops and branches with helper functions.".to_string()),
+        ),
+        first_token.text_trimmed_range(),
+        Fix::empty(),
+    )))
+}
+
+/// Score a function definition, at any depth. Functions defined in it are
+/// scored on their own and count as a single node here.
+pub fn cyclomatic_complexity_function(
+    function: &RFunctionDefinition,
+    checker: &Checker,
+) -> anyhow::Result<Option<Diagnostic>> {
+    let max_complexity = checker.rule_options.cyclomatic_complexity.max_complexity;
+
+    let formals = function
+        .parameters()
+        .map(|parameters| {
+            parameters
+                .items()
+                .into_iter()
+                .filter_map(|parameter| parameter.ok())
+                .map(|parameter| {
+                    parameter
+                        .default()
+                        .map_or(Lang::Atom, |default| lower_result(default.value()))
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    let lowered = Lang::Function {
+        formals,
+        body: Box::new(lower_result(function.body())),
+    };
+
+    let Some(score) = cyclocomp(&lowered) else {
+        return Ok(None);
+    };
+    if score <= max_complexity {
         return Ok(None);
     }
 
@@ -91,174 +132,209 @@ pub fn cyclomatic_complexity(
         ViolationData::new(
             Rule::CyclomaticComplexity,
             format!(
-                "This function has a cyclomatic complexity of {score}, above the maximum of {}.",
-                options.max_complexity
+                "This function has a cyclomatic complexity of {score}, above the maximum of {max_complexity}."
             ),
             Some("Split this function into smaller ones.".to_string()),
         ),
         // Point at the `function` keyword: the body can span hundreds of lines.
-        ast.name()?.text_trimmed_range(),
+        function.name()?.text_trimmed_range(),
         Fix::empty(),
     )))
 }
 
-/// Measure the top-level code of a file, i.e. everything outside of a function
-/// definition, as a single unit.
-pub fn cyclomatic_complexity_top_level(
-    expressions: &[RSyntaxNode],
-    checker: &Checker,
-) -> anyhow::Result<Option<Diagnostic>> {
-    let options = &checker.rule_options.cyclomatic_complexity;
-    let Some(first) = expressions.first() else {
-        return Ok(None);
-    };
-
-    let mut tails = HashSet::new();
-    if let Some(last) = expressions.last().and_then(AnyRExpression::cast_ref) {
-        collect_tail_positions(&last, &mut tails);
-    }
-
-    let score = compute_complexity(expressions, &options.stopping_functions, &tails);
-    if score <= options.max_complexity {
-        return Ok(None);
-    }
-
-    Ok(Some(Diagnostic::new(
-        ViolationData::new(
-            Rule::CyclomaticComplexity,
-            format!(
-                "The top-level code of this file has a cyclomatic complexity of {score}, \
-                 above the maximum of {}.",
-                options.max_complexity
-            ),
-            Some("Move this logic into functions.".to_string()),
-        ),
-        first.text_trimmed_range(),
-        Fix::empty(),
-    )))
-}
-
-/// Walk `roots` and add up the branch points they contain.
-///
-/// Function definitions are skipped: each one is measured on its own, so the
-/// paths inside a closure belong to the closure and not to whatever surrounds
-/// it.
-fn compute_complexity(
-    roots: &[RSyntaxNode],
-    stopping: &HashSet<String>,
-    tails: &HashSet<TextRange>,
-) -> usize {
-    // A branchless body still has one path through it.
-    let mut score = 1;
-
-    for root in roots {
-        let mut preorder = root.preorder();
-        while let Some(event) = preorder.next() {
-            let WalkEvent::Enter(node) = event else {
-                continue;
-            };
-
-            if node.kind() == RSyntaxKind::R_FUNCTION_DEFINITION {
-                preorder.skip_subtree();
-                continue;
-            }
-
-            score += node_cost(&node, stopping, tails);
-        }
-    }
-
-    score
-}
-
-fn node_cost(node: &RSyntaxNode, stopping: &HashSet<String>, tails: &HashSet<TextRange>) -> usize {
-    match node.kind() {
-        RSyntaxKind::R_IF_STATEMENT
-        | RSyntaxKind::R_FOR_STATEMENT
-        | RSyntaxKind::R_WHILE_STATEMENT
-        | RSyntaxKind::R_REPEAT_STATEMENT => 1,
-        RSyntaxKind::R_BINARY_EXPRESSION => {
-            let Some(expression) = RBinaryExpression::cast_ref(node) else {
-                return 0;
-            };
-            let Ok(operator) = expression.operator() else {
-                return 0;
-            };
-            // Only `&&` and `||` short-circuit; `&` and `|` are vectorized and
-            // always evaluate both sides, so they don't create a path.
-            usize::from(matches!(
-                operator.kind(),
-                RSyntaxKind::AND2 | RSyntaxKind::OR2
-            ))
-        }
-        RSyntaxKind::R_CALL => {
-            let Some(call) = RCall::cast_ref(node) else {
-                return 0;
-            };
-            call_cost(&call, stopping, tails)
-        }
-        _ => 0,
-    }
-}
-
-fn call_cost(call: &RCall, stopping: &HashSet<String>, tails: &HashSet<TextRange>) -> usize {
-    let Ok(function) = call.function() else {
-        return 0;
-    };
-    let Ok(arguments) = call.arguments() else {
-        return 0;
-    };
-    let name = get_function_name(function);
-
-    match name.as_str() {
-        // The first argument is the value being matched, so a `switch()` only
-        // starts branching at its second arm.
-        "switch" => arguments.items().into_iter().count().saturating_sub(2),
-        // Every handler is another way out of the guarded expression. `expr` is
-        // that expression and `finally` runs on all paths, so neither counts.
-        "tryCatch" | "withCallingHandlers" => arguments
-            .items()
-            .into_iter()
-            .filter_map(|argument| argument_name(&argument.ok()?))
-            .filter(|name| name != "expr" && name != "finally")
-            .count(),
-        "try" => 1,
-        "return" => usize::from(!is_tail(call, tails)),
-        _ => usize::from(stopping.contains(&name) && !is_tail(call, tails)),
-    }
-}
-
-/// An exit in tail position is how the code normally ends, so it doesn't add a
-/// path. Only the ones jumping out from somewhere else do.
-fn is_tail(call: &RCall, tails: &HashSet<TextRange>) -> bool {
-    tails.contains(&call.syntax().text_trimmed_range())
-}
-
-/// Collect the expressions that give the code its value: the expression itself,
-/// the last one of a `{` block, and both branches of a trailing `if`.
-fn collect_tail_positions(expression: &AnyRExpression, tails: &mut HashSet<TextRange>) {
-    tails.insert(expression.syntax().text_trimmed_range());
-
+/// Convert a syntax node to what R's parser would have produced for it.
+fn lower(expression: &AnyRExpression) -> Lang {
     match expression {
         AnyRExpression::RBracedExpressions(braced) => {
-            if let Some(last) = braced.expressions().into_iter().last() {
-                collect_tail_positions(&last, tails);
-            }
+            let mut elements = vec![Lang::Atom];
+            elements.extend(braced.expressions().into_iter().map(|e| lower(&e)));
+            Lang::Call(elements)
         }
         AnyRExpression::RParenthesizedExpression(parenthesized) => {
-            if let Ok(inner) = parenthesized.body() {
-                collect_tail_positions(&inner, tails);
+            match lower_result(parenthesized.body()) {
+                // Parentheses around a condition don't hide its exits.
+                condition @ Lang::AndOr { .. } => condition,
+                body => Lang::Call(vec![Lang::Atom, body]),
             }
         }
-        AnyRExpression::RIfStatement(if_statement) => {
-            if let Ok(consequence) = if_statement.consequence() {
-                collect_tail_positions(&consequence, tails);
-            }
-            if let Some(else_clause) = if_statement.else_clause()
-                && let Ok(alternative) = else_clause.alternative()
+        AnyRExpression::RUnaryExpression(unary) => {
+            Lang::Call(vec![Lang::Atom, lower_result(unary.argument())])
+        }
+        AnyRExpression::RBinaryExpression(binary) => lower_binary(binary),
+        // The selector is a symbol or a string.
+        AnyRExpression::RExtractExpression(extract) => {
+            Lang::Call(vec![Lang::Atom, lower_result(extract.left()), Lang::Atom])
+        }
+        AnyRExpression::RNamespaceExpression(_) => {
+            Lang::Call(vec![Lang::Atom, Lang::Atom, Lang::Atom])
+        }
+        AnyRExpression::RCall(call) => {
+            let Ok(function) = call.function() else {
+                return Lang::Atom;
+            };
+            let Ok(arguments) = call.arguments() else {
+                return Lang::Atom;
+            };
+            if is_identifier(&function, "switch")
+                && let Some(switch) = lower_switch(&arguments.items())
             {
-                collect_tail_positions(&alternative, tails);
+                return switch;
+            }
+
+            let mut elements = vec![lower(&function)];
+            elements.extend(lower_arguments(&arguments.items()));
+
+            if is_identifier(&function, "return") {
+                Lang::Return(elements)
+            } else {
+                Lang::Call(elements)
             }
         }
-        _ => {}
+        AnyRExpression::RSubset(subset) => {
+            lower_subset(subset.function(), subset.arguments().map(|a| a.items()))
+        }
+        AnyRExpression::RSubset2(subset) => {
+            lower_subset(subset.function(), subset.arguments().map(|a| a.items()))
+        }
+        AnyRExpression::RIfStatement(if_statement) => Lang::If {
+            condition: Box::new(lower_result(if_statement.condition())),
+            consequence: Box::new(lower_result(if_statement.consequence())),
+            alternative: if_statement
+                .else_clause()
+                .map(|clause| Box::new(lower_result(clause.alternative()))),
+        },
+        AnyRExpression::RForStatement(for_statement) => Lang::For {
+            sequence: Box::new(lower_result(for_statement.sequence())),
+            body: Box::new(lower_result(for_statement.body())),
+        },
+        AnyRExpression::RWhileStatement(while_statement) => Lang::While {
+            condition: Box::new(lower_result(while_statement.condition())),
+            body: Box::new(lower_result(while_statement.body())),
+        },
+        AnyRExpression::RRepeatStatement(repeat) => {
+            Lang::Repeat(Box::new(lower_result(repeat.body())))
+        }
+        AnyRExpression::RBreakExpression(_) => Lang::Break,
+        AnyRExpression::RNextExpression(_) => Lang::Next,
+        // A nested function is scored on its own, see `cyclomatic_complexity_function()`.
+        AnyRExpression::RFunctionDefinition(_) => Lang::Atom,
+        // Symbols, constants, and anything we can't make sense of.
+        _ => Lang::Atom,
     }
+}
+
+fn lower_result<E: Into<AnyRExpression>>(expression: biome_rowan::SyntaxResult<E>) -> Lang {
+    match expression {
+        Ok(expression) => lower(&expression.into()),
+        Err(_) => Lang::Atom,
+    }
+}
+
+fn lower_binary(binary: &RBinaryExpression) -> Lang {
+    let (Ok(left), Ok(operator), Ok(right)) = (binary.left(), binary.operator(), binary.right())
+    else {
+        return Lang::Atom;
+    };
+
+    match operator.kind() {
+        RSyntaxKind::AND2 | RSyntaxKind::OR2 => Lang::AndOr {
+            is_and: operator.kind() == RSyntaxKind::AND2,
+            left: Box::new(lower(&left)),
+            right: Box::new(lower(&right)),
+        },
+        // R's parser turns `a -> b` into `` `<-`(b, a) ``.
+        RSyntaxKind::ASSIGN_RIGHT | RSyntaxKind::SUPER_ASSIGN_RIGHT => {
+            Lang::Call(vec![Lang::Atom, lower(&right), lower(&left)])
+        }
+        // ... and `lhs |> f(args)` into `f(lhs, args)`.
+        RSyntaxKind::PIPE => match &right {
+            AnyRExpression::RCall(call) => lower_piped_call(call, lower(&left)),
+            _ => Lang::Call(vec![Lang::Atom, lower(&left), lower(&right)]),
+        },
+        _ => Lang::Call(vec![Lang::Atom, lower(&left), lower(&right)]),
+    }
+}
+
+fn lower_piped_call(call: &RCall, lhs: Lang) -> Lang {
+    let (Ok(function), Ok(arguments)) = (call.function(), call.arguments()) else {
+        return Lang::Atom;
+    };
+
+    let mut elements = vec![lower(&function)];
+    let mut lhs = Some(lhs);
+    for argument in arguments.items().into_iter().flatten() {
+        let is_placeholder = argument.name_clause().is_some()
+            && matches!(
+                argument.value(),
+                Some(AnyRExpression::RIdentifier(ident)) if ident.syntax().text_trimmed() == "_"
+            );
+        match (is_placeholder, lhs.take()) {
+            (true, Some(lhs)) => elements.push(lhs),
+            (_, unused) => {
+                lhs = unused;
+                elements.push(argument.value().map_or(Lang::Atom, |v| lower(&v)));
+            }
+        }
+    }
+    if let Some(lhs) = lhs {
+        elements.insert(1, lhs);
+    }
+
+    if is_identifier(&function, "return") {
+        Lang::Return(elements)
+    } else {
+        Lang::Call(elements)
+    }
+}
+
+fn lower_subset(
+    function: biome_rowan::SyntaxResult<AnyRExpression>,
+    items: biome_rowan::SyntaxResult<RArgumentList>,
+) -> Lang {
+    let (Ok(function), Ok(items)) = (function, items) else {
+        return Lang::Atom;
+    };
+    let mut elements = vec![Lang::Atom, lower(&function)];
+    let arguments = lower_arguments(&items);
+    // `x[]` holds one empty argument in R.
+    if arguments.is_empty() {
+        elements.push(Lang::Atom);
+    } else {
+        elements.extend(arguments);
+    }
+    Lang::Call(elements)
+}
+
+fn lower_arguments(items: &RArgumentList) -> Vec<Lang> {
+    items
+        .into_iter()
+        .filter_map(|argument| argument.ok())
+        .map(|argument| argument.value().map_or(Lang::Atom, |v| lower(&v)))
+        .collect()
+}
+
+/// cyclocomp only treats the bare symbol `return` as a return, not
+/// `base::return`.
+fn is_identifier(function: &AnyRExpression, name: &str) -> bool {
+    matches!(
+        function,
+        AnyRExpression::RIdentifier(ident)
+            if ident.syntax().text_trimmed().to_string().trim_matches('`') == name
+    )
+}
+
+/// `switch(selector, a = x, b = , y)`: every arm after the selector is a path.
+fn lower_switch(items: &RArgumentList) -> Option<Lang> {
+    let mut arguments = items.into_iter().filter_map(|argument| argument.ok());
+    let selector = lower(&arguments.next()?.value()?);
+
+    let mut arms = vec![];
+    let mut has_default = false;
+    for argument in arguments {
+        // An unnamed arm is the default.
+        has_default |= argument.name_clause().is_none() && argument.value().is_some();
+        arms.push(argument.value().map(|value| lower(&value)));
+    }
+
+    Some(Lang::Switch { selector: Box::new(selector), arms, has_default })
 }
