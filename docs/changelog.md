@@ -25,6 +25,7 @@
 
   * `consecutive_signs` (#745, @Yousa-Mirage)
   * `library_call` (#701)
+  * `pipe_call` (#736, @Yousa-Mirage).
   * `undesirable_operator` (#657, @christopherkenny)
   * `yoda_condition` (#733, @Yousa-Mirage)
 
