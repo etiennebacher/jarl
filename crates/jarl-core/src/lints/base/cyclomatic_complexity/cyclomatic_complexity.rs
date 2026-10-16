@@ -60,20 +60,15 @@ use crate::rule_set::Rule;
 ///
 /// * `max-complexity`
 /// <!-- docs: end -->
-/// Score a top-level expression. Functions defined in it are scored on their
-/// own and count as a single node here.
 pub fn cyclomatic_complexity(
     expression: &AnyRExpression,
     checker: &Checker,
 ) -> anyhow::Result<Option<Diagnostic>> {
     let max_complexity = checker.rule_options.cyclomatic_complexity.max_complexity;
 
-    let Some(score) = cyclocomp(&lower(expression)) else {
+    let Some(score) = score_above(&lower(expression), max_complexity) else {
         return Ok(None);
     };
-    if score <= max_complexity {
-        return Ok(None);
-    }
 
     // Point at the first token: the expression can span hundreds of lines.
     let Some(first_token) = expression.syntax().first_token() else {
@@ -121,12 +116,9 @@ pub fn cyclomatic_complexity_function(
         body: Box::new(lower_result(function.body())),
     };
 
-    let Some(score) = cyclocomp(&lowered) else {
+    let Some(score) = score_above(&lowered, max_complexity) else {
         return Ok(None);
     };
-    if score <= max_complexity {
-        return Ok(None);
-    }
 
     Ok(Some(Diagnostic::new(
         ViolationData::new(
@@ -183,12 +175,7 @@ fn lower(expression: &AnyRExpression) -> Lang {
 
             let mut elements = vec![lower(&function)];
             elements.extend(lower_arguments(&arguments.items()));
-
-            if is_identifier(&function, "return") {
-                Lang::Return(elements)
-            } else {
-                Lang::Call(elements)
-            }
+            call_node(&function, elements)
         }
         AnyRExpression::RSubset(subset) => {
             lower_subset(subset.function(), subset.arguments().map(|a| a.items()))
@@ -216,9 +203,9 @@ fn lower(expression: &AnyRExpression) -> Lang {
         }
         AnyRExpression::RBreakExpression(_) => Lang::Break,
         AnyRExpression::RNextExpression(_) => Lang::Next,
-        // A nested function is scored on its own, see `cyclomatic_complexity_function()`.
-        AnyRExpression::RFunctionDefinition(_) => Lang::Atom,
-        // Symbols, constants, and anything we can't make sense of.
+        // Symbols, constants, and anything we can't make sense of. This includes
+        // nested functions, which are scored on their own, see
+        // `cyclomatic_complexity_function()`.
         _ => Lang::Atom,
     }
 }
@@ -280,11 +267,7 @@ fn lower_piped_call(call: &RCall, lhs: Lang) -> Lang {
         elements.insert(1, lhs);
     }
 
-    if is_identifier(&function, "return") {
-        Lang::Return(elements)
-    } else {
-        Lang::Call(elements)
-    }
+    call_node(&function, elements)
 }
 
 fn lower_subset(
@@ -311,6 +294,20 @@ fn lower_arguments(items: &RArgumentList) -> Vec<Lang> {
         .filter_map(|argument| argument.ok())
         .map(|argument| argument.value().map_or(Lang::Atom, |v| lower(&v)))
         .collect()
+}
+
+/// The score of `lowered` if it is above `max_complexity`.
+fn score_above(lowered: &Lang, max_complexity: usize) -> Option<usize> {
+    cyclocomp(lowered).filter(|score| *score > max_complexity)
+}
+
+/// A call to `callee`, which is a `return` if it is the bare symbol.
+fn call_node(callee: &AnyRExpression, elements: Vec<Lang>) -> Lang {
+    if is_identifier(callee, "return") {
+        Lang::Return(elements)
+    } else {
+        Lang::Call(elements)
+    }
 }
 
 /// cyclocomp only treats the bare symbol `return` as a return, not
