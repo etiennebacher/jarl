@@ -74,10 +74,19 @@ pub(crate) enum Command {
 #[command(arg_required_else_help(true), disable_help_flag = true)]
 pub struct CheckCommand {
     #[arg(
-        required = true,
+        required_unless_present = "stdin_file_path",
+        conflicts_with = "stdin_file_path",
         help = "List of files or directories to check or fix lints, for example `jarl check .`."
     )]
     pub files: Vec<String>,
+    #[arg(
+        long,
+        value_name = "PATH",
+        conflicts_with_all = ["fix", "unsafe_fixes", "fix_only", "add_jarl_ignore"],
+        help_heading = "File selection",
+        help = "Read the code to check from stdin. The path is not read and doesn't have to exist: it is used to find the configuration and package, to apply `exclude` patterns, and as file name in diagnostics, e.g. `jarl check --stdin-file-path R/foo.R`."
+    )]
+    pub stdin_file_path: Option<String>,
     #[arg(
         long,
         value_name = "FILES",

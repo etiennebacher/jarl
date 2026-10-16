@@ -21,6 +21,12 @@ Use `functions` to fully replace the default list of undesirable functions.
 Use `extend-functions` to add to the default list.
 Specifying both is an error.
 
+Entries can be strings or inline tables mapping a function to a custom
+suggestion.
+Function names in inline tables must be quoted.
+Names can be qualified with a package, such as `base::setwd`, in which case
+they only match calls with the same package prefix.
+
 ### Default values
 
 ```toml
@@ -36,6 +42,13 @@ functions = ["browser", "debug"]
 
 # Or add to the defaults:
 extend-functions = ["debug"]
+
+# Or add to the defaults, with optional suggestions:
+extend-functions = [
+  { "setwd" = 'Use `here::here()`.' },
+  "sprintf",  # No suggestion for this case
+  { "transmute" = 'Use `mutate(.keep = "none")`.' },
+]
 ```
 
 ## Example

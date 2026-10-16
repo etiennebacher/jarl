@@ -94,6 +94,7 @@ website:
             - rules/comparison_negation.md
             - rules/condition_call.md
             - rules/condition_message.md
+            - rules/consecutive_signs.md
             - rules/cyclomatic_complexity.md
             - rules/download_file.md
             - rules/dplyr_filter_out.md
@@ -171,3 +172,4 @@ website:
             - rules/unused_object.md
             - rules/vector_logic.md
             - rules/which_grepl.md
+            - rules/yoda_condition.md

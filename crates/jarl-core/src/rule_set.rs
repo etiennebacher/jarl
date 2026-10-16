@@ -315,6 +315,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    ConsecutiveSigns => {
+        name: "consecutive_signs",
+        categories: [Read, Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     CyclomaticComplexity => {
         name: "cyclomatic_complexity",
         categories: [Read],
@@ -720,6 +727,14 @@ declare_rules! {
         categories: [Perf, Read],
         default: Enabled,
         fix: Safe,
+        min_r_version: None,
+    },
+
+    YodaCondition => {
+        name: "yoda_condition",
+        categories: [Read],
+        default: Disabled,
+        fix: Unsafe,
         min_r_version: None,
     },
 
