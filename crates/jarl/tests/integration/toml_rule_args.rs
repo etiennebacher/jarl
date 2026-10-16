@@ -87,6 +87,47 @@ unknown-option = 3
 }
 
 #[test]
+fn test_cyclomatic_complexity_wrong_type() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.cyclomatic_complexity]
+max-complexity = "a"
+"#,
+        ),
+        ("test.R", "x <- 1"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 3, column 18
+      |
+    3 | max-complexity = "a"
+      |                  ^^^
+    invalid type: string "a", expected usize
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
 fn test_cyclomatic_complexity_zero_maximum_is_error() -> anyhow::Result<()> {
     let case = CliTest::with_files([
         (
