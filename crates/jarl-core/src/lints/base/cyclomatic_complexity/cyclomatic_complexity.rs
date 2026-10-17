@@ -136,55 +136,11 @@ fn first_line(statement: &AnyRExpression) -> String {
     }
 }
 
-/// Convert a syntax node to what R's parser would have produced for it.
+/// Convert a syntax node to what the control-flow graph needs: the constructs
+/// that branch, and for everything else the expressions it holds, in order.
+/// Calls, operators, subsets, etc. add no path by themselves.
 fn lower(expression: &AnyRExpression) -> Lang {
     match expression {
-        AnyRExpression::RBracedExpressions(braced) => {
-            let mut elements = vec![Lang::Atom];
-            elements.extend(braced.expressions().into_iter().map(|e| lower(&e)));
-            Lang::Call(elements)
-        }
-        AnyRExpression::RParenthesizedExpression(parenthesized) => {
-            match lower_result(parenthesized.body()) {
-                // Parentheses around a condition don't hide its exits.
-                condition @ Lang::AndOr { .. } => condition,
-                body => Lang::Call(vec![Lang::Atom, body]),
-            }
-        }
-        AnyRExpression::RUnaryExpression(unary) => {
-            Lang::Call(vec![Lang::Atom, lower_result(unary.argument())])
-        }
-        AnyRExpression::RBinaryExpression(binary) => lower_binary(binary),
-        // The selector is a symbol or a string.
-        AnyRExpression::RExtractExpression(extract) => {
-            Lang::Call(vec![Lang::Atom, lower_result(extract.left()), Lang::Atom])
-        }
-        AnyRExpression::RNamespaceExpression(_) => {
-            Lang::Call(vec![Lang::Atom, Lang::Atom, Lang::Atom])
-        }
-        AnyRExpression::RCall(call) => {
-            let Ok(function) = call.function() else {
-                return Lang::Atom;
-            };
-            let Ok(arguments) = call.arguments() else {
-                return Lang::Atom;
-            };
-            if is_identifier(&function, "switch")
-                && let Some(switch) = lower_switch(&arguments.items())
-            {
-                return switch;
-            }
-
-            let mut elements = vec![lower(&function)];
-            elements.extend(lower_arguments(&arguments.items()));
-            call_node(&function, elements)
-        }
-        AnyRExpression::RSubset(subset) => {
-            lower_subset(subset.function(), subset.arguments().map(|a| a.items()))
-        }
-        AnyRExpression::RSubset2(subset) => {
-            lower_subset(subset.function(), subset.arguments().map(|a| a.items()))
-        }
         AnyRExpression::RIfStatement(if_statement) => Lang::If {
             condition: Box::new(lower_result(if_statement.condition())),
             consequence: Box::new(lower_result(if_statement.consequence())),
@@ -205,10 +161,40 @@ fn lower(expression: &AnyRExpression) -> Lang {
         }
         AnyRExpression::RBreakExpression(_) => Lang::Break,
         AnyRExpression::RNextExpression(_) => Lang::Next,
-        // Symbols, constants, and anything we can't make sense of. This includes
-        // nested functions, which are scored on their own, see
-        // `cyclomatic_complexity_function()`.
-        _ => Lang::Atom,
+        AnyRExpression::RBinaryExpression(binary) => {
+            match (binary.left(), binary.operator(), binary.right()) {
+                (Ok(left), Ok(operator), Ok(right))
+                    if matches!(operator.kind(), RSyntaxKind::AND2 | RSyntaxKind::OR2) =>
+                {
+                    Lang::AndOr {
+                        is_and: operator.kind() == RSyntaxKind::AND2,
+                        left: Box::new(lower(&left)),
+                        right: Box::new(lower(&right)),
+                    }
+                }
+                _ => Lang::Call(lower_children(expression.syntax())),
+            }
+        }
+        // Parentheses around a condition don't hide its exits.
+        AnyRExpression::RParenthesizedExpression(parenthesized) => {
+            lower_result(parenthesized.body())
+        }
+        AnyRExpression::RCall(call) => {
+            if let (Ok(function), Ok(arguments)) = (call.function(), call.arguments()) {
+                if is_identifier(&function, "switch")
+                    && let Some(switch) = lower_switch(&arguments.items())
+                {
+                    return switch;
+                }
+                if is_identifier(&function, "return") {
+                    return Lang::Return(lower_children(expression.syntax()));
+                }
+            }
+            Lang::Call(lower_children(expression.syntax()))
+        }
+        // A nested function is scored on its own, see `cyclomatic_complexity()`.
+        AnyRExpression::RFunctionDefinition(_) => Lang::Atom,
+        _ => Lang::Call(lower_children(expression.syntax())),
     }
 }
 
@@ -219,92 +205,17 @@ fn lower_result<E: Into<AnyRExpression>>(expression: biome_rowan::SyntaxResult<E
     }
 }
 
-fn lower_binary(binary: &RBinaryExpression) -> Lang {
-    let (Ok(left), Ok(operator), Ok(right)) = (binary.left(), binary.operator(), binary.right())
-    else {
-        return Lang::Atom;
-    };
-
-    match operator.kind() {
-        RSyntaxKind::AND2 | RSyntaxKind::OR2 => Lang::AndOr {
-            is_and: operator.kind() == RSyntaxKind::AND2,
-            left: Box::new(lower(&left)),
-            right: Box::new(lower(&right)),
-        },
-        // R's parser turns `a -> b` into `` `<-`(b, a) ``.
-        RSyntaxKind::ASSIGN_RIGHT | RSyntaxKind::SUPER_ASSIGN_RIGHT => {
-            Lang::Call(vec![Lang::Atom, lower(&right), lower(&left)])
-        }
-        // ... and `lhs |> f(args)` into `f(lhs, args)`.
-        RSyntaxKind::PIPE => match &right {
-            AnyRExpression::RCall(call) => lower_piped_call(call, lower(&left)),
-            _ => Lang::Call(vec![Lang::Atom, lower(&left), lower(&right)]),
-        },
-        _ => Lang::Call(vec![Lang::Atom, lower(&left), lower(&right)]),
-    }
-}
-
-fn lower_piped_call(call: &RCall, lhs: Lang) -> Lang {
-    let (Ok(function), Ok(arguments)) = (call.function(), call.arguments()) else {
-        return Lang::Atom;
-    };
-
-    let mut elements = vec![lower(&function)];
-    let mut lhs = Some(lhs);
-    for argument in arguments.items().into_iter().flatten() {
-        let is_placeholder = argument.name_clause().is_some()
-            && matches!(
-                argument.value(),
-                Some(AnyRExpression::RIdentifier(ident)) if ident.syntax().text_trimmed() == "_"
-            );
-        match (is_placeholder, lhs.take()) {
-            (true, Some(lhs)) => elements.push(lhs),
-            (_, unused) => {
-                lhs = unused;
-                elements.push(argument.value().map_or(Lang::Atom, |v| lower(&v)));
-            }
+/// The expressions held by `node`, in order, looking through the nodes that
+/// aren't expressions themselves (argument lists, etc.).
+fn lower_children(node: &RSyntaxNode) -> Vec<Lang> {
+    let mut children = vec![];
+    for child in node.children() {
+        match AnyRExpression::cast_ref(&child) {
+            Some(expression) => children.push(lower(&expression)),
+            None => children.extend(lower_children(&child)),
         }
     }
-    if let Some(lhs) = lhs {
-        elements.insert(1, lhs);
-    }
-
-    call_node(&function, elements)
-}
-
-fn lower_subset(
-    function: biome_rowan::SyntaxResult<AnyRExpression>,
-    items: biome_rowan::SyntaxResult<RArgumentList>,
-) -> Lang {
-    let (Ok(function), Ok(items)) = (function, items) else {
-        return Lang::Atom;
-    };
-    let mut elements = vec![Lang::Atom, lower(&function)];
-    let arguments = lower_arguments(&items);
-    // `x[]` holds one empty argument in R.
-    if arguments.is_empty() {
-        elements.push(Lang::Atom);
-    } else {
-        elements.extend(arguments);
-    }
-    Lang::Call(elements)
-}
-
-fn lower_arguments(items: &RArgumentList) -> Vec<Lang> {
-    items
-        .into_iter()
-        .filter_map(|argument| argument.ok())
-        .map(|argument| argument.value().map_or(Lang::Atom, |v| lower(&v)))
-        .collect()
-}
-
-/// A call to `callee`, which is a `return` if it is the bare symbol.
-fn call_node(callee: &AnyRExpression, elements: Vec<Lang>) -> Lang {
-    if is_identifier(callee, "return") {
-        Lang::Return(elements)
-    } else {
-        Lang::Call(elements)
-    }
+    children
 }
 
 /// cyclocomp only treats the bare symbol `return` as a return, not

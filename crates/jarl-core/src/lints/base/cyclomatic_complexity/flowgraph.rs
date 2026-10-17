@@ -18,10 +18,12 @@ use std::collections::{HashMap, HashSet};
 /// What cyclocomp sees of an R expression.
 #[derive(Debug, Clone)]
 pub enum Lang {
-    /// A symbol, a constant, or a missing argument.
+    /// A node that adds nothing: a nested function (scored on its own) or code that
+    /// couldn't be read.
     Atom,
-    /// Any call that isn't a control-flow construct. The first element is the
-    /// callee (or the operator), the others are the arguments.
+    /// Any expression that isn't a control-flow construct (a call, an operator,
+    /// a subset, etc.), as the expressions it holds in order. It adds no path
+    /// by itself.
     Call(Vec<Lang>),
     /// A call to `return`, with the same layout as `Call`.
     Return(Vec<Lang>),
