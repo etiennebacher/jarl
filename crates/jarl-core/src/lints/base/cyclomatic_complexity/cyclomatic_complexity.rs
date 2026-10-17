@@ -39,28 +39,10 @@ use crate::rule_set::Rule;
 ///   a single node in the function that contains it, while `cyclocomp` adds all
 ///   of its paths to the ones of the outer function.
 ///
-/// ## Example
+/// ## References
 ///
-/// ```r
-/// summarize <- function(x, na.rm, kind) {
-///   if (!is.numeric(x)) stop("`x` must be numeric.")
-///   if (na.rm && anyNA(x)) x <- x[!is.na(x)]
-///   for (i in seq_along(x)) {
-///     if (x[i] < 0) next
-///     if (kind == "mean") return(mean(x))
-///   }
-///   median(x)
-/// }
-/// ```
-///
-/// Use instead: split the function in smaller ones, each with a few branches.
-///
-/// ## Options
-///
-/// * `max-complexity`
+/// * [Cyclomatic complexity](https://en.wikipedia.org/wiki/Cyclomatic_complexity)
 /// <!-- docs: end -->
-/// Score a function definition, at any depth. Functions defined in it are
-/// scored on their own and count as a single node here.
 pub fn cyclomatic_complexity(
     function: &RFunctionDefinition,
     checker: &Checker,

@@ -17,7 +17,6 @@ const DEFAULT_MAX_COMPLEXITY: usize = 20;
 /// ...
 ///
 /// [lint.cyclomatic_complexity]
-/// # Only report the functions that are really tangled.
 /// max-complexity = 25
 /// ```
 /// <!-- docs: end -->

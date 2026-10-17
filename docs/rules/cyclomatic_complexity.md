@@ -53,26 +53,9 @@ max-complexity = 20
 ...
 
 [lint.cyclomatic_complexity]
-# Only report the functions that are really tangled.
 max-complexity = 25
 ```
 
-## Example
+## References
 
-```r
-summarize <- function(x, na.rm, kind) {
-  if (!is.numeric(x)) stop("`x` must be numeric.")
-  if (na.rm && anyNA(x)) x <- x[!is.na(x)]
-  for (i in seq_along(x)) {
-    if (x[i] < 0) next
-    if (kind == "mean") return(mean(x))
-  }
-  median(x)
-}
-```
-
-Use instead: split the function in smaller ones, each with a few branches.
-
-## Options
-
-* `max-complexity`
+* [Cyclomatic complexity](https://en.wikipedia.org/wiki/Cyclomatic_complexity)
