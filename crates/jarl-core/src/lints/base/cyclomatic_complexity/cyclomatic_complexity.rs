@@ -94,8 +94,9 @@ fn help_message(function: &RFunctionDefinition, score: usize) -> String {
 }
 
 /// The statements of the body that account for more than `MIN_SHARE_PERCENT` of
-/// the score, with the number of points they add, largest first. A statement
-/// adds the difference between the score of the function and its score without it.
+/// the score, with the number of points they add, largest first. Each statement is
+/// scored alone, in a function where it isn't the last expression: the points it
+/// adds are the ones above the 1 of an empty body.
 fn biggest_parts(function: &RFunctionDefinition, score: usize) -> Vec<(String, usize)> {
     let Ok(AnyRExpression::RBracedExpressions(braced)) = function.body() else {
         return vec![];
@@ -104,22 +105,16 @@ fn biggest_parts(function: &RFunctionDefinition, score: usize) -> Vec<(String, u
     if statements.len() < 2 {
         return vec![];
     }
-    let lowered: Vec<Lang> = statements.iter().map(lower).collect();
 
     let mut parts: Vec<(String, usize)> = statements
         .iter()
-        .enumerate()
-        .filter_map(|(i, statement)| {
-            let mut elements = vec![Lang::Atom];
-            elements.extend(
-                lowered.iter().enumerate().map(
-                    |(j, lang)| {
-                        if i == j { Lang::Atom } else { lang.clone() }
-                    },
-                ),
-            );
-            let without = cyclocomp(&Lang::Function(Box::new(Lang::Call(elements))))?;
-            let share = score.checked_sub(without)?;
+        .filter_map(|statement| {
+            let alone = Lang::Function(Box::new(Lang::Call(vec![
+                Lang::Atom,
+                lower(statement),
+                Lang::Atom,
+            ])));
+            let share = cyclocomp(&alone)?.checked_sub(1)?;
             (share * 100 > score * MIN_SHARE_PERCENT).then(|| (first_line(statement), share))
         })
         .collect();
