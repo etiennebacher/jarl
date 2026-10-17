@@ -52,17 +52,6 @@ mod tests {
         );
     }
 
-    /// The score of `code`, read from the message reported with a maximum of 1.
-    fn score(code: &str) -> String {
-        let output = snapshot_lint(code, 1);
-        output
-            .split("complexity of ")
-            .nth(1)
-            .and_then(|rest| rest.split(',').next())
-            .unwrap_or("1")
-            .to_string()
-    }
-
     // The scores below are the ones of `cyclocomp::cyclocomp()`, unless a test
     // says otherwise.
 
@@ -73,32 +62,128 @@ mod tests {
 
     #[test]
     fn test_if() {
-        assert_snapshot!(score("foo <- function(x) if (x) 1"), @"2");
         // A bare `else` adds nothing, an `else if` is an `if`.
-        assert_snapshot!(score("foo <- function(x) if (x) 1 else 2"), @"2");
-        assert_snapshot!(score("foo <- function(x) if (x) 1 else if (!x) 2 else 3"), @"3");
+        assert_snapshot!(
+            snapshot_lint(
+                "if_only <- function(x) if (x) 1\nif_else <- function(x) if (x) 1 else 2\nelse_if <- function(x) if (x) 1 else if (!x) 2 else 3",
+                1
+            ),
+            @"
+        warning: cyclomatic_complexity
+         --> <test>:1:12
+          |
+        1 | if_only <- function(x) if (x) 1
+          |            -------- This function has a cyclomatic complexity of 2, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones.
+        warning: cyclomatic_complexity
+         --> <test>:2:12
+          |
+        2 | if_else <- function(x) if (x) 1 else 2
+          |            -------- This function has a cyclomatic complexity of 2, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones.
+        warning: cyclomatic_complexity
+         --> <test>:3:12
+          |
+        3 | else_if <- function(x) if (x) 1 else if (!x) 2 else 3
+          |            -------- This function has a cyclomatic complexity of 3, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones.
+        Found 3 errors.
+        "
+        );
     }
 
     #[test]
     fn test_loops() {
         // A loop adds two paths: entering it and leaving it.
-        assert_snapshot!(score("foo <- function(x) for (i in x) 1"), @"3");
-        assert_snapshot!(score("foo <- function(x) while (x) 1"), @"3");
-        assert_snapshot!(score("foo <- function(x) repeat if (x) break"), @"4");
+        assert_snapshot!(
+            snapshot_lint(
+                "for_loop <- function(x) for (i in x) 1\nwhile_loop <- function(x) while (x) 1\nrepeat_loop <- function(x) repeat if (x) break",
+                1
+            ),
+            @"
+        warning: cyclomatic_complexity
+         --> <test>:1:13
+          |
+        1 | for_loop <- function(x) for (i in x) 1
+          |             -------- This function has a cyclomatic complexity of 3, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones.
+        warning: cyclomatic_complexity
+         --> <test>:2:15
+          |
+        2 | while_loop <- function(x) while (x) 1
+          |               -------- This function has a cyclomatic complexity of 3, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones.
+        warning: cyclomatic_complexity
+         --> <test>:3:16
+          |
+        3 | repeat_loop <- function(x) repeat if (x) break
+          |                -------- This function has a cyclomatic complexity of 4, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones.
+        Found 3 errors.
+        "
+        );
     }
 
     #[test]
     fn test_break_and_next() {
-        assert_snapshot!(score("foo <- function(x) while (x) { if (x) break }"), @"5");
-        assert_snapshot!(score("foo <- function(x) for (i in x) { if (i) next; 1 }"), @"5");
+        assert_snapshot!(
+            snapshot_lint(
+                "with_break <- function(x) while (x) { if (x) break }\nwith_next <- function(x) for (i in x) { if (i) next; 1 }",
+                1
+            ),
+            @"
+        warning: cyclomatic_complexity
+         --> <test>:1:15
+          |
+        1 | with_break <- function(x) while (x) { if (x) break }
+          |               -------- This function has a cyclomatic complexity of 5, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones.
+        warning: cyclomatic_complexity
+         --> <test>:2:14
+          |
+        2 | with_next <- function(x) for (i in x) { if (i) next; 1 }
+          |              -------- This function has a cyclomatic complexity of 5, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones.
+        Found 2 errors.
+        "
+        );
     }
 
     #[test]
     fn test_return() {
         // `return()` as the last expression is how the function ends.
         expect_no_lint_with_max("foo <- function(x) return(x)", 1);
-        assert_snapshot!(score("foo <- function(x) { if (x) return(1); 2 }"), @"3");
-        assert_snapshot!(score("foo <- function(x) { if (x) return(1) else return(2) }"), @"2");
+        assert_snapshot!(
+            snapshot_lint(
+                "guard_clause <- function(x) { if (x) return(1); 2 }\nboth_branches <- function(x) { if (x) return(1) else return(2) }",
+                1
+            ),
+            @"
+        warning: cyclomatic_complexity
+         --> <test>:1:17
+          |
+        1 | guard_clause <- function(x) { if (x) return(1); 2 }
+          |                 -------- This function has a cyclomatic complexity of 3, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones. The largest parts are `if (x) return(1)` (+2, 66%).
+        warning: cyclomatic_complexity
+         --> <test>:2:18
+          |
+        2 | both_branches <- function(x) { if (x) return(1) else return(2) }
+          |                  -------- This function has a cyclomatic complexity of 2, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones.
+        Found 2 errors.
+        "
+        );
     }
 
     #[test]
@@ -113,42 +198,178 @@ mod tests {
 
     #[test]
     fn test_short_circuit_operators() {
-        assert_snapshot!(score("foo <- function(x, y) x && y"), @"2");
-        assert_snapshot!(score("foo <- function(x, y) x && y || x"), @"3");
+        assert_snapshot!(
+            snapshot_lint(
+                "and <- function(x, y) x && y\nand_or <- function(x, y) x && y || x",
+                1
+            ),
+            @"
+        warning: cyclomatic_complexity
+         --> <test>:1:8
+          |
+        1 | and <- function(x, y) x && y
+          |        -------- This function has a cyclomatic complexity of 2, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones.
+        warning: cyclomatic_complexity
+         --> <test>:2:11
+          |
+        2 | and_or <- function(x, y) x && y || x
+          |           -------- This function has a cyclomatic complexity of 3, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones.
+        Found 2 errors.
+        "
+        );
         // The vectorized operators always evaluate both sides.
         expect_no_lint_with_max("foo <- function(x, y) x & y | x", 1);
     }
 
     #[test]
     fn test_chained_short_circuit_operators_grow_linearly() {
-        // Each operand is one more path (cyclocomp counts 4, 7, 11 and 16).
-        assert_snapshot!(score("foo <- function(x) { if (a) stop() }"), @"2");
-        assert_snapshot!(score("foo <- function(x) { if (a || b) stop() }"), @"3");
-        assert_snapshot!(score("foo <- function(x) { if (a || b || c) stop() }"), @"4");
-        assert_snapshot!(score("foo <- function(x) { if (a || b || c || d) stop() }"), @"5");
-        assert_snapshot!(score("foo <- function(x) { if (a && b && c && d) stop() }"), @"5");
-        assert_snapshot!(score("foo <- function(x) { if ((a || b) || c) stop() }"), @"4");
-        assert_snapshot!(score("foo <- function(x) a || b || c || d"), @"4");
+        // Each operand is one more path (cyclocomp counts 4, 7, 11 and 16 for
+        // the first four `if` conditions).
+        assert_snapshot!(
+            snapshot_lint(
+                "one <- function(x) { if (a) stop() }
+two <- function(x) { if (a || b) stop() }
+three <- function(x) { if (a || b || c) stop() }
+four <- function(x) { if (a || b || c || d) stop() }
+and_four <- function(x) { if (a && b && c && d) stop() }
+parentheses <- function(x) { if ((a || b) || c) stop() }
+value <- function(x) a || b || c || d",
+                1
+            ),
+            @"
+        warning: cyclomatic_complexity
+         --> <test>:1:8
+          |
+        1 | one <- function(x) { if (a) stop() }
+          |        -------- This function has a cyclomatic complexity of 2, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones.
+        warning: cyclomatic_complexity
+         --> <test>:2:8
+          |
+        2 | two <- function(x) { if (a || b) stop() }
+          |        -------- This function has a cyclomatic complexity of 3, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones.
+        warning: cyclomatic_complexity
+         --> <test>:3:10
+          |
+        3 | three <- function(x) { if (a || b || c) stop() }
+          |          -------- This function has a cyclomatic complexity of 4, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones.
+        warning: cyclomatic_complexity
+         --> <test>:4:9
+          |
+        4 | four <- function(x) { if (a || b || c || d) stop() }
+          |         -------- This function has a cyclomatic complexity of 5, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones.
+        warning: cyclomatic_complexity
+         --> <test>:5:13
+          |
+        5 | and_four <- function(x) { if (a && b && c && d) stop() }
+          |             -------- This function has a cyclomatic complexity of 5, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones.
+        warning: cyclomatic_complexity
+         --> <test>:6:16
+          |
+        6 | parentheses <- function(x) { if ((a || b) || c) stop() }
+          |                -------- This function has a cyclomatic complexity of 4, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones.
+        warning: cyclomatic_complexity
+         --> <test>:7:10
+          |
+        7 | value <- function(x) a || b || c || d
+          |          -------- This function has a cyclomatic complexity of 4, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones.
+        Found 7 errors.
+        "
+        );
     }
 
     #[test]
     fn test_switch() {
         // cyclocomp doesn't know about `switch()`: it always scores 1.
         expect_no_lint_with_max("foo <- function(x) switch(x)", 1);
-        assert_snapshot!(score("foo <- function(x) switch(x, a = 1)"), @"2");
-        assert_snapshot!(score("foo <- function(x) switch(x, a = 1, b = 2, 3)"), @"3");
         // Without a default arm, no match returns `NULL`.
-        assert_snapshot!(score("foo <- function(x) switch(x, a = 1, b = 2)"), @"3");
-        // An empty arm falls through to the next one.
-        assert_snapshot!(score("foo <- function(x) switch(x, a = , b = 1, 2)"), @"2");
-        assert_snapshot!(score("foo <- function(x) switch(x, a = if (x) 1, b = 2)"), @"4");
+        assert_snapshot!(
+            snapshot_lint(
+                "one_arm <- function(x) switch(x, a = 1)
+default <- function(x) switch(x, a = 1, b = 2, 3)
+no_default <- function(x) switch(x, a = 1, b = 2)
+fall_through <- function(x) switch(x, a = , b = 1, 2)
+nested <- function(x) switch(x, a = if (x) 1, b = 2)",
+                1
+            ),
+            @"
+        warning: cyclomatic_complexity
+         --> <test>:1:12
+          |
+        1 | one_arm <- function(x) switch(x, a = 1)
+          |            -------- This function has a cyclomatic complexity of 2, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones.
+        warning: cyclomatic_complexity
+         --> <test>:2:12
+          |
+        2 | default <- function(x) switch(x, a = 1, b = 2, 3)
+          |            -------- This function has a cyclomatic complexity of 3, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones.
+        warning: cyclomatic_complexity
+         --> <test>:3:15
+          |
+        3 | no_default <- function(x) switch(x, a = 1, b = 2)
+          |               -------- This function has a cyclomatic complexity of 3, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones.
+        warning: cyclomatic_complexity
+         --> <test>:4:17
+          |
+        4 | fall_through <- function(x) switch(x, a = , b = 1, 2)
+          |                 -------- This function has a cyclomatic complexity of 2, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones.
+        warning: cyclomatic_complexity
+         --> <test>:5:11
+          |
+        5 | nested <- function(x) switch(x, a = if (x) 1, b = 2)
+          |           -------- This function has a cyclomatic complexity of 4, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones.
+        Found 5 errors.
+        "
+        );
     }
 
     #[test]
     fn test_syntax_converted_by_the_parser() {
         // `x[]` holds an empty argument, `->` swaps its sides, and a pipe
-        // calls the function on its left.
-        assert_snapshot!(score("foo <- function(x) { x[]; a -> b; x |> f() |> g(); if (x) 1 }"), @"2");
+        // calls the function on its left: none of them changes the score.
+        assert_snapshot!(
+            snapshot_lint(
+                "foo <- function(x) { x[]; a -> b; x |> f() |> g(); if (x) 1 }",
+                1
+            ),
+            @"
+        warning: cyclomatic_complexity
+         --> <test>:1:8
+          |
+        1 | foo <- function(x) { x[]; a -> b; x |> f() |> g(); if (x) 1 }
+          |        -------- This function has a cyclomatic complexity of 2, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones. The largest parts are `if (x) 1` (+1, 50%).
+        Found 1 error.
+        "
+        );
     }
 
     #[test]
