@@ -294,6 +294,7 @@ The operation of some rules can be customised with arguments in the
 configuration file, see the relevant rule documentation page for details:
 
 * [`assignment`](../rules/assignment.md#configuration-options)
+* [`cyclomatic_complexity`](../rules/cyclomatic_complexity.md#configuration-options)
 * [`duplicated_arguments`](../rules/duplicated_arguments.md#configuration-options)
 * [`if_not_else`](../rules/if_not_else.md#configuration-options)
 * [`implicit_assignment`](../rules/implicit_assignment.md#configuration-options)
