@@ -54,9 +54,12 @@ pub fn cyclomatic_complexity(
 
     let lowered = Lang::Function(Box::new(lower_result(function.body())));
 
-    let Some(score) = score_above(&lowered, max_complexity) else {
+    let Some(score) = cyclocomp(&lowered) else {
         return Ok(None);
     };
+    if score <= max_complexity {
+        return Ok(None);
+    }
 
     Ok(Some(Diagnostic::new(
         ViolationData::new(
@@ -298,11 +301,6 @@ fn lower_arguments(items: &RArgumentList) -> Vec<Lang> {
         .filter_map(|argument| argument.ok())
         .map(|argument| argument.value().map_or(Lang::Atom, |v| lower(&v)))
         .collect()
-}
-
-/// The score of `lowered` if it is above `max_complexity`.
-fn score_above(lowered: &Lang, max_complexity: usize) -> Option<usize> {
-    cyclocomp(lowered).filter(|score| *score > max_complexity)
 }
 
 /// A call to `callee`, which is a `return` if it is the bare symbol.
