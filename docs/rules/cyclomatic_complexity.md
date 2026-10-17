@@ -8,6 +8,9 @@
 Measures the cyclomatic complexity of each function and reports the ones above
 `max-complexity` (20 by default).
 
+When a function is above the maximum, the message lists the statements of its
+body that add more than 20% of the score, as a starting point to split it.
+
 ## Why is this bad?
 
 The score counts the paths through the flow graph of the function.

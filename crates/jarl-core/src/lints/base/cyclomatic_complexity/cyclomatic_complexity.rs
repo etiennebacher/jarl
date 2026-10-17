@@ -14,6 +14,9 @@ use crate::rule_set::Rule;
 /// Measures the cyclomatic complexity of each function and reports the ones above
 /// `max-complexity` (20 by default).
 ///
+/// When a function is above the maximum, the message lists the statements of its
+/// body that add more than 20% of the score, as a starting point to split it.
+///
 /// ## Why is this bad?
 ///
 /// The score counts the paths through the flow graph of the function.
@@ -49,7 +52,7 @@ pub fn cyclomatic_complexity(
 ) -> anyhow::Result<Option<Diagnostic>> {
     let max_complexity = checker.rule_options.cyclomatic_complexity.max_complexity;
 
-    let formals = function
+    let formals: Vec<Lang> = function
         .parameters()
         .map(|parameters| {
             parameters
@@ -65,7 +68,7 @@ pub fn cyclomatic_complexity(
         })
         .unwrap_or_default();
     let lowered = Lang::Function {
-        formals,
+        formals: formals.clone(),
         body: Box::new(lower_result(function.body())),
     };
 
@@ -79,12 +82,85 @@ pub fn cyclomatic_complexity(
             format!(
                 "This function has a cyclomatic complexity of {score}, above the maximum of {max_complexity}."
             ),
-            Some("Split this function into smaller ones.".to_string()),
+            Some(help_message(function, &formals, score)),
         ),
         // Point at the `function` keyword: the body can span hundreds of lines.
         function.name()?.text_trimmed_range(),
         Fix::empty(),
     )))
+}
+
+/// The statements of the body that, alone, account for more than this share of the
+/// score are worth splitting first.
+const MIN_SHARE_PERCENT: usize = 20;
+
+fn help_message(function: &RFunctionDefinition, formals: &[Lang], score: usize) -> String {
+    let mut message = "Split this function into smaller ones.".to_string();
+
+    let parts = biggest_parts(function, formals, score);
+    if !parts.is_empty() {
+        let parts: Vec<String> = parts
+            .iter()
+            .map(|(text, share)| format!("`{text}` (+{share}, {}%)", share * 100 / score))
+            .collect();
+        message.push_str(&format!(" The largest parts are {}.", parts.join(", ")));
+    }
+    message
+}
+
+/// The statements of the body that account for more than `MIN_SHARE_PERCENT` of
+/// the score, with the number of points they add, largest first. A statement
+/// adds the difference between the score of the function and its score without it.
+fn biggest_parts(
+    function: &RFunctionDefinition,
+    formals: &[Lang],
+    score: usize,
+) -> Vec<(String, usize)> {
+    let Ok(AnyRExpression::RBracedExpressions(braced)) = function.body() else {
+        return vec![];
+    };
+    let statements: Vec<AnyRExpression> = braced.expressions().into_iter().collect();
+    if statements.len() < 2 {
+        return vec![];
+    }
+    let lowered: Vec<Lang> = statements.iter().map(lower).collect();
+
+    let mut parts: Vec<(String, usize)> = statements
+        .iter()
+        .enumerate()
+        .filter_map(|(i, statement)| {
+            let mut elements = vec![Lang::Atom];
+            elements.extend(
+                lowered.iter().enumerate().map(
+                    |(j, lang)| {
+                        if i == j { Lang::Atom } else { lang.clone() }
+                    },
+                ),
+            );
+            let without = cyclocomp(&Lang::Function {
+                formals: formals.to_vec(),
+                body: Box::new(Lang::Call(elements)),
+            })?;
+            let share = score.checked_sub(without)?;
+            (share * 100 > score * MIN_SHARE_PERCENT).then(|| (first_line(statement), share))
+        })
+        .collect();
+    parts.sort_by_key(|(_, share)| std::cmp::Reverse(*share));
+    parts
+}
+
+/// The first line of a statement, shortened.
+fn first_line(statement: &AnyRExpression) -> String {
+    const MAX_CHARS: usize = 40;
+
+    let text = statement.syntax().text_trimmed().to_string();
+    let line = text.lines().next().unwrap_or_default().trim();
+    if line.chars().count() > MAX_CHARS {
+        let shortened: String = line.chars().take(MAX_CHARS).collect();
+        format!("{}...", shortened.trim_end())
+    } else {
+        line.to_string()
+    }
 }
 
 /// Convert a syntax node to what R's parser would have produced for it.

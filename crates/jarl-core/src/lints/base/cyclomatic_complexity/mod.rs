@@ -52,16 +52,15 @@ mod tests {
         );
     }
 
-    /// Assert that the highest score reported for `code` is `score`: nothing is
-    /// reported when the maximum is `score`, and `score` is the one reported
-    /// when the maximum is just below.
-    fn assert_score(code: &str, score: usize) {
-        expect_no_lint_with_max(code, score);
-        let output = snapshot_lint(code, score - 1);
-        assert!(
-            output.contains(&format!("complexity of {score},")),
-            "expected a score of {score} for `{code}`, got:\n{output}"
-        );
+    /// The score of `code`, read from the message reported with a maximum of 1.
+    fn score(code: &str) -> String {
+        let output = snapshot_lint(code, 1);
+        output
+            .split("complexity of ")
+            .nth(1)
+            .and_then(|rest| rest.split(',').next())
+            .unwrap_or("1")
+            .to_string()
     }
 
     // The scores below are the ones of `cyclocomp::cyclocomp()`, unless a test
@@ -74,32 +73,32 @@ mod tests {
 
     #[test]
     fn test_if() {
-        assert_score("foo <- function(x) if (x) 1", 2);
+        assert_snapshot!(score("foo <- function(x) if (x) 1"), @"2");
         // A bare `else` adds nothing, an `else if` is an `if`.
-        assert_score("foo <- function(x) if (x) 1 else 2", 2);
-        assert_score("foo <- function(x) if (x) 1 else if (!x) 2 else 3", 3);
+        assert_snapshot!(score("foo <- function(x) if (x) 1 else 2"), @"2");
+        assert_snapshot!(score("foo <- function(x) if (x) 1 else if (!x) 2 else 3"), @"3");
     }
 
     #[test]
     fn test_loops() {
         // A loop adds two paths: entering it and leaving it.
-        assert_score("foo <- function(x) for (i in x) 1", 3);
-        assert_score("foo <- function(x) while (x) 1", 3);
-        assert_score("foo <- function(x) repeat if (x) break", 4);
+        assert_snapshot!(score("foo <- function(x) for (i in x) 1"), @"3");
+        assert_snapshot!(score("foo <- function(x) while (x) 1"), @"3");
+        assert_snapshot!(score("foo <- function(x) repeat if (x) break"), @"4");
     }
 
     #[test]
     fn test_break_and_next() {
-        assert_score("foo <- function(x) while (x) { if (x) break }", 5);
-        assert_score("foo <- function(x) for (i in x) { if (i) next; 1 }", 5);
+        assert_snapshot!(score("foo <- function(x) while (x) { if (x) break }"), @"5");
+        assert_snapshot!(score("foo <- function(x) for (i in x) { if (i) next; 1 }"), @"5");
     }
 
     #[test]
     fn test_return() {
         // `return()` as the last expression is how the function ends.
         expect_no_lint_with_max("foo <- function(x) return(x)", 1);
-        assert_score("foo <- function(x) { if (x) return(1); 2 }", 3);
-        assert_score("foo <- function(x) { if (x) return(1) else return(2) }", 2);
+        assert_snapshot!(score("foo <- function(x) { if (x) return(1); 2 }"), @"3");
+        assert_snapshot!(score("foo <- function(x) { if (x) return(1) else return(2) }"), @"2");
     }
 
     #[test]
@@ -114,8 +113,8 @@ mod tests {
 
     #[test]
     fn test_short_circuit_operators() {
-        assert_score("foo <- function(x, y) x && y", 2);
-        assert_score("foo <- function(x, y) x && y || x", 3);
+        assert_snapshot!(score("foo <- function(x, y) x && y"), @"2");
+        assert_snapshot!(score("foo <- function(x, y) x && y || x"), @"3");
         // The vectorized operators always evaluate both sides.
         expect_no_lint_with_max("foo <- function(x, y) x & y | x", 1);
     }
@@ -123,36 +122,33 @@ mod tests {
     #[test]
     fn test_chained_short_circuit_operators_grow_linearly() {
         // Each operand is one more path (cyclocomp counts 4, 7, 11 and 16).
-        assert_score("foo <- function(x) { if (a) stop() }", 2);
-        assert_score("foo <- function(x) { if (a || b) stop() }", 3);
-        assert_score("foo <- function(x) { if (a || b || c) stop() }", 4);
-        assert_score("foo <- function(x) { if (a || b || c || d) stop() }", 5);
-        assert_score("foo <- function(x) { if (a && b && c && d) stop() }", 5);
-        assert_score("foo <- function(x) { if ((a || b) || c) stop() }", 4);
-        assert_score("foo <- function(x) a || b || c || d", 4);
+        assert_snapshot!(score("foo <- function(x) { if (a) stop() }"), @"2");
+        assert_snapshot!(score("foo <- function(x) { if (a || b) stop() }"), @"3");
+        assert_snapshot!(score("foo <- function(x) { if (a || b || c) stop() }"), @"4");
+        assert_snapshot!(score("foo <- function(x) { if (a || b || c || d) stop() }"), @"5");
+        assert_snapshot!(score("foo <- function(x) { if (a && b && c && d) stop() }"), @"5");
+        assert_snapshot!(score("foo <- function(x) { if ((a || b) || c) stop() }"), @"4");
+        assert_snapshot!(score("foo <- function(x) a || b || c || d"), @"4");
     }
 
     #[test]
     fn test_switch() {
         // cyclocomp doesn't know about `switch()`: it always scores 1.
         expect_no_lint_with_max("foo <- function(x) switch(x)", 1);
-        assert_score("foo <- function(x) switch(x, a = 1)", 2);
-        assert_score("foo <- function(x) switch(x, a = 1, b = 2, 3)", 3);
+        assert_snapshot!(score("foo <- function(x) switch(x, a = 1)"), @"2");
+        assert_snapshot!(score("foo <- function(x) switch(x, a = 1, b = 2, 3)"), @"3");
         // Without a default arm, no match returns `NULL`.
-        assert_score("foo <- function(x) switch(x, a = 1, b = 2)", 3);
+        assert_snapshot!(score("foo <- function(x) switch(x, a = 1, b = 2)"), @"3");
         // An empty arm falls through to the next one.
-        assert_score("foo <- function(x) switch(x, a = , b = 1, 2)", 2);
-        assert_score("foo <- function(x) switch(x, a = if (x) 1, b = 2)", 4);
+        assert_snapshot!(score("foo <- function(x) switch(x, a = , b = 1, 2)"), @"2");
+        assert_snapshot!(score("foo <- function(x) switch(x, a = if (x) 1, b = 2)"), @"4");
     }
 
     #[test]
     fn test_syntax_converted_by_the_parser() {
         // `x[]` holds an empty argument, `->` swaps its sides, and a pipe
         // calls the function on its left.
-        assert_score(
-            "foo <- function(x) { x[]; a -> b; x |> f() |> g(); if (x) 1 }",
-            2,
-        );
+        assert_snapshot!(score("foo <- function(x) { x[]; a -> b; x |> f() |> g(); if (x) 1 }"), @"2");
     }
 
     #[test]
@@ -186,6 +182,57 @@ mod tests {
         expect_no_lint_with_max(
             "foo <- function(x) {\n  inner <- function(y) return(y)\n  inner(x)\n}",
             1,
+        );
+    }
+
+    #[test]
+    fn test_report_the_largest_parts() {
+        // 3 of the 5 points. The last `if` is 20%, which is not above the limit.
+        assert_snapshot!(
+            snapshot_lint("
+foo <- function(x) {
+  y <- 1
+  if (x) {
+    for (i in x) print(i)
+  }
+  if (y) 1
+}", 1),
+            @"
+        warning: cyclomatic_complexity
+         --> <test>:2:8
+          |
+        2 | foo <- function(x) {
+          |        -------- This function has a cyclomatic complexity of 5, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones. The largest parts are `if (x) {` (+3, 60%).
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_no_largest_parts_when_the_score_is_spread() {
+        // Each `if` is 1 of the 7 points, nothing stands out.
+        assert_snapshot!(
+            snapshot_lint("
+foo <- function(x) {
+  if (a) 1
+  if (b) 1
+  if (c) 1
+  if (d) 1
+  if (e) 1
+  if (f) 1
+}", 1),
+            @"
+        warning: cyclomatic_complexity
+         --> <test>:2:8
+          |
+        2 | foo <- function(x) {
+          |        -------- This function has a cyclomatic complexity of 7, above the maximum of 1.
+          |
+          = help: Split this function into smaller ones.
+        Found 1 error.
+        "
         );
     }
 
