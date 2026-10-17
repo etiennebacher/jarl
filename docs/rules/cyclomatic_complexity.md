@@ -5,9 +5,8 @@
 
 ## What it does
 
-Measures the cyclomatic complexity of each function, and of each top-level
-expression of a file, and reports the ones above `max-complexity` (20 by
-default).
+Measures the cyclomatic complexity of each function and reports the ones above
+`max-complexity` (20 by default).
 
 The score is the one computed by the
 [cyclocomp](https://cran.r-project.org/package=cyclocomp) package, which is
@@ -38,7 +37,7 @@ paths nobody had in mind.
 
 The operation of the `cyclomatic_complexity` rule can be customised in the [configuration file](../reference/config-file.md).
 
-Use `max-complexity` to set the highest score an expression is allowed to
+Use `max-complexity` to set the highest score a function is allowed to
 reach before it is reported. It must be at least 1.
 
 ### Default values
@@ -54,7 +53,7 @@ max-complexity = 20
 ...
 
 [lint.cyclomatic_complexity]
-# Only report the expressions that are really tangled.
+# Only report the functions that are really tangled.
 max-complexity = 25
 ```
 

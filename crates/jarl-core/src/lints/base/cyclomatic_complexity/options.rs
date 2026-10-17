@@ -1,7 +1,7 @@
 const DEFAULT_MAX_COMPLEXITY: usize = 20;
 
 /// <!-- docs: start -->
-/// Use `max-complexity` to set the highest score an expression is allowed to
+/// Use `max-complexity` to set the highest score a function is allowed to
 /// reach before it is reported. It must be at least 1.
 ///
 /// ### Default values
@@ -17,7 +17,7 @@ const DEFAULT_MAX_COMPLEXITY: usize = 20;
 /// ...
 ///
 /// [lint.cyclomatic_complexity]
-/// # Only report the expressions that are really tangled.
+/// # Only report the functions that are really tangled.
 /// max-complexity = 25
 /// ```
 /// <!-- docs: end -->
@@ -41,7 +41,7 @@ impl ResolvedCyclomaticComplexityOptions {
             .and_then(|opts| opts.max_complexity)
             .unwrap_or(DEFAULT_MAX_COMPLEXITY);
 
-        // The score of an expression is never below 1, so a maximum of 0 would
+        // The score of a function is never below 1, so a maximum of 0 would
         // report every single expression.
         if max_complexity == 0 {
             return Err(anyhow::anyhow!(

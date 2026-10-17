@@ -70,7 +70,6 @@ mod tests {
     #[test]
     fn test_branchless_code_has_a_score_of_one() {
         expect_no_lint_with_max("foo <- function(x) {\n  x + 1\n}", 1);
-        expect_no_lint_with_max("x <- 1", 1);
     }
 
     #[test]
@@ -191,30 +190,10 @@ mod tests {
     }
 
     #[test]
-    fn test_top_level_expressions_are_scored_one_by_one() {
-        // The `if` and the `for` are separate expressions: only the `for`
-        // is above the maximum.
-        assert_snapshot!(
-            snapshot_lint("x <- 1\nif (x) x <- 2\nfor (i in 1:3) if (i) next else print(i)", 4),
-            @r"
-        warning: cyclomatic_complexity
-         --> <test>:3:1
-          |
-        3 | for (i in 1:3) if (i) next else print(i)
-          | --- This expression has a cyclomatic complexity of 5, above the maximum of 4.
-          |
-          = help: Consider replacing high-complexity sections like loops and branches with helper functions.
-        Found 1 error.
-        "
-        );
-    }
-
-    #[test]
     fn test_no_lint_when_cyclocomp_errors() {
         // cyclocomp can't compute a score for these, so lintr doesn't report
         // them.
-        expect_no_lint_with_max("break", 1);
-        expect_no_lint_with_max("return(1)", 1);
+        expect_no_lint_with_max("foo <- function(x) break", 1);
     }
 
     #[test]

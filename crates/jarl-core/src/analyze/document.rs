@@ -4,7 +4,6 @@ use oak_semantic::semantic_index::SemanticIndex;
 
 use crate::checker::Checker;
 use crate::diagnostic::*;
-use crate::lints::base::cyclomatic_complexity::cyclomatic_complexity::cyclomatic_complexity;
 use crate::lints::base::empty_file::empty_file::empty_file;
 use crate::lints::base::library_call::library_call::library_call;
 use crate::lints::base::unreachable_code::unreachable_code::unreachable_code_top_level;
@@ -31,14 +30,6 @@ pub(crate) fn check_document(
     semantic: Option<&SemanticIndex>,
 ) -> anyhow::Result<()> {
     // --- Document-level analysis ---
-
-    // Measure the complexity of each top-level expression
-    if checker.is_rule_enabled(Rule::CyclomaticComplexity) {
-        for expression in expressions.iter() {
-            let diagnostic = cyclomatic_complexity(&expression, checker)?;
-            checker.report_diagnostic(diagnostic);
-        }
-    }
 
     let expressions: Vec<RSyntaxNode> = expressions.iter().map(|e| e.syntax().clone()).collect();
 

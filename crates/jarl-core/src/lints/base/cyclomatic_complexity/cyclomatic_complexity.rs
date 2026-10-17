@@ -11,9 +11,8 @@ use crate::rule_set::Rule;
 ///
 /// ## What it does
 ///
-/// Measures the cyclomatic complexity of each function, and of each top-level
-/// expression of a file, and reports the ones above `max-complexity` (20 by
-/// default).
+/// Measures the cyclomatic complexity of each function and reports the ones above
+/// `max-complexity` (20 by default).
 ///
 /// The score is the one computed by the
 /// [cyclocomp](https://cran.r-project.org/package=cyclocomp) package, which is
@@ -60,37 +59,9 @@ use crate::rule_set::Rule;
 ///
 /// * `max-complexity`
 /// <!-- docs: end -->
-pub fn cyclomatic_complexity(
-    expression: &AnyRExpression,
-    checker: &Checker,
-) -> anyhow::Result<Option<Diagnostic>> {
-    let max_complexity = checker.rule_options.cyclomatic_complexity.max_complexity;
-
-    let Some(score) = score_above(&lower(expression), max_complexity) else {
-        return Ok(None);
-    };
-
-    // Point at the first token: the expression can span hundreds of lines.
-    let Some(first_token) = expression.syntax().first_token() else {
-        return Ok(None);
-    };
-
-    Ok(Some(Diagnostic::new(
-        ViolationData::new(
-            Rule::CyclomaticComplexity,
-            format!(
-                "This expression has a cyclomatic complexity of {score}, above the maximum of {max_complexity}."
-            ),
-            Some("Consider replacing high-complexity sections like loops and branches with helper functions.".to_string()),
-        ),
-        first_token.text_trimmed_range(),
-        Fix::empty(),
-    )))
-}
-
 /// Score a function definition, at any depth. Functions defined in it are
 /// scored on their own and count as a single node here.
-pub fn cyclomatic_complexity_function(
+pub fn cyclomatic_complexity(
     function: &RFunctionDefinition,
     checker: &Checker,
 ) -> anyhow::Result<Option<Diagnostic>> {
