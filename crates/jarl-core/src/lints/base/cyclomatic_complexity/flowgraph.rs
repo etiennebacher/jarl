@@ -54,12 +54,9 @@ pub enum Lang {
         arms: Vec<Option<Lang>>,
         has_default: bool,
     },
-    /// The default values of the formals (`Lang::Atom` when there is none),
-    /// and the body.
-    Function {
-        formals: Vec<Lang>,
-        body: Box<Lang>,
-    },
+    /// A function, with its body. The formals are left out: they add as many
+    /// nodes as edges, so they don't change the score.
+    Function(Box<Lang>),
 }
 
 /// Cyclomatic complexity of a single expression, or `None` when cyclocomp
@@ -288,26 +285,14 @@ impl Graph {
                 self.set_last(id, last);
                 Some(())
             }
-            Lang::Function { formals, body } => {
-                if formals.is_empty() {
-                    let id1 = child(id, 1);
-                    self.add_node(id, vec![id1.clone()]);
-                    self.add_edge(id, &id1);
-                    self.functions.push(id.to_string());
-                    let result = self.walk(body, &id1);
-                    self.functions.pop();
-                    result
-                } else {
-                    let (id1, id2) = (child(id, 1), child(id, 2));
-                    self.add_node(id, vec![id2.clone()]);
-                    self.add_edge(id, &id1);
-                    self.add_edge(&id1, &id2);
-                    self.walk_list(formals, &id1)?;
-                    self.functions.push(id.to_string());
-                    let result = self.walk(body, &id2);
-                    self.functions.pop();
-                    result
-                }
+            Lang::Function(body) => {
+                let id1 = child(id, 1);
+                self.add_node(id, vec![id1.clone()]);
+                self.add_edge(id, &id1);
+                self.functions.push(id.to_string());
+                let result = self.walk(body, &id1);
+                self.functions.pop();
+                result
             }
             Lang::Call(elements) => self.walk_list(elements, id),
         }

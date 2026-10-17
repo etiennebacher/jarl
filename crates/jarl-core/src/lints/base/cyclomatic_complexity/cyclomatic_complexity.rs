@@ -52,25 +52,7 @@ pub fn cyclomatic_complexity(
 ) -> anyhow::Result<Option<Diagnostic>> {
     let max_complexity = checker.rule_options.cyclomatic_complexity.max_complexity;
 
-    let formals: Vec<Lang> = function
-        .parameters()
-        .map(|parameters| {
-            parameters
-                .items()
-                .into_iter()
-                .filter_map(|parameter| parameter.ok())
-                .map(|parameter| {
-                    parameter
-                        .default()
-                        .map_or(Lang::Atom, |default| lower_result(default.value()))
-                })
-                .collect()
-        })
-        .unwrap_or_default();
-    let lowered = Lang::Function {
-        formals: formals.clone(),
-        body: Box::new(lower_result(function.body())),
-    };
+    let lowered = Lang::Function(Box::new(lower_result(function.body())));
 
     let Some(score) = score_above(&lowered, max_complexity) else {
         return Ok(None);
@@ -82,7 +64,7 @@ pub fn cyclomatic_complexity(
             format!(
                 "This function has a cyclomatic complexity of {score}, above the maximum of {max_complexity}."
             ),
-            Some(help_message(function, &formals, score)),
+            Some(help_message(function, score)),
         ),
         // Point at the `function` keyword: the body can span hundreds of lines.
         function.name()?.text_trimmed_range(),
@@ -94,10 +76,10 @@ pub fn cyclomatic_complexity(
 /// score are worth splitting first.
 const MIN_SHARE_PERCENT: usize = 20;
 
-fn help_message(function: &RFunctionDefinition, formals: &[Lang], score: usize) -> String {
+fn help_message(function: &RFunctionDefinition, score: usize) -> String {
     let mut message = "Split this function into smaller ones.".to_string();
 
-    let parts = biggest_parts(function, formals, score);
+    let parts = biggest_parts(function, score);
     if !parts.is_empty() {
         let parts: Vec<String> = parts
             .iter()
@@ -111,11 +93,7 @@ fn help_message(function: &RFunctionDefinition, formals: &[Lang], score: usize) 
 /// The statements of the body that account for more than `MIN_SHARE_PERCENT` of
 /// the score, with the number of points they add, largest first. A statement
 /// adds the difference between the score of the function and its score without it.
-fn biggest_parts(
-    function: &RFunctionDefinition,
-    formals: &[Lang],
-    score: usize,
-) -> Vec<(String, usize)> {
+fn biggest_parts(function: &RFunctionDefinition, score: usize) -> Vec<(String, usize)> {
     let Ok(AnyRExpression::RBracedExpressions(braced)) = function.body() else {
         return vec![];
     };
@@ -137,10 +115,7 @@ fn biggest_parts(
                     },
                 ),
             );
-            let without = cyclocomp(&Lang::Function {
-                formals: formals.to_vec(),
-                body: Box::new(Lang::Call(elements)),
-            })?;
+            let without = cyclocomp(&Lang::Function(Box::new(Lang::Call(elements))))?;
             let share = score.checked_sub(without)?;
             (share * 100 > score * MIN_SHARE_PERCENT).then(|| (first_line(statement), share))
         })
