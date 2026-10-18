@@ -139,8 +139,6 @@ placeholder `<reason>`, like `--add-jarl-ignore` does.
 Fixes are offered one file at a time, in path order. Violations you did not fix
 are reported at the end, as usual.
 
-This option needs a human-readable `--output-format` (`full` or `concise`).
-
 ---
 
 **`--allow-dirty`**

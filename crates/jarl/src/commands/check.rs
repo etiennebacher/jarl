@@ -39,7 +39,6 @@ use output_format::{
     ConciseEmitter, Emitter, FullEmitter, JsonEmitter, OutputFormat, SarifEmitter,
 };
 
-/// Formats meant for a person to read, as opposed to a machine to parse.
 fn is_human_format(format: OutputFormat) -> bool {
     matches!(format, OutputFormat::Full | OutputFormat::Concise)
 }
@@ -75,15 +74,6 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     // Fail fast on invalid `--exclude` glob patterns instead of silently
     // ignoring them during discovery.
     validate_exclude_patterns(&args.exclude)?;
-
-    // Clap conflicts can't cover this one: it depends on the value of
-    // `--output-format`, not on the flag being present.
-    if args.interactive && !is_human_format(args.output_format) {
-        return Err(anyhow::anyhow!(
-            "`--interactive` needs a human-readable output format, but `--output-format {}` was given.",
-            format!("{:?}", args.output_format).to_lowercase()
-        ));
-    }
 
     // The prompt answers come from the terminal, which stdin is already feeding.
     if args.interactive && args.stdin_file_path.is_some() {

@@ -280,7 +280,7 @@ fn test_interactive_and_add_jarl_ignore_incompatible() -> anyhow::Result<()> {
 }
 
 #[test]
-fn test_interactive_and_machine_output_format_incompatible() -> anyhow::Result<()> {
+fn test_interactive_and_output_format_incompatible() -> anyhow::Result<()> {
     let case = CliTest::with_files([("foo.R", "any(is.na(x))")])?;
 
     insta::assert_snapshot!(
@@ -296,12 +296,15 @@ fn test_interactive_and_machine_output_format_incompatible() -> anyhow::Result<(
         @"
 
     success: false
-    exit_code: 255
+    exit_code: 2
     ----- stdout -----
 
     ----- stderr -----
-    jarl failed
-      Cause: `--interactive` needs a human-readable output format, but `--output-format json` was given.
+    error: the argument '--interactive' cannot be used with '--output-format <OUTPUT_FORMAT>'
+
+    Usage: jarl check --interactive <FILES>...
+
+    For more information, try '--help'.
     "
     );
 
