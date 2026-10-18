@@ -18,7 +18,12 @@ fn check_stdin(case: &CliTest, code: &str, args: &[&str]) -> anyhow::Result<Outp
         .join(" ");
 
     let mut child = command.spawn()?;
-    child.stdin.take().unwrap().write_all(code.as_bytes())?;
+    // jarl exits without reading stdin when the arguments are invalid, which can
+    // close the pipe before this write.
+    match child.stdin.take().unwrap().write_all(code.as_bytes()) {
+        Err(error) if error.kind() == std::io::ErrorKind::BrokenPipe => {}
+        result => result?,
+    }
     let output = child.wait_with_output()?;
 
     Ok(Output {
