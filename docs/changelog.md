@@ -8,6 +8,9 @@
   (deprecated since 0.5.0) are removed. Use the rule-specific option
   `[lint.assignment]` in `jarl.toml` instead (#663, #758).
 
+* The rule `browser` (deprecated since 0.5.0) is removed. Use the rule
+  `undesirable_function` instead (#757).
+
 * A fix can now edit several places of a file at once, so in the `json` output
   format the `fix` object contains a list of edits instead of a single
   `content`/`range` pair (#700):

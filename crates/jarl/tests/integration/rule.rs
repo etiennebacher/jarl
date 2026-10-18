@@ -300,7 +300,7 @@ fn test_deprecated_rule_shows_note() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         case.command()
             .arg("rule")
-            .arg("browser")
+            .arg("internal_function")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -308,44 +308,29 @@ fn test_deprecated_rule_shows_note() -> anyhow::Result<()> {
     success: true
     exit_code: 0
     ----- stdout -----
-    browser
-    Categories: CORR
+    internal_function
+    Categories: SUSP
     Enabled by default: yes
-    Fix: safe
-    Note: deprecated since 0.5.0, use `undesirable_function` instead
+    Fix: not available
+    Note: deprecated since 0.7.0, use `undesirable_operator` instead
 
-    Added in 0.1.2
+    Added in 0.4.0
 
     ## What it does
 
-    Checks for lingering presence of `browser()` which should not be present in
-    released code.
+    Checks for usage of `:::`.
 
-    **This rule is deprecated and will be removed in a future version. Use the
-    rule [`undesirable_function`](https://jarl.etiennebacher.com/rules/undesirable_function)
-    and configure it to report calls to `browser()` instead.**
+    **This rule is deprecated and will be removed in a future version. Use
+    `undesirable_operator` instead.**
 
     ## Why is this bad?
 
-    `browser()` interrupts the execution of an expression and allows the inspection
-    of the environment where `browser()` was called from. This is helpful while
-    developing a function, but is not expected to be called by the user. Does not
-    remove the call as it does not have a suitable replacement.
+    Using `:::` to access a package's internal functions is unsafe. Those
+    functions are not part of the package's public interface and may be changed
+    or removed by the maintainers without notice. Use public functions via `::`
+    instead.
 
-    ## Example
-
-    ```r
-    do_something <- function(abc = 1) {
-       xyz <- abc + 1
-       browser()      # This should be removed.
-       xyz
-    }
-
-    ```
-
-    ## References
-
-    See `?browser`
+    This rule doesn't have an automatic fix.
 
     ----- stderr -----
     "
