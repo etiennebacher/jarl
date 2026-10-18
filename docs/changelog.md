@@ -24,6 +24,7 @@
 * New rules:
 
   * `consecutive_signs` (#745, @Yousa-Mirage)
+  * `function_return`
   * `library_call` (#701)
   * `undesirable_operator` (#657, @christopherkenny)
   * `yoda_condition` (#733, @Yousa-Mirage)
