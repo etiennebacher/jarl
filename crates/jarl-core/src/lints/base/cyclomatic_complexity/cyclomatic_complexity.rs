@@ -52,6 +52,15 @@ pub fn cyclomatic_complexity(
 ) -> anyhow::Result<Option<Diagnostic>> {
     let max_complexity = checker.rule_options.cyclomatic_complexity.max_complexity;
 
+    // Approximate the complexity using the number of statements without lowering
+    // to the graph. This avoids building the graph for functions that we know
+    // are far from the complexity limit.
+    if let Ok(body) = function.body()
+        && score_upper_bound(&body) <= max_complexity
+    {
+        return Ok(None);
+    }
+
     let lowered = Lang::Function(Box::new(lower_result(function.body())));
 
     let Some(score) = cyclocomp(&lowered) else {
@@ -73,6 +82,38 @@ pub fn cyclomatic_complexity(
         function.name()?.text_trimmed_range(),
         Fix::empty(),
     )))
+}
+
+/// A cheap upper bound of the score, counting the most each construct can add
+/// (nested functions included, although they are scored on their own).
+fn score_upper_bound(body: &AnyRExpression) -> usize {
+    let added: usize = body
+        .syntax()
+        .descendants()
+        .filter_map(AnyRExpression::cast)
+        .map(|expression| match expression {
+            AnyRExpression::RIfStatement(_)
+            | AnyRExpression::RBreakExpression(_)
+            | AnyRExpression::RNextExpression(_) => 1,
+            AnyRExpression::RForStatement(_)
+            | AnyRExpression::RWhileStatement(_)
+            | AnyRExpression::RRepeatStatement(_) => 2,
+            AnyRExpression::RBinaryExpression(binary) => usize::from(matches!(
+                binary.operator().map(|operator| operator.kind()),
+                Ok(RSyntaxKind::AND2 | RSyntaxKind::OR2)
+            )),
+            // `return()` adds a path, `switch()` one per arm.
+            AnyRExpression::RCall(call) => match (call.function(), call.arguments()) {
+                (Ok(function), Ok(arguments)) if is_identifier(&function, "switch") => {
+                    arguments.items().into_iter().count() + 1
+                }
+                (Ok(function), _) if is_identifier(&function, "return") => 1,
+                _ => 0,
+            },
+            _ => 0,
+        })
+        .sum();
+    1 + added
 }
 
 /// The statements of the body that, alone, account for more than this share of the
