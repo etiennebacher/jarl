@@ -1,7 +1,7 @@
+use crate::diagnostic::*;
 use crate::rule_set::Rule;
-use crate::{diagnostic::*, utils::node_contains_comments};
 use air_r_syntax::*;
-use biome_rowan::AstNode;
+use biome_rowan::{AstNode, Direction};
 
 pub struct Repeat;
 
@@ -47,36 +47,41 @@ impl Violation for Repeat {
 }
 
 pub fn repeat(ast: &RWhileStatement) -> anyhow::Result<Option<Diagnostic>> {
-    let condition = ast.condition()?;
-
-    if condition.as_r_true_expression().is_some() {
-        let body = ast.body()?;
-        let body_text = body.to_trimmed_text();
-
-        let is_braced = body.as_r_braced_expressions().is_some();
-        let fix_content = if is_braced {
-            format!("{body_text}")
-        } else {
-            format!("{{ {body_text} }}")
-        };
-
-        let range = ast.syntax().text_trimmed_range();
-        let range_to_report = TextRange::new(
-            ast.while_token()?.text_trimmed_range().start(),
-            ast.r_paren_token()?.text_trimmed_range().end(),
-        );
-
-        let diagnostic = Diagnostic::new(
-            Repeat,
-            range_to_report,
-            Fix::new(
-                range,
-                format!("repeat {fix_content}"),
-                node_contains_comments(ast.syntax()),
-            ),
-        );
-        return Ok(Some(diagnostic));
+    let mut condition = ast.condition()?;
+    while let AnyRExpression::RParenthesizedExpression(paren) = condition {
+        condition = paren.body()?;
     }
 
-    Ok(None)
+    if condition.as_r_true_expression().is_none() {
+        return Ok(None);
+    }
+
+    let while_token = ast.while_token()?;
+    let r_paren = ast.r_paren_token()?;
+    let range = TextRange::new(
+        while_token.text_trimmed_range().start(),
+        r_paren.text_trimmed_range().end(),
+    );
+
+    // Only comments inside the replaced header prevent a fix; the body is untouched.
+    let has_comments = ast
+        .syntax()
+        .descendants_tokens(Direction::Next)
+        .take_while(|token| token.text_trimmed_range().start() < range.end())
+        .any(|token| {
+            (token != while_token && token.has_leading_comments())
+                || (token != r_paren && token.has_trailing_comments())
+        });
+
+    // Keep existing whitespace, adding a separator only when the body is adjacent.
+    let replacement = if ast.body()?.range().start() == range.end() {
+        "repeat "
+    } else {
+        "repeat"
+    };
+    Ok(Some(Diagnostic::new(
+        Repeat,
+        range,
+        Fix::new(range, replacement.to_string(), has_comments),
+    )))
 }
