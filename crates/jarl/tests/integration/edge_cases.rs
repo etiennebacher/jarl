@@ -158,7 +158,7 @@ fn test_multibyte_fix_offsets() -> anyhow::Result<()> {
         "test.R",
         r#"# jarl-ignore seq: 原因一
 x <- 1
-# jarl-ignore browser: 原因二
+# jarl-ignore class_equals: 原因二
 y <- 2
 
 排序 <- 分数[order(分数)]
