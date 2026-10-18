@@ -75,13 +75,6 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     // ignoring them during discovery.
     validate_exclude_patterns(&args.exclude)?;
 
-    // The prompt answers come from the terminal, which stdin is already feeding.
-    if args.interactive && args.stdin_file_path.is_some() {
-        return Err(anyhow::anyhow!(
-            "`--interactive` cannot be combined with `--stdin-file-path`."
-        ));
-    }
-
     let mut prompter = args.interactive.then(TerminalPrompt::default);
 
     let mut resolver = PathResolver::new(Settings::default());

@@ -162,6 +162,7 @@ pub struct CheckCommand {
         conflicts_with = "statistics",
         conflicts_with = "add_jarl_ignore",
         conflicts_with = "output_format",
+        conflicts_with = "stdin_file_path",
         help_heading = "Fix options",
         help = "Preview each fix and choose whether to apply it. Implies `--fix`."
     )]
