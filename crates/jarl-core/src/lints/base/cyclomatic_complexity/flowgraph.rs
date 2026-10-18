@@ -18,12 +18,10 @@ use std::collections::{HashMap, HashSet};
 /// What cyclocomp sees of an R expression.
 #[derive(Debug, Clone)]
 pub enum Lang {
-    /// A node that adds nothing: a nested function (scored on its own) or code that
-    /// couldn't be read.
-    Atom,
     /// Any expression that isn't a control-flow construct (a call, an operator,
     /// a subset, etc.), as the expressions it holds in order. It adds no path
-    /// by itself.
+    /// by itself. Code that adds nothing (a nested function, which is scored on its
+    /// own, or code that couldn't be read) is an empty `Call`.
     Call(Vec<Lang>),
     /// A call to `return`, with the same layout as `Call`.
     Return(Vec<Lang>),
@@ -56,38 +54,40 @@ pub enum Lang {
         arms: Vec<Option<Lang>>,
         has_default: bool,
     },
-    /// A function, with its body. The formals are left out: they add as many
-    /// nodes as edges, so they don't change the score.
-    Function(Box<Lang>),
 }
 
-/// Cyclomatic complexity of a single expression, or `None` when cyclocomp
-/// errors on it (`break` outside of a loop, `return` outside of a function).
-pub fn cyclocomp(expression: &Lang) -> Option<usize> {
+/// The node of the function: `return` leaves from it.
+const FUNCTION: &str = "1.1";
+
+/// Cyclomatic complexity of the body of a function, or `None` when cyclocomp
+/// errors on it (`break` outside of a loop, `return` outside of a function). The
+/// formals are left out: they add as many nodes as edges.
+pub fn cyclocomp(body: &Lang) -> Option<usize> {
     let mut graph = Graph::default();
-    graph.add_node("2", vec![]);
+    graph.set_last("2", vec![]);
     graph.add_edge("1", "2");
 
-    // The top-level object is an `expression` vector holding the expression.
-    graph.walk_list(std::slice::from_ref(expression), "1")?;
+    // The top-level object is an `expression` vector holding the function.
+    graph.set_last("1", vec![FUNCTION.to_string()]);
+    graph.add_edge("1", FUNCTION);
+    graph.set_last(FUNCTION, vec![child(FUNCTION, 1)]);
+    graph.add_edge(FUNCTION, &child(FUNCTION, 1));
+    graph.walk(body, &child(FUNCTION, 1))?;
 
     let edges = graph.resolve_edges();
-    Some((edges + 2).saturating_sub(graph.num_nodes))
+    Some((edges + 2).saturating_sub(graph.last.len()))
 }
 
 #[derive(Default)]
 struct Graph {
-    num_nodes: usize,
     /// The `last` of each node: the nodes that control leaves from.
     last: HashMap<String, Vec<String>>,
     /// For `&&` and `||` nodes, the nodes control leaves from when the
     /// condition is true / false. Any other node leaves from itself.
-    true_exits: HashMap<String, Vec<String>>,
-    false_exits: HashMap<String, Vec<String>>,
+    exits: HashMap<String, (Vec<String>, Vec<String>)>,
     edges: Vec<(String, String)>,
     breaks: Vec<String>,
     nexts: Vec<String>,
-    functions: Vec<String>,
 }
 
 fn child(id: &str, i: usize) -> String {
@@ -100,11 +100,7 @@ fn is_child(child: &str, parent: &str) -> bool {
 }
 
 impl Graph {
-    fn add_node(&mut self, id: &str, last: Vec<String>) {
-        self.num_nodes += 1;
-        self.last.insert(id.to_string(), last);
-    }
-
+    /// Adds a node, or replaces the `last` of an existing one.
     fn set_last(&mut self, id: &str, last: Vec<String>) {
         self.last.insert(id.to_string(), last);
     }
@@ -119,91 +115,64 @@ impl Graph {
         }
     }
 
-    fn add_to_last(&mut self, node: Option<&String>, id: &str) -> Option<()> {
-        self.last.get_mut(node?)?.push(id.to_string());
+    fn add_to_last(&mut self, node: &str, id: &str) -> Option<()> {
+        self.last.get_mut(node)?.push(id.to_string());
         Some(())
     }
 
-    fn true_exits(&self, id: &str) -> Vec<String> {
-        self.true_exits
+    /// The nodes control leaves from when the condition `id` is true, and false.
+    fn exits(&self, id: &str) -> (Vec<String>, Vec<String>) {
+        self.exits
             .get(id)
             .cloned()
-            .unwrap_or_else(|| vec![id.to_string()])
-    }
-
-    fn false_exits(&self, id: &str) -> Vec<String> {
-        self.false_exits
-            .get(id)
-            .cloned()
-            .unwrap_or_else(|| vec![id.to_string()])
+            .unwrap_or_else(|| (vec![id.to_string()], vec![id.to_string()]))
     }
 
     fn walk(&mut self, x: &Lang, id: &str) -> Option<()> {
         match x {
-            Lang::Atom => {
-                self.add_node(id, vec![]);
-                Some(())
-            }
             Lang::Return(elements) => {
-                let function = self.functions.last().cloned();
-                self.add_to_last(function.as_ref(), id)?;
+                self.add_to_last(FUNCTION, id)?;
                 self.walk_list(elements, id)
             }
             Lang::For { sequence, body } => {
                 let (id1, id2) = (child(id, 1), child(id, 2));
-                self.add_node(id, vec![id1.clone(), id2.clone()]);
+                self.set_last(id, vec![id1.clone(), id2.clone()]);
                 self.add_edge(id, &id1);
                 self.add_edge(&id1, &id2);
                 self.add_edge(&id2, &id2);
                 self.walk(sequence, &id1)?;
-                self.breaks.push(id.to_string());
-                self.nexts.push(id2.clone());
-                let result = self.walk(body, &id2);
-                self.breaks.pop();
-                self.nexts.pop();
-                result
+                self.walk_loop(body, id, &id2, &id2)
             }
             Lang::While { condition, body } => {
                 let (id1, id2) = (child(id, 1), child(id, 2));
                 // `break`s are added to the `last` of this node while walking
                 // the body, so it has to exist before.
-                self.add_node(id, vec![]);
+                self.set_last(id, vec![]);
                 self.add_edge(id, &id1);
                 self.walk(condition, &id1)?;
-                let mut last = self.false_exits(&id1);
+                let (true_exits, mut last) = self.exits(&id1);
                 last.push(id2.clone());
                 self.set_last(id, last);
 
-                let true_exits = self.true_exits(&id1);
                 self.add_edges_from(&true_exits, &id2);
                 self.add_edge(&id2, &id1);
 
-                self.breaks.push(id.to_string());
-                self.nexts.push(id1.clone());
-                let result = self.walk(body, &id2);
-                self.breaks.pop();
-                self.nexts.pop();
-                result
+                self.walk_loop(body, id, &id2, &id1)
             }
             Lang::Repeat(body) => {
                 let id1 = child(id, 1);
-                self.add_node(id, vec![id1.clone()]);
+                self.set_last(id, vec![id1.clone()]);
                 self.add_edge(id, &id1);
                 self.add_edge(&id1, &id1);
-                self.breaks.push(id.to_string());
-                self.nexts.push(id1.clone());
-                let result = self.walk(body, &id1);
-                self.breaks.pop();
-                self.nexts.pop();
-                result
+                self.walk_loop(body, id, &id1, &id1)
             }
             Lang::Break => {
-                self.add_node(id, vec![]);
-                let target = self.breaks.last().cloned();
-                self.add_to_last(target.as_ref(), id)
+                self.set_last(id, vec![]);
+                let target = self.breaks.last().cloned()?;
+                self.add_to_last(&target, id)
             }
             Lang::Next => {
-                self.add_node(id, vec![]);
+                self.set_last(id, vec![]);
                 if let Some(target) = self.nexts.last().cloned() {
                     self.add_edge(id, &target);
                 }
@@ -211,12 +180,11 @@ impl Graph {
             }
             Lang::If { condition, consequence, alternative } => {
                 let (id1, id2, id3) = (child(id, 1), child(id, 2), child(id, 3));
-                self.add_node(id, vec![]);
+                self.set_last(id, vec![]);
                 self.add_edge(id, &id1);
                 self.walk(condition, &id1)?;
 
-                let true_exits = self.true_exits(&id1);
-                let false_exits = self.false_exits(&id1);
+                let (true_exits, false_exits) = self.exits(&id1);
                 self.add_edges_from(&true_exits, &id2);
                 match alternative {
                     None => {
@@ -235,38 +203,36 @@ impl Graph {
             }
             Lang::AndOr { is_and, left, right } => {
                 let (id1, id2) = (child(id, 1), child(id, 2));
-                self.add_node(id, vec![]);
+                self.set_last(id, vec![]);
                 self.add_edge(id, &id1);
                 self.walk(left, &id1)?;
 
                 // The right-hand side is only evaluated when the left-hand
                 // side is true for `&&`, and false for `||`.
+                let (left_true, left_false) = self.exits(&id1);
                 let (reaches_right, left_stops) = if *is_and {
-                    (self.true_exits(&id1), self.false_exits(&id1))
+                    (left_true, left_false)
                 } else {
-                    (self.false_exits(&id1), self.true_exits(&id1))
+                    (left_false, left_true)
                 };
                 self.add_edges_from(&reaches_right, &id2);
                 self.walk(right, &id2)?;
 
-                let (right_true, right_false) = (self.true_exits(&id2), self.false_exits(&id2));
+                let (right_true, right_false) = self.exits(&id2);
                 let (true_exits, false_exits) = if *is_and {
                     (right_true, [left_stops, right_false].concat())
                 } else {
                     ([left_stops, right_true].concat(), right_false)
                 };
 
-                let mut last = [true_exits.clone(), false_exits.clone()].concat();
-                let mut seen = HashSet::new();
-                last.retain(|id| seen.insert(id.clone()));
+                let last = [true_exits.clone(), false_exits.clone()].concat();
                 self.set_last(id, last);
-                self.true_exits.insert(id.to_string(), true_exits);
-                self.false_exits.insert(id.to_string(), false_exits);
+                self.exits.insert(id.to_string(), (true_exits, false_exits));
                 Some(())
             }
             Lang::Switch { selector, arms, has_default } => {
                 let id1 = child(id, 1);
-                self.add_node(id, vec![]);
+                self.set_last(id, vec![]);
                 self.add_edge(id, &id1);
                 self.walk(selector, &id1)?;
 
@@ -287,23 +253,24 @@ impl Graph {
                 self.set_last(id, last);
                 Some(())
             }
-            Lang::Function(body) => {
-                let id1 = child(id, 1);
-                self.add_node(id, vec![id1.clone()]);
-                self.add_edge(id, &id1);
-                self.functions.push(id.to_string());
-                let result = self.walk(body, &id1);
-                self.functions.pop();
-                result
-            }
             Lang::Call(elements) => self.walk_list(elements, id),
         }
+    }
+
+    /// Walks the body of a loop, where `break` leaves `id` and `next` goes to `next`.
+    fn walk_loop(&mut self, body: &Lang, id: &str, body_id: &str, next: &str) -> Option<()> {
+        self.breaks.push(id.to_string());
+        self.nexts.push(next.to_string());
+        let result = self.walk(body, body_id);
+        self.breaks.pop();
+        self.nexts.pop();
+        result
     }
 
     fn walk_list(&mut self, elements: &[Lang], id: &str) -> Option<()> {
         let n = elements.len();
         let last = if n == 0 { vec![] } else { vec![child(id, n)] };
-        self.add_node(id, last);
+        self.set_last(id, last);
         if n == 0 {
             return Some(());
         }

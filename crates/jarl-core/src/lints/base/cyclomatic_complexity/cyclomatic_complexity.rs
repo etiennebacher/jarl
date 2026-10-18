@@ -62,9 +62,7 @@ pub fn cyclomatic_complexity(
         return Ok(None);
     }
 
-    let lowered = Lang::Function(Box::new(lower_result(function.body())));
-
-    let Some(score) = cyclocomp(&lowered) else {
+    let Some(score) = cyclocomp(&lower_result(function.body())) else {
         return Ok(None);
     };
     if score <= max_complexity {
@@ -151,11 +149,11 @@ fn biggest_parts(function: &RFunctionDefinition, score: usize) -> Vec<(String, u
     let mut parts: Vec<(String, usize)> = statements
         .iter()
         .filter_map(|statement| {
-            let alone = Lang::Function(Box::new(Lang::Call(vec![
-                Lang::Atom,
+            let alone = Lang::Call(vec![
+                Lang::Call(vec![]),
                 lower(statement),
-                Lang::Atom,
-            ])));
+                Lang::Call(vec![]),
+            ]);
             let share = cyclocomp(&alone)?.checked_sub(1)?;
             (share * 100 > score * MIN_SHARE_PERCENT).then(|| (first_line(statement), share))
         })
@@ -235,7 +233,7 @@ fn lower(expression: &AnyRExpression) -> Lang {
             Lang::Call(lower_children(expression.syntax()))
         }
         // A nested function is scored on its own, see `cyclomatic_complexity()`.
-        AnyRExpression::RFunctionDefinition(_) => Lang::Atom,
+        AnyRExpression::RFunctionDefinition(_) => Lang::Call(vec![]),
         _ => Lang::Call(lower_children(expression.syntax())),
     }
 }
@@ -243,7 +241,7 @@ fn lower(expression: &AnyRExpression) -> Lang {
 fn lower_result<E: Into<AnyRExpression>>(expression: biome_rowan::SyntaxResult<E>) -> Lang {
     match expression {
         Ok(expression) => lower(&expression.into()),
-        Err(_) => Lang::Atom,
+        Err(_) => Lang::Call(vec![]),
     }
 }
 
