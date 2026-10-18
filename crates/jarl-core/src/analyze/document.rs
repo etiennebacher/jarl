@@ -1,9 +1,10 @@
-use air_r_syntax::{RExpressionList, RSyntaxNode};
-use biome_rowan::{AstNode, AstNodeList};
+use air_r_syntax::{RBinaryExpression, RExpressionList, RSyntaxNode};
+use biome_rowan::{AstNode, AstNodeList, SyntaxNodeCast};
 use oak_semantic::semantic_index::SemanticIndex;
 
 use crate::checker::Checker;
 use crate::diagnostic::*;
+use crate::lints::base::assignment_on_if_no_else::assignment_on_if_no_else::assignment_on_if_no_else;
 use crate::lints::base::empty_file::empty_file::empty_file;
 use crate::lints::base::library_call::library_call::library_call;
 use crate::lints::base::unreachable_code::unreachable_code::unreachable_code_top_level;
@@ -20,6 +21,7 @@ use crate::lints::comments::unmatched_range_suppression::unmatched_range_suppres
 };
 use crate::package::PackageFileAnalysis;
 use crate::rule_set::Rule;
+use jarl_semantic::SemanticInfo;
 
 pub(crate) fn check_document(
     expressions: &RExpressionList,
@@ -32,6 +34,30 @@ pub(crate) fn check_document(
     // --- Document-level analysis ---
 
     let expressions: Vec<RSyntaxNode> = expressions.iter().map(|e| e.syntax().clone()).collect();
+    let unevaluated_ranges = checker.unevaluated_ranges();
+
+    if checker.is_rule_enabled(Rule::AssignmentOnIfNoElse)
+        && let Some(info) = semantic.and_then(|semantic| {
+            let first = expressions.first()?;
+            let root = first.ancestors().last().unwrap_or_else(|| first.clone());
+            Some(SemanticInfo::build(
+                &root,
+                &expressions,
+                semantic,
+                &checker.source_index_cache,
+                &checker.loaded_packages,
+                &unevaluated_ranges,
+            ))
+        })
+    {
+        for expression in &expressions {
+            for node in expression.descendants() {
+                if let Some(binary) = node.cast::<RBinaryExpression>() {
+                    checker.report_diagnostic(assignment_on_if_no_else(&binary, &info)?);
+                }
+            }
+        }
+    }
 
     // Check for unreachable code at top level
     if checker.is_rule_enabled(Rule::UnreachableCode) {
