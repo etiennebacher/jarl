@@ -5,6 +5,7 @@ use biome_rowan::AstNode;
 
 pub struct Repeat;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.19
 ///
 /// ## What it does
@@ -32,6 +33,7 @@ pub struct Repeat;
 ///   break
 /// }
 /// ```
+/// <!-- docs: end -->
 impl Violation for Repeat {
     fn rule(&self) -> Rule {
         Rule::Repeat

@@ -438,6 +438,7 @@ pub fn create_suppression_edit_in_rmd(
                 compute_suppression_insert_point(&chunk.code, local_start, local_end)?;
             // Remap chunk-local offset to file-level offset.
             insert_point.offset += chunk.start_byte;
+            insert_point.line = count_lines_to(file_content, insert_point.offset);
             let comment_text = format_suppression_comments(
                 &[rule_name],
                 explanation,
@@ -536,6 +537,41 @@ mod tests {
         // Should insert at the start of the line, no leading newline needed
         assert!(!insert.needs_leading_newline);
         assert_eq!(insert.indent, "  ");
+    }
+
+    #[test]
+    fn test_create_suppression_edit_in_rmd_remaps_line() {
+        let source = concat!(
+            "---\n",
+            "title: \"Demo\"\n",
+            "output: html_document\n",
+            "---\n",
+            "\n",
+            "Introductory text.\n",
+            "\n",
+            "```{r}\n",
+            "x <- 1\n",
+            "any(is.na(x))\n",
+            "```\n",
+        );
+        let diagnostic_start = source.find("any(is.na(x))").unwrap();
+        let diagnostic_end = diagnostic_start + "any(is.na(x))".len();
+
+        let edit = create_suppression_edit_in_rmd(
+            source,
+            diagnostic_start,
+            diagnostic_end,
+            "any_is_na",
+            "<reason>",
+        )
+        .unwrap();
+
+        assert_eq!(edit.insert_point.line, 9);
+        assert_eq!(
+            edit.insert_point.offset,
+            source.find("any(is.na(x))").unwrap()
+        );
+        assert!(!edit.insert_point.needs_leading_newline);
     }
 
     #[test]

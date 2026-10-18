@@ -7,6 +7,7 @@ use biome_rowan::AstNode;
 
 pub struct TrueFalseSymbol;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.8
 ///
 /// ## What it does
@@ -37,6 +38,7 @@ pub struct TrueFalseSymbol;
 /// x <- TRUE
 /// y <- FALSE
 /// ```
+/// <!-- docs: end -->
 impl Violation for TrueFalseSymbol {
     fn rule(&self) -> Rule {
         Rule::TrueFalseSymbol
@@ -74,11 +76,13 @@ pub fn true_false_symbol(
         }
     }
 
-    // Allow `T[1]`, `F[[1]]`, `df$T`, and `obj@F`, where `T` and `F` are
-    // object, column, or slot names rather than logical values.
+    // Allow `T[1]`, `F[[1]]`, `df$T`, `obj@F`, and `pkg::T`, where `T` and `F`
+    // are object, column, slot, or namespace member names rather than logical
+    // values.
     if ast.parent::<RSubset>().is_some()
         || ast.parent::<RSubset2>().is_some()
         || ast.parent::<RExtractExpression>().is_some()
+        || ast.parent::<RNamespaceExpression>().is_some()
     {
         return Ok(None);
     }

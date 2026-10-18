@@ -1,5 +1,8 @@
 use air_workspace::resolve::PathResolver;
-use jarl_core::discovery::{discover_r_file_paths, discover_settings, validate_exclude_patterns};
+use jarl_core::discovery::{
+    discover_r_file_paths, discover_settings, excluded_by_settings,
+    should_exclude_file_based_on_settings, validate_exclude_patterns,
+};
 use jarl_core::library_paths::is_r_available;
 use jarl_core::package_cache::{PackageCache, any_file_references_packages, find_r_project_root};
 use jarl_core::rule_set::Rule;
@@ -41,11 +44,21 @@ fn is_human_format(format: OutputFormat) -> bool {
     matches!(format, OutputFormat::Full | OutputFormat::Concise)
 }
 
-/// Lint one group of files, asking about each fix when `--interactive` is on.
+/// Check the files of `config`, or the stdin buffer standing in for its only
+/// path when there is one. Otherwise ask about each fix when `--interactive`
+/// is on.
 fn run_check(
     config: jarl_core::config::Config,
+    stdin: Option<&(PathBuf, String)>,
     prompter: Option<&mut TerminalPrompt>,
 ) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
+    if let Some((path, contents)) = stdin {
+        let name = air_fs::relativize_path(path);
+        return vec![(
+            name,
+            jarl_core::check::check_contents(contents, path, config),
+        )];
+    }
     match prompter {
         Some(prompt) => jarl_core::check::check_interactive(config, prompt),
         None => jarl_core::check::check(config),
@@ -72,6 +85,13 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         ));
     }
 
+    // The prompt answers come from the terminal, which stdin is already feeding.
+    if args.interactive && args.stdin_file_path.is_some() {
+        return Err(anyhow::anyhow!(
+            "`--interactive` cannot be combined with `--stdin-file-path`."
+        ));
+    }
+
     let mut prompter = args.interactive.then(TerminalPrompt::default);
 
     let mut resolver = PathResolver::new(Settings::default());
@@ -84,7 +104,17 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     // override each discovered settings' `default_exclude` to `false` so the
     // default patterns from `DEFAULT_EXCLUDE_PATTERNS` are not applied during
     // discovery.
-    let discovered = discover_settings(&args.files)?;
+    let stdin = read_stdin_source(&args)?;
+    let sources = match &stdin {
+        Some((path, contents)) => output_format::Sources::with_stdin(path, contents.clone()),
+        None => output_format::Sources::default(),
+    };
+    let files: Vec<String> = match &stdin {
+        Some((path, _)) => vec![path.to_string_lossy().into_owned()],
+        None => args.files.clone(),
+    };
+
+    let discovered = discover_settings(&files)?;
     let single_config = discovered.len() == 1;
 
     for mut ds in discovered {
@@ -104,16 +134,37 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         resolver.add(&ds.directory, ds.settings);
     }
 
-    let paths = discover_r_file_paths(
-        &args.files,
-        &args.exclude,
-        &resolver,
-        true,
-        args.no_default_exclude,
-    )
-    .into_iter()
-    .filter_map(Result::ok)
-    .collect::<Vec<_>>();
+    // Like a file found on disk, stdin code is not linted when the settings
+    // exclude its path. Without any `jarl.toml`, the default settings still
+    // apply (e.g. `renv/` is excluded).
+    if let Some((path, _)) = &stdin {
+        let excluded = if resolver.items().is_empty() {
+            let mut settings = Settings::default();
+            if args.no_default_exclude {
+                settings.linter.default_exclude = Some(false);
+            }
+            excluded_by_settings(path, &settings, &cwd.clone().unwrap_or_default())
+        } else {
+            should_exclude_file_based_on_settings(path, &resolver)
+        };
+        if excluded {
+            return Ok(ExitStatus::Success);
+        }
+    }
+
+    let paths = match &stdin {
+        Some((path, _)) => vec![path.clone()],
+        None => discover_r_file_paths(
+            &args.files,
+            &args.exclude,
+            &resolver,
+            true,
+            args.no_default_exclude,
+        )
+        .into_iter()
+        .filter_map(Result::ok)
+        .collect::<Vec<_>>(),
+    };
 
     if paths.is_empty() {
         println!(
@@ -125,7 +176,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     }
 
     let check_config = ArgsConfig {
-        files: args.files.iter().map(|s| s.into()).collect(),
+        files: files.iter().map(|s| s.into()).collect(),
         // `--interactive` is a way of applying fixes, so it enables fix mode
         // the same way `--fix-only` does. Which entry point actually runs is
         // decided by `run_check`.
@@ -166,7 +217,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         let config = build_config(&check_config, settings, group_paths.clone())?;
 
         if !config.rules_to_apply.has_package_specific_rules() {
-            file_results.extend(run_check(config, prompter.as_mut()));
+            file_results.extend(run_check(config, stdin.as_ref(), prompter.as_mut()));
             continue;
         }
 
@@ -204,7 +255,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
             config.rules_to_apply = config
                 .rules_to_apply
                 .filter(|r| !r.categories().iter().any(|c| c.is_package_specific()));
-            file_results.extend(run_check(config, prompter.as_mut()));
+            file_results.extend(run_check(config, stdin.as_ref(), prompter.as_mut()));
             continue;
         }
 
@@ -227,7 +278,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
                 .clone();
 
             config.package_cache = cache;
-            file_results.extend(run_check(config, prompter.as_mut()));
+            file_results.extend(run_check(config, stdin.as_ref(), prompter.as_mut()));
         }
     }
 
@@ -286,7 +337,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         // Statistics must still report parse errors and preserve a failing exit status.
         let has_errors = !all_errors.is_empty();
         if has_errors {
-            FullEmitter.emit(&mut stdout, &[], &all_errors)?;
+            FullEmitter.emit(&mut stdout, &[], &all_errors, &sources)?;
         }
 
         return print_statistics(&all_diagnostics_flat, has_errors, parent_config_path);
@@ -294,19 +345,19 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
 
     match args.output_format {
         OutputFormat::Concise => {
-            ConciseEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
+            ConciseEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors, &sources)?;
         }
         OutputFormat::Json => {
-            JsonEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
+            JsonEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors, &sources)?;
         }
         OutputFormat::Github => {
-            GithubEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
+            GithubEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors, &sources)?;
         }
         OutputFormat::Sarif => {
-            SarifEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
+            SarifEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors, &sources)?;
         }
         OutputFormat::Full => {
-            FullEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
+            FullEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors, &sources)?;
         }
     }
 
@@ -327,6 +378,12 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     if is_human_format(args.output_format) {
         // ── Summary ──
         print_summary(&all_diagnostics_flat, !all_errors.is_empty());
+
+        // Only when the user asked for fixes: otherwise nothing in the output
+        // claims these violations were fixable in the first place.
+        if args.fix || args.fix_only {
+            output_format::print_roxygen_fix_note(&all_diagnostics_flat);
+        }
 
         // ── Warnings ──
         let mut warnings: Vec<String> = Vec::new();
@@ -618,4 +675,22 @@ fn hide_unused_function_if_needed(
     }
 
     (hidden, unused_fn_count)
+}
+
+/// With `jarl check --stdin-file-path <PATH>`, read the code from stdin and
+/// return it with the (absolute) virtual path it stands for. `None` when not
+/// reading from stdin.
+fn read_stdin_source(args: &CheckCommand) -> Result<Option<(PathBuf, String)>> {
+    let Some(file_path) = &args.stdin_file_path else {
+        return Ok(None);
+    };
+
+    let mut contents = String::new();
+    std::io::Read::read_to_string(&mut std::io::stdin(), &mut contents)
+        .map_err(|e| anyhow::anyhow!("Failed to read from stdin: {e}"))?;
+
+    Ok(Some((
+        air_fs::normalize_path(PathBuf::from(file_path)),
+        contents,
+    )))
 }

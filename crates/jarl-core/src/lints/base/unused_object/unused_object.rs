@@ -14,6 +14,7 @@ use crate::diagnostic::{Diagnostic, Fix, ViolationData};
 use crate::rule_set::Rule;
 use crate::utils::get_function_name;
 
+/// <!-- docs: start -->
 /// Version added: 0.6.0
 ///
 /// ## What it does
@@ -143,6 +144,7 @@ use crate::utils::get_function_name;
 /// x <- 1   # unused
 /// print(y)
 /// ```
+/// <!-- docs: end -->
 pub fn unused_object(
     expressions: &[RSyntaxNode],
     semantic: &SemanticIndex,
@@ -158,8 +160,8 @@ pub fn unused_object(
         expressions,
         semantic,
         &checker.source_index_cache,
-        &checker.loaded_packages,
-        &checker.unevaluated_ranges,
+        &checker.packages_in_reach(),
+        &checker.unevaluated_ranges(),
     );
     let exports = &checker.namespace_exports;
     let skipped = &checker.rule_options.unused_object.skipped_functions;

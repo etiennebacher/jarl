@@ -16,6 +16,7 @@ use std::path::PathBuf;
 
 use crate::config::resolve_rule_names;
 use crate::lints::base::assignment::options::AssignmentOptions;
+use crate::lints::base::cyclomatic_complexity::options::CyclomaticComplexityOptions;
 use crate::lints::base::duplicated_arguments::options::DuplicatedArgumentsOptions;
 use crate::lints::base::if_not_else::options::IfNotElseOptions;
 use crate::lints::base::implicit_assignment::options::ImplicitAssignmentOptions;
@@ -25,6 +26,7 @@ use crate::lints::base::pipe_consistency::options::PipeConsistencyOptions;
 use crate::lints::base::quotes::options::QuotesOptions;
 use crate::lints::base::true_false_symbol::options::TrueFalseSymbolOptions;
 use crate::lints::base::undesirable_function::options::UndesirableFunctionOptions;
+use crate::lints::base::undesirable_operator::options::UndesirableOperatorOptions;
 use crate::lints::base::unreachable_code::options::UnreachableCodeOptions;
 use crate::lints::base::unused_function::options::UnusedFunctionOptions;
 use crate::lints::base::unused_object::options::UnusedObjectOptions;
@@ -83,7 +85,56 @@ pub fn parse_jarl_toml(path: &Path) -> Result<TomlOptions, ParseTomlError> {
         ));
     }
 
-    toml::from_str(&toml).map_err(|err| ParseTomlError::Deserialize(path.to_path_buf(), err))
+    let options = toml::from_str(&toml)
+        .map_err(|err| ParseTomlError::Deserialize(path.to_path_buf(), err))?;
+
+    // We need to run this here because then serde loses the information on
+    // whether a key was quoted.
+    if let Ok(document) = toml.parse::<toml_edit::DocumentMut>()
+        && let Some(message) = unquoted_key(&document)
+    {
+        return Err(ParseTomlError::Invalid(path.to_path_buf(), message));
+    }
+
+    Ok(options)
+}
+
+/// `[lint.<rule>]` options holding inline tables whose keys must be quoted,
+/// as `(rule, options)` pairs.
+const QUOTED_KEY_OPTIONS: &[(&str, &[&str])] =
+    &[("undesirable_function", &["functions", "extend-functions"])];
+
+/// Find an unquoted key in an inline table listed in [QUOTED_KEY_OPTIONS] and
+/// return the error message for it.
+fn unquoted_key(document: &toml_edit::DocumentMut) -> Option<String> {
+    let lint = document.get("lint")?;
+
+    for (rule, options) in QUOTED_KEY_OPTIONS {
+        let Some(rule_options) = lint.get(rule) else {
+            continue;
+        };
+        for option in *options {
+            let Some(entries) = rule_options.get(option).and_then(toml_edit::Item::as_array) else {
+                continue;
+            };
+            for table in entries.iter().filter_map(toml_edit::Value::as_inline_table) {
+                for (key, _) in table {
+                    let quoted = table
+                        .key(key)
+                        .and_then(toml_edit::Key::as_repr)
+                        .and_then(|repr| repr.as_raw().as_str())
+                        .is_some_and(|repr| repr.starts_with(['"', '\'']));
+                    if !quoted {
+                        return Some(format!(
+                            "Key `{key}` in `{option}` of `[lint.{rule}]` must be quoted. Use `\"{key}\"` instead."
+                        ));
+                    }
+                }
+            }
+        }
+    }
+
+    None
 }
 
 /// The primary `[lint]` options, i.e. everything but the per-rule sub-tables.
@@ -310,6 +361,13 @@ pub struct LinterTomlOptions {
     /// Valid values are `"<-"` (the default) and `"="`.
     pub assignment: Option<AssignmentOptions>,
 
+    /// # Options for the `cyclomatic_complexity` rule
+    ///
+    /// Use `max-complexity` to set the highest score a function (or the
+    /// top-level code of a file) is allowed to reach before it is reported.
+    #[serde(rename = "cyclomatic_complexity")]
+    pub cyclomatic_complexity: Option<CyclomaticComplexityOptions>,
+
     /// # Options for the `duplicated_arguments` rule
     ///
     /// Use `skipped-functions` to fully replace the default list of functions
@@ -380,9 +438,19 @@ pub struct LinterTomlOptions {
     ///
     /// Use `functions` to fully replace the default list of undesirable functions.
     /// Use `extend-functions` to add to the default list.
+    /// Entries in `functions` and `extend-functions` can be strings or inline
+    /// tables mapping a function to a custom suggestion.
     /// Specifying both is an error.
     #[serde(rename = "undesirable_function")]
     pub undesirable_function: Option<UndesirableFunctionOptions>,
+
+    /// # Options for the `undesirable_operator` rule
+    ///
+    /// Use `operators` to fully replace the default list of undesirable operators.
+    /// Use `extend-operators` to add to the default list.
+    /// Specifying both is an error.
+    #[serde(rename = "undesirable_operator")]
+    pub undesirable_operator: Option<UndesirableOperatorOptions>,
 
     /// # Options for the `unreachable_code` rule
     ///
@@ -421,31 +489,25 @@ pub struct LinterTomlOptions {
 }
 
 /// Return the path to the `jarl.toml` or `.jarl.toml` file in a given directory.
-pub fn find_jarl_toml_in_directory<P: AsRef<Path>>(path: P) -> Option<PathBuf> {
-    // Check for `jarl.toml` first, as we prioritize the "visible" one.
-    let toml = path.as_ref().join("jarl.toml");
-    if toml.is_file() {
-        return Some(toml);
-    }
+///
+/// The two names are interchangeable, so a directory holding both is ambiguous
+/// and is reported as an error rather than silently resolved: picking one would
+/// leave the user editing a file that has no effect.
+pub fn find_jarl_toml_in_directory<P: AsRef<Path>>(path: P) -> anyhow::Result<Option<PathBuf>> {
+    let directory = path.as_ref();
+    let visible = directory.join("jarl.toml");
+    let hidden = directory.join(".jarl.toml");
 
-    // Now check for `.jarl.toml` as well
-    let toml = path.as_ref().join(".jarl.toml");
-    if toml.is_file() {
-        return Some(toml);
+    match (visible.is_file(), hidden.is_file()) {
+        (true, true) => Err(anyhow::anyhow!(
+            "Found two configuration files: '{}' and '{}'. Use only one of them.",
+            visible.display(),
+            hidden.display()
+        )),
+        (true, false) => Ok(Some(visible)),
+        (false, true) => Ok(Some(hidden)),
+        (false, false) => Ok(None),
     }
-
-    // Didn't find a configuration file
-    None
-}
-
-/// Find the path to the closest `jarl.toml` or `.jarl.toml` if one exists, walking up the filesystem
-pub fn find_jarl_toml<P: AsRef<Path>>(path: P) -> Option<PathBuf> {
-    for directory in path.as_ref().ancestors() {
-        if let Some(toml) = find_jarl_toml_in_directory(directory) {
-            return Some(toml);
-        }
-    }
-    None
 }
 
 impl TomlOptions {

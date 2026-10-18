@@ -180,7 +180,7 @@ pub fn build_config(
         .unwrap_or_default();
 
     Ok(Config {
-        project_roots: project_roots(&check_config.files),
+        project_roots: project_roots(&check_config.files)?,
         paths,
         rules,
         rules_to_apply,
@@ -210,22 +210,24 @@ pub fn build_config(
 ///
 /// Nested roots are collapsed to their outermost ancestor so a tree is only
 /// ever declared once.
-fn project_roots(args: &[PathBuf]) -> Vec<PathBuf> {
-    let mut roots: Vec<PathBuf> = args
-        .iter()
-        .filter_map(|arg| {
-            if arg.is_dir() {
-                return Some(arg.clone());
-            }
-            // A file argument only pulls in its directory when that directory
-            // is configured, i.e. the user has told us where the project is.
-            let dir = arg.parent()?;
-            crate::toml::find_jarl_toml_in_directory(dir)?;
-            Some(dir.to_path_buf())
-        })
-        .collect::<HashSet<_>>()
-        .into_iter()
-        .collect();
+fn project_roots(args: &[PathBuf]) -> Result<Vec<PathBuf>> {
+    let mut declared: HashSet<PathBuf> = HashSet::new();
+    for arg in args {
+        if arg.is_dir() {
+            declared.insert(arg.clone());
+            continue;
+        }
+        // A file argument only pulls in its directory when that directory
+        // is configured, i.e. the user has told us where the project is.
+        let Some(dir) = arg.parent() else {
+            continue;
+        };
+        if crate::toml::find_jarl_toml_in_directory(dir)?.is_some() {
+            declared.insert(dir.to_path_buf());
+        }
+    }
+
+    let mut roots: Vec<PathBuf> = declared.into_iter().collect();
     roots.sort();
 
     let mut outermost: Vec<PathBuf> = Vec::new();
@@ -234,7 +236,7 @@ fn project_roots(args: &[PathBuf]) -> Vec<PathBuf> {
             outermost.push(root);
         }
     }
-    outermost
+    Ok(outermost)
 }
 
 /// Expand rule groups (`PERF`, `ALL`) and reject anything that isn't a rule.

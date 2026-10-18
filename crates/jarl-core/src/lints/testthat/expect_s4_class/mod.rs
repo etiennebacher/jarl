@@ -46,9 +46,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_true(is(object = x, "Matrix"))
-          | ------------------------------------- `expect_s4_class(x, "Matrix")` is better than `expect_true(is(object = x, "Matrix"))`.
+          | ------------------------------------- `expect_s4_class(x, y)` is better than `expect_true(is(x, y))`.
           |
-          = help: Use `expect_s4_class(x, "Matrix")` instead.
+          = help: Use `expect_s4_class(x, y)` instead.
         Found 1 error.
         "#
         );
@@ -60,9 +60,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_true(is(x, `class2` = "Matrix"))
-          | --------------------------------------- `expect_s4_class(x, "Matrix")` is better than `expect_true(is(x, `class2` = "Matrix"))`.
+          | --------------------------------------- `expect_s4_class(x, y)` is better than `expect_true(is(x, y))`.
           |
-          = help: Use `expect_s4_class(x, "Matrix")` instead.
+          = help: Use `expect_s4_class(x, y)` instead.
         Found 1 error.
         "#
         );
@@ -77,25 +77,25 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_true(is(x, "Matrix"))
-          | ---------------------------- `expect_s4_class(x, "Matrix")` is better than `expect_true(is(x, "Matrix"))`.
+          | ---------------------------- `expect_s4_class(x, y)` is better than `expect_true(is(x, y))`.
           |
-          = help: Use `expect_s4_class(x, "Matrix")` instead.
+          = help: Use `expect_s4_class(x, y)` instead.
         Found 1 error.
         "#
         );
 
         assert_snapshot!(
             snapshot_lint("expect_true(is(foo(x), class_name))"),
-            @r#"
+            @"
         warning: expect_s4_class
          --> <test>:1:1
           |
         1 | expect_true(is(foo(x), class_name))
-          | ----------------------------------- `expect_s4_class(foo(x), class_name)` is better than `expect_true(is(foo(x), class_name))`.
+          | ----------------------------------- `expect_s4_class(x, y)` is better than `expect_true(is(x, y))`.
           |
-          = help: Use `expect_s4_class(foo(x), class_name)` instead.
+          = help: Use `expect_s4_class(x, y)` instead.
         Found 1 error.
-        "#
+        "
         );
 
         assert_snapshot!(

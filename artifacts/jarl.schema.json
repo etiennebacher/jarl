@@ -29,6 +29,21 @@
       },
       "additionalProperties": false
     },
+    "CyclomaticComplexityOptions": {
+      "description": "TOML options for `[lint.cyclomatic_complexity]`.\n\nUse `max-complexity` to set the highest score a function is allowed to\nreach before it is reported.",
+      "type": "object",
+      "properties": {
+        "max-complexity": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
     "DuplicatedArgumentsOptions": {
       "description": "TOML options for `[lint.duplicated_arguments]`.\n\nUse `skipped-functions` to fully replace the default list of functions\nthat are allowed to have duplicated arguments. Use\n`extend-skipped-functions` to add to the default list.\nSpecifying both is an error.",
       "type": "object",
@@ -125,6 +140,18 @@
           "type": [
             "boolean",
             "null"
+          ]
+        },
+        "cyclomatic_complexity": {
+          "title": "Options for the `cyclomatic_complexity` rule",
+          "description": "Use `max-complexity` to set the highest score a function is allowed to\nreach before it is reported.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CyclomaticComplexityOptions"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "default-exclude": {
@@ -321,10 +348,22 @@
         },
         "undesirable_function": {
           "title": "Options for the `undesirable_function` rule",
-          "description": "Use `functions` to fully replace the default list of undesirable functions.\nUse `extend-functions` to add to the default list.\nSpecifying both is an error.",
+          "description": "Use `functions` to fully replace the default list of undesirable functions.\nUse `extend-functions` to add to the default list.\nEntries in `functions` and `extend-functions` can be strings or inline\ntables mapping a function to a custom suggestion.\nSpecifying both is an error.",
           "anyOf": [
             {
               "$ref": "#/$defs/UndesirableFunctionOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "undesirable_operator": {
+          "title": "Options for the `undesirable_operator` rule",
+          "description": "Use `operators` to fully replace the default list of undesirable operators.\nUse `extend-operators` to add to the default list.\nSpecifying both is an error.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UndesirableOperatorOptions"
             },
             {
               "type": "null"
@@ -472,8 +511,22 @@
       },
       "additionalProperties": false
     },
+    "UndesirableFunctionEntry": {
+      "description": "A function name, or a map from one or more function names to suggestions.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      ]
+    },
     "UndesirableFunctionOptions": {
-      "description": "TOML options for `[lint.undesirable_function]`.\n\nUse `functions` to fully replace the default list of undesirable functions.\nUse `extend-functions` to add to the default list.\nSpecifying both is an error.",
+      "description": "TOML options for `[lint.undesirable_function]`.\n\nUse `functions` to fully replace the default list of undesirable functions.\nUse `extend-functions` to add to the default list.\nEntries can be strings or inline tables mapping a function to a custom\nsuggestion.\nSpecifying both is an error.",
       "type": "object",
       "properties": {
         "extend-functions": {
@@ -482,10 +535,35 @@
             "null"
           ],
           "items": {
-            "type": "string"
+            "$ref": "#/$defs/UndesirableFunctionEntry"
           }
         },
         "functions": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/UndesirableFunctionEntry"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "UndesirableOperatorOptions": {
+      "description": "TOML options for `[lint.undesirable_operator]`.\n\nUse `operators` to fully replace the default list of undesirable operators.\nUse `extend-operators` to add to the default list.\nSpecifying both is an error.",
+      "type": "object",
+      "properties": {
+        "extend-operators": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "operators": {
           "type": [
             "array",
             "null"

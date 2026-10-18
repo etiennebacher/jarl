@@ -18,43 +18,43 @@ mod tests {
     fn test_no_lint_dplyr_group_by_ungroup() {
         // No ungroup at the end
         expect_no_lint(
-            "x |> group_by(grp) |> summarize(a = mean(b))",
+            "library(dplyr)\nx |> group_by(grp) |> summarize(a = mean(b))",
             "dplyr_group_by_ungroup",
             None,
         );
         // More than one verb between group_by and ungroup
         expect_no_lint(
-            "x |> group_by(grp) |> mutate(a = 1) |> summarize(b = mean(a)) |> ungroup()",
+            "library(dplyr)\nx |> group_by(grp) |> mutate(a = 1) |> summarize(b = mean(a)) |> ungroup()",
             "dplyr_group_by_ungroup",
             None,
         );
         // group_by() with arguments (not a simple pipe ungroup)
         expect_no_lint(
-            "x |> group_by(grp1, grp2, .add = TRUE) |> summarize(a = mean(b)) |> ungroup()",
+            "library(dplyr)\nx |> group_by(grp1, grp2, .add = TRUE) |> summarize(a = mean(b)) |> ungroup()",
             "dplyr_group_by_ungroup",
             None,
         );
         // ungroup() with arguments (not a simple pipe ungroup)
         expect_no_lint(
-            "x |> group_by(grp1, grp2) |> summarize(a = mean(b)) |> ungroup(grp1)",
+            "library(dplyr)\nx |> group_by(grp1, grp2) |> summarize(a = mean(b)) |> ungroup(grp1)",
             "dplyr_group_by_ungroup",
             None,
         );
         // Verb already has .by
         expect_no_lint(
-            "x |> group_by(grp) |> summarize(a = mean(b), .by = grp) |> ungroup()",
+            "library(dplyr)\nx |> group_by(grp) |> summarize(a = mean(b), .by = grp) |> ungroup()",
             "dplyr_group_by_ungroup",
             None,
         );
         // Slice verb already has by (slice_*() use `by`, not `.by`)
         expect_no_lint(
-            "x |> group_by(grp) |> slice_head(n = 1, by = grp) |> ungroup()",
+            "library(dplyr)\nx |> group_by(grp) |> slice_head(n = 1, by = grp) |> ungroup()",
             "dplyr_group_by_ungroup",
             None,
         );
         // Non-dplyr verb
         expect_no_lint(
-            "x |> group_by(grp) |> my_custom_fun() |> ungroup()",
+            "library(dplyr)\nx |> group_by(grp) |> my_custom_fun() |> ungroup()",
             "dplyr_group_by_ungroup",
             None,
         );
@@ -68,12 +68,12 @@ x |> ungroup()",
         );
         // Non-dplyr namespace
         expect_no_lint(
-            "x |> group_by(grp) |> summarize(a = 1) |> other::ungroup()",
+            "library(dplyr)\nx |> group_by(grp) |> summarize(a = 1) |> other::ungroup()",
             "dplyr_group_by_ungroup",
             None,
         );
         expect_no_lint(
-            "x |> group_by(grp) |> other::summarize(a = 1) |> ungroup()",
+            "library(dplyr)\nx |> group_by(grp) |> other::summarize(a = 1) |> ungroup()",
             "dplyr_group_by_ungroup",
             None,
         );

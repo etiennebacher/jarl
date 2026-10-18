@@ -17,6 +17,31 @@ fn make_hyperlink(text: &str) -> String {
 }
 
 use jarl_core::diagnostic::{Diagnostic, render_diagnostic};
+use jarl_core::location::Location;
+
+/// Where emitters read the source of the files mentioned in diagnostics from.
+/// Files come from disk, except the virtual path of code linted from stdin,
+/// which has no file to read.
+#[derive(Debug, Default)]
+pub struct Sources {
+    stdin: Option<(String, String)>,
+}
+
+impl Sources {
+    /// Sources where `path` stands for the code `contents` read from stdin.
+    pub fn with_stdin(path: &std::path::Path, contents: String) -> Self {
+        Self { stdin: Some((relativize_path(path), contents)) }
+    }
+
+    fn read(&self, path: &std::path::Path) -> std::io::Result<String> {
+        match &self.stdin {
+            Some((stdin_path, contents)) if *stdin_path == relativize_path(path) => {
+                Ok(contents.clone())
+            }
+            _ => fs::read_to_string(path),
+        }
+    }
+}
 
 /// Prints a section header like `── Summary ──────────────────────────────────`
 /// padded to 57 characters total.
@@ -84,6 +109,18 @@ pub fn print_summary(diagnostics: &[&Diagnostic], has_errors: bool) {
     }
 }
 
+/// Tells the user that fixes were dropped because their violations sit in
+/// roxygen `@examples` sections. Only worth saying when the user expected a
+/// fix to happen: a rule that is documented as fixable is reported here
+/// without a fix, and nothing else explains why.
+pub fn print_roxygen_fix_note(diagnostics: &[&Diagnostic]) {
+    if diagnostics.iter().any(|d| d.fix_disabled_in_roxygen) {
+        println!(
+            "\nSome fixes are disabled because the violations are in `@examples` sections.\nSet `fix-roxygen = true` in `jarl.toml` to apply them."
+        );
+    }
+}
+
 /// Prints warnings under a `── Warnings ──` section header.
 pub fn print_warnings(warnings: &[String]) {
     if warnings.is_empty() {
@@ -109,8 +146,8 @@ pub fn print_notes(notes: &[String]) {
 }
 
 #[derive(Debug, Serialize)]
-struct JsonOutput<'a> {
-    diagnostics: Vec<&'a Diagnostic>,
+struct JsonOutput {
+    diagnostics: Vec<serde_json::Value>,
     errors: Vec<JsonError>,
 }
 
@@ -118,6 +155,17 @@ struct JsonOutput<'a> {
 struct JsonError {
     file: String,
     error: String,
+    /// Individual syntax errors, empty for errors that aren't parse errors.
+    syntax_errors: Vec<JsonSyntaxError>,
+}
+
+/// Same conventions as diagnostics: `range` is a pair of byte offsets and
+/// `location.column` is 0-based.
+#[derive(Debug, Serialize)]
+struct JsonSyntaxError {
+    message: String,
+    range: [u32; 2],
+    location: Location,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, ValueEnum, Serialize, Deserialize)]
@@ -144,6 +192,7 @@ pub trait Emitter {
         writer: &mut W,
         diagnostics: &[&Diagnostic],
         errors: &[(String, anyhow::Error)],
+        sources: &Sources,
     ) -> anyhow::Result<()>;
 }
 
@@ -175,11 +224,11 @@ fn emit_errors_concise(errors: &[(String, anyhow::Error)]) {
 /// an annotated source snippet (message + underlined range), reusing the same
 /// renderer as lint diagnostics. Falls back to the generic summary line when the
 /// parser attached no structured information or the source can't be read.
-fn emit_errors_full(errors: &[(String, anyhow::Error)], renderer: &Renderer) {
+fn emit_errors_full(errors: &[(String, anyhow::Error)], sources: &Sources, renderer: &Renderer) {
     for (path, err) in errors {
         match err.downcast_ref::<jarl_core::error::ParseError>() {
             Some(parse_error) if !parse_error.syntax_errors.is_empty() => {
-                match fs::read_to_string(&parse_error.filename) {
+                match sources.read(&parse_error.filename) {
                     Ok(source) => {
                         for syntax_error in &parse_error.syntax_errors {
                             let rendered = jarl_core::diagnostic::render_syntax_error(
@@ -209,6 +258,7 @@ impl Emitter for ConciseEmitter {
         writer: &mut W,
         diagnostics: &[&Diagnostic],
         errors: &[(String, anyhow::Error)],
+        _sources: &Sources,
     ) -> anyhow::Result<()> {
         let mut writer = BufWriter::new(writer);
 
@@ -270,19 +320,53 @@ impl Emitter for JsonEmitter {
         writer: &mut W,
         diagnostics: &[&Diagnostic],
         errors: &[(String, anyhow::Error)],
+        _sources: &Sources,
     ) -> anyhow::Result<()> {
         let mut writer = BufWriter::new(writer);
 
         // Convert errors to a serializable format
         let json_errors: Vec<JsonError> = errors
             .iter()
-            .map(|(path, err)| JsonError { file: path.clone(), error: format!("{:#}", err) })
+            .map(|(path, err)| {
+                let syntax_errors = match err.downcast_ref::<jarl_core::error::ParseError>() {
+                    Some(parse_error) => parse_error
+                        .syntax_errors
+                        .iter()
+                        .map(|e| JsonSyntaxError {
+                            message: e.message.clone(),
+                            range: [e.range.start().into(), e.range.end().into()],
+                            location: e.location,
+                        })
+                        .collect(),
+                    None => Vec::new(),
+                };
+                JsonError {
+                    file: path.clone(),
+                    error: format!("{:#}", err),
+                    syntax_errors,
+                }
+            })
             .collect();
 
-        let output = JsonOutput {
-            diagnostics: diagnostics.to_vec(),
-            errors: json_errors,
-        };
+        // Add `fix.safety` to each diagnostic: `safe`, `unsafe` (needs
+        // `--unsafe-fixes`), or `none` (no fix available).
+        let json_diagnostics = diagnostics
+            .iter()
+            .map(|d| {
+                let mut value = serde_json::to_value(d)?;
+                let safety = if d.has_safe_fix() {
+                    "safe"
+                } else if d.has_unsafe_fix() {
+                    "unsafe"
+                } else {
+                    "none"
+                };
+                value["fix"]["safety"] = safety.into();
+                Ok(value)
+            })
+            .collect::<anyhow::Result<Vec<_>>>()?;
+
+        let output = JsonOutput { diagnostics: json_diagnostics, errors: json_errors };
 
         serde_json::to_writer_pretty(&mut writer, &output)?;
         writer.flush()?;
@@ -297,9 +381,11 @@ impl Emitter for GithubEmitter {
         &self,
         writer: &mut W,
         diagnostics: &[&Diagnostic],
-        _errors: &[(String, anyhow::Error)],
+        errors: &[(String, anyhow::Error)],
+        _sources: &Sources,
     ) -> anyhow::Result<()> {
         let mut writer = BufWriter::new(writer);
+        emit_errors_concise(errors);
         for diagnostic in diagnostics {
             let (row, col) = match diagnostic.location {
                 Some(loc) => (loc.row(), loc.column() + 1), // Convert to 1-based for display
@@ -465,7 +551,7 @@ struct SarifFix {
 #[serde(rename_all = "camelCase")]
 struct SarifArtifactChange {
     artifact_location: SarifArtifactLocation,
-    replacements: [SarifReplacement; 1],
+    replacements: Vec<SarifReplacement>,
 }
 
 #[derive(Debug, Serialize)]
@@ -506,9 +592,11 @@ impl Emitter for SarifEmitter {
         &self,
         writer: &mut W,
         diagnostics: &[&Diagnostic],
-        _errors: &[(String, anyhow::Error)],
+        errors: &[(String, anyhow::Error)],
+        sources: &Sources,
     ) -> anyhow::Result<()> {
         let mut writer = BufWriter::new(writer);
+        emit_errors_concise(errors);
 
         // Cache each file's contents so ranges can be converted to line/column
         // regions without re-reading the source.
@@ -549,7 +637,7 @@ impl Emitter for SarifEmitter {
             let content = match content_cache.entry(diagnostic.filename.clone()) {
                 std::collections::hash_map::Entry::Occupied(entry) => entry.into_mut(),
                 std::collections::hash_map::Entry::Vacant(entry) => {
-                    let Ok(content) = fs::read_to_string(&diagnostic.filename) else {
+                    let Ok(content) = sources.read(&diagnostic.filename) else {
                         continue;
                     };
                     entry.insert(content)
@@ -570,13 +658,20 @@ impl Emitter for SarifEmitter {
             }
             .replace('\\', "/");
 
-            // A fix is only emitted when it edits the source (not skipped, and
-            // it either inserts content or deletes a non-empty range).
+            // A fix is only emitted when it edits the source: not skipped, and
+            // carrying at least one edit. Its edits become the replacements of
+            // a single artifact change, so they are applied together.
             let fix = &diagnostic.fix;
-            let fixes = if !fix.to_skip && (fix.start() != fix.end() || !fix.content.is_empty()) {
-                let deleted_region = range_to_region(content, fix.start(), fix.end());
-                let inserted_content = (!fix.content.is_empty())
-                    .then(|| SarifMessage { text: Cow::Owned(fix.content.clone()) });
+            let fixes = if !fix.to_skip && !fix.edits.is_empty() {
+                let replacements = fix
+                    .edits
+                    .iter()
+                    .map(|edit| SarifReplacement {
+                        deleted_region: range_to_region(content, edit.start(), edit.end()),
+                        inserted_content: (!edit.content.is_empty())
+                            .then(|| SarifMessage { text: Cow::Owned(edit.content.clone()) }),
+                    })
+                    .collect();
                 vec![SarifFix {
                     description: SarifMessage { text: Cow::Owned(message.clone()) },
                     artifact_changes: [SarifArtifactChange {
@@ -584,7 +679,7 @@ impl Emitter for SarifEmitter {
                             uri: uri.clone(),
                             uri_base_id: "ROOTPATH",
                         },
-                        replacements: [SarifReplacement { deleted_region, inserted_content }],
+                        replacements,
                     }],
                 }]
             } else {
@@ -646,6 +741,7 @@ impl Emitter for FullEmitter {
         writer: &mut W,
         diagnostics: &[&Diagnostic],
         errors: &[(String, anyhow::Error)],
+        sources: &Sources,
     ) -> anyhow::Result<()> {
         let mut writer = BufWriter::new(writer);
         // Use plain renderer when NO_COLOR is set or in snapshots
@@ -659,7 +755,7 @@ impl Emitter for FullEmitter {
         // First, print all parsing errors
         if !errors.is_empty() {
             writer.flush()?; // Flush before writing to stderr
-            emit_errors_full(errors, &renderer);
+            emit_errors_full(errors, sources, &renderer);
             if !diagnostics.is_empty() {
                 eprintln!(); // Add separator between errors and diagnostics
             }
@@ -684,7 +780,7 @@ impl Emitter for FullEmitter {
         // Pre-load all files into cache
         for diagnostic in diagnostics {
             if !file_cache.contains_key(diagnostic.filename.as_path()) {
-                match fs::read_to_string(&diagnostic.filename) {
+                match sources.read(&diagnostic.filename) {
                     Ok(content) => {
                         file_cache.insert(diagnostic.filename.as_path(), content);
                     }

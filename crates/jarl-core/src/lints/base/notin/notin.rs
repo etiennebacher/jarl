@@ -4,6 +4,7 @@ use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.6.0
 ///
 /// ## What it does
@@ -38,6 +39,7 @@ use biome_rowan::AstNode;
 /// ## References
 ///
 /// See `?match`
+/// <!-- docs: end -->
 pub fn notin(ast: &RUnaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let operator = ast.operator()?;
 

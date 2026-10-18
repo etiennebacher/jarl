@@ -1,4 +1,5 @@
 # outer_negation
+
 ::: {.callout-note title="Added in 0.1.0" .low-opacity}
 :::
 

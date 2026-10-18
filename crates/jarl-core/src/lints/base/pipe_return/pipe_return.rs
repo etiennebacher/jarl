@@ -4,6 +4,7 @@ use crate::utils::get_function_name;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.6.0
 ///
 /// ## What it does
@@ -53,6 +54,7 @@ use biome_rowan::AstNode;
 /// f(1:3)
 /// #> 6
 /// ```
+/// <!-- docs: end -->
 pub fn pipe_return(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let RBinaryExpressionFields { left: _, operator, right } = ast.as_fields();
     let operator = operator?;

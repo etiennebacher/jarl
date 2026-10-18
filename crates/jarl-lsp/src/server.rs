@@ -476,7 +476,7 @@ impl Server {
         let fix_data = diagnostic.data.as_ref()?;
         let fix: crate::lint::DiagnosticFix = serde_json::from_value(fix_data.clone()).ok()?;
 
-        if fix.content.is_empty() && fix.start == fix.end {
+        if fix.edits.is_empty() {
             return None; // No fix available
         }
 
@@ -484,18 +484,24 @@ impl Server {
         let content = snapshot.content();
         let encoding = snapshot.position_encoding();
 
-        let start_pos =
-            crate::lint::byte_offset_to_lsp_position(fix.start, content, encoding).ok()?;
-        let end_pos = crate::lint::byte_offset_to_lsp_position(fix.end, content, encoding).ok()?;
+        // A fix is all-or-nothing, and a `WorkspaceEdit` holds several edits
+        // per file, so the whole fix lands as one undo step.
+        let mut text_edits = Vec::with_capacity(fix.edits.len());
+        for edit in &fix.edits {
+            let start_pos =
+                crate::lint::byte_offset_to_lsp_position(edit.start, content, encoding).ok()?;
+            let end_pos =
+                crate::lint::byte_offset_to_lsp_position(edit.end, content, encoding).ok()?;
 
-        let edit_range = types::Range::new(start_pos, end_pos);
-
-        // Create the text edit for this single file
-        let text_edit = types::TextEdit { range: edit_range, new_text: fix.content.clone() };
+            text_edits.push(types::TextEdit {
+                range: types::Range::new(start_pos, end_pos),
+                new_text: edit.content.clone(),
+            });
+        }
 
         // Create workspace edit with just this file's changes
         let mut changes = std::collections::HashMap::new();
-        changes.insert(snapshot.uri().clone(), vec![text_edit]);
+        changes.insert(snapshot.uri().clone(), text_edits);
 
         let workspace_edit = types::WorkspaceEdit { changes: Some(changes), ..Default::default() };
 
@@ -1251,10 +1257,19 @@ select = ["ALL"]
         source_with_cursor: &str,
         encoding: PositionEncoding,
     ) -> Option<String> {
+        apply_jarl_ignore_at_cursor_with_encoding_and_extension(source_with_cursor, encoding, "R")
+    }
+
+    /// Apply a jarl-ignore action for a file with the given extension.
+    fn apply_jarl_ignore_at_cursor_with_encoding_and_extension(
+        source_with_cursor: &str,
+        encoding: PositionEncoding,
+        extension: &str,
+    ) -> Option<String> {
         let cursor_pos = source_with_cursor.find(CURSOR)?;
         let content = source_with_cursor.replace(CURSOR, "");
 
-        let env = TestEnv::new(&content);
+        let env = TestEnv::new_with_extension(&content, extension);
         let snapshot = env.create_snapshot_with_encoding(&content, encoding);
 
         // Run the linter to get real diagnostics
@@ -1393,9 +1408,11 @@ select = ["ALL"]
         let snapshot = create_test_snapshot("any(duplicated(x))\n");
 
         let fix = lint::DiagnosticFix {
-            content: "anyDuplicated(x) > 0".to_string(),
-            start: 0,
-            end: 18,
+            edits: vec![lint::DiagnosticEdit {
+                content: "anyDuplicated(x) > 0".to_string(),
+                start: 0,
+                end: 18,
+            }],
             is_safe: false,
             rule_name: "any_duplicated".to_string(),
             diagnostic_start: 0,
@@ -1463,6 +1480,47 @@ x <- foo(<CURS>any(is.na(x)))
         # jarl-ignore any_is_na: <reason>
         x <- foo(any(is.na(x)))
         ");
+    }
+
+    #[test]
+    fn test_suppression_insert_new_comment_in_rmd_and_qmd_chunk() {
+        let source = concat!(
+            "---\n",
+            "title: \"Demo\"\n",
+            "output: html_document\n",
+            "---\n",
+            "\n",
+            "Introductory text.\n",
+            "\n",
+            "```{r}\n",
+            "x <- 1\n",
+            "<CURS>any(is.na(x))\n",
+            "```\n",
+        );
+        let expected = concat!(
+            "---\n",
+            "title: \"Demo\"\n",
+            "output: html_document\n",
+            "---\n",
+            "\n",
+            "Introductory text.\n",
+            "\n",
+            "```{r}\n",
+            "x <- 1\n",
+            "# jarl-ignore any_is_na: <reason>\n",
+            "any(is.na(x))\n",
+            "```\n",
+        );
+
+        for extension in ["Rmd", "qmd"] {
+            let result = apply_jarl_ignore_at_cursor_with_encoding_and_extension(
+                source,
+                PositionEncoding::UTF8,
+                extension,
+            )
+            .unwrap();
+            assert_eq!(result, expected, "unexpected insertion for .{extension}");
+        }
     }
 
     #[test]

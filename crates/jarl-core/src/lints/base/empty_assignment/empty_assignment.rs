@@ -5,6 +5,7 @@ use biome_rowan::AstNode;
 
 pub struct EmptyAssignment;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.8
 ///
 /// ## What it does
@@ -30,6 +31,7 @@ pub struct EmptyAssignment;
 /// a <- NULL
 /// b <- NULL
 /// ```
+/// <!-- docs: end -->
 impl Violation for EmptyAssignment {
     fn rule(&self) -> Rule {
         Rule::EmptyAssignment

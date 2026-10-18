@@ -43,6 +43,127 @@ unknown-option = "foo"
     Ok(())
 }
 
+// cyclomatic_complexity ----------------------------------------
+
+#[test]
+fn test_cyclomatic_complexity_unknown_field_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.cyclomatic_complexity]
+unknown-option = 3
+"#,
+        ),
+        ("test.R", "x <- 1"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 3, column 1
+      |
+    3 | unknown-option = 3
+      | ^^^^^^^^^^^^^^
+    unknown field `unknown-option`, expected `max-complexity`
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_cyclomatic_complexity_wrong_type() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.cyclomatic_complexity]
+max-complexity = "a"
+"#,
+        ),
+        ("test.R", "x <- 1"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 3, column 18
+      |
+    3 | max-complexity = "a"
+      |                  ^^^
+    invalid type: string "a", expected usize
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_cyclomatic_complexity_zero_maximum_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.cyclomatic_complexity]
+max-complexity = 0
+"#,
+        ),
+        ("test.R", "x <- 1"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    `max-complexity` in `[lint.cyclomatic_complexity]` must be at least 1.
+    "
+    );
+
+    Ok(())
+}
+
 // duplicated_arguments ----------------------------------------
 
 #[test]
@@ -598,6 +719,91 @@ pipe = "foo"
     Ok(())
 }
 
+// undesirable_operator ----------------------------------------
+
+#[test]
+fn test_undesirable_operator_unknown_field_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+
+[lint.undesirable_operator]
+unknown-option = ["$"]
+"#,
+        ),
+        ("test.R", "x + 1"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 5, column 1
+      |
+    5 | unknown-option = ["$"]
+      | ^^^^^^^^^^^^^^
+    unknown field `unknown-option`, expected `operators` or `extend-operators`
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_undesirable_operator_cannot_replace_and_extend() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+
+[lint.undesirable_operator]
+operators = ["$"]
+extend-operators = ["@"]
+"#,
+        ),
+        ("test.R", "x + 1"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Cannot specify both `operators` and `extend-operators` in `[lint.undesirable_operator]`.
+    "#
+    );
+
+    Ok(())
+}
+
 // quotes ----------------------------------------
 
 #[test]
@@ -677,6 +883,524 @@ quote = "foo"
     jarl failed
       Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
     Invalid value for `quote` in `[lint.quotes]`: "foo". Expected "double" or "single".
+    "#
+    );
+
+    Ok(())
+}
+
+// undesirable_function ----------------------------------------
+
+#[test]
+fn test_undesirable_function_both_functions_and_extend_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.undesirable_function]
+functions = ["setwd"]
+extend-functions = ["sprintf"]
+"#,
+        ),
+        ("test.R", "setwd(\"data\")"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Cannot specify both `functions` and `extend-functions` in `[lint.undesirable_function]`.
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_undesirable_function_unknown_field_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.undesirable_function]
+unknown-option = ["setwd"]
+"#,
+        ),
+        ("test.R", "setwd(\"data\")"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 3, column 1
+      |
+    3 | unknown-option = ["setwd"]
+      | ^^^^^^^^^^^^^^
+    unknown field `unknown-option`, expected `functions` or `extend-functions`
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_undesirable_function_unquoted_numeric_name_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.undesirable_function]
+extend-functions = [{ 1 = 'Use here::here().' }]
+"#,
+        ),
+        ("test.R", "setwd()"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Key `1` in `extend-functions` of `[lint.undesirable_function]` must be quoted. Use `"1"` instead.
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_undesirable_function_unquoted_boolean_name_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.undesirable_function]
+extend-functions = [{ true = 'Use here::here().' }]
+"#,
+        ),
+        ("test.R", "setwd()"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Key `true` in `extend-functions` of `[lint.undesirable_function]` must be quoted. Use `"true"` instead.
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_undesirable_function_unquoted_name_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.undesirable_function]
+extend-functions = [{ setwd = 'Use here::here().' }]
+"#,
+        ),
+        ("test.R", "setwd()"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Key `setwd` in `extend-functions` of `[lint.undesirable_function]` must be quoted. Use `"setwd"` instead.
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_undesirable_function_unquoted_name_in_functions_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.undesirable_function]
+functions = [{ setwd = 'Use here::here().' }]
+"#,
+        ),
+        ("test.R", "setwd()"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Key `setwd` in `functions` of `[lint.undesirable_function]` must be quoted. Use `"setwd"` instead.
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_undesirable_function_numeric_name_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.undesirable_function]
+extend-functions = [{ "1" = "Use here::here()." }]
+"#,
+        ),
+        ("test.R", "setwd()"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Function name `1` must be a valid R identifier or use the form `package::name` in `[lint.undesirable_function]`.
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_undesirable_function_boolean_name_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.undesirable_function]
+extend-functions = [{ "true" = "Use here::here()." }]
+"#,
+        ),
+        ("test.R", "setwd()"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Function name `true` must be a valid R identifier or use the form `package::name` in `[lint.undesirable_function]`.
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_undesirable_function_numeric_suggestion_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.undesirable_function]
+extend-functions = [{ "setwd" = 1 }]
+"#,
+        ),
+        ("test.R", "setwd()"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Suggestion for `setwd` in `[lint.undesirable_function]` must be a string.
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_undesirable_function_boolean_suggestion_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.undesirable_function]
+extend-functions = [{ "setwd" = true }]
+"#,
+        ),
+        ("test.R", "setwd()"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Suggestion for `setwd` in `[lint.undesirable_function]` must be a string.
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_undesirable_function_empty_name_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.undesirable_function]
+extend-functions = [{ "" = true }]
+"#,
+        ),
+        ("test.R", "setwd()"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Function name cannot be empty in `[lint.undesirable_function]`.
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_undesirable_function_whitespace_name_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.undesirable_function]
+extend-functions = [{ "  setwd  " = true }]
+"#,
+        ),
+        ("test.R", "setwd()"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Function name `  setwd  ` cannot have leading or trailing whitespace in `[lint.undesirable_function]`.
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_undesirable_function_quoted_names() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+select = ["undesirable_function"]
+
+[lint.undesirable_function]
+extend-functions = [
+    { "setwd" = "Use here::here()." },
+    { 'base::setwd' = "Use here::here()." },
+    "sprintf",
+]
+"#,
+        ),
+        ("test.R", "setwd()\nbase::setwd()\nsprintf()\n"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: undesirable_function
+     --> test.R:1:1
+      |
+    1 | setwd()
+      | ------- `setwd()` is listed as an undesirable function.
+      |
+      = help: Use here::here().
+
+    warning: undesirable_function
+     --> test.R:2:1
+      |
+    2 | base::setwd()
+      | ------------- `base::setwd()` is listed as an undesirable function.
+      |
+      = help: Use here::here().
+
+    warning: undesirable_function
+     --> test.R:3:1
+      |
+    3 | sprintf()
+      | --------- `sprintf()` is listed as an undesirable function.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 3 errors.
+
+    ----- stderr -----
     "#
     );
 

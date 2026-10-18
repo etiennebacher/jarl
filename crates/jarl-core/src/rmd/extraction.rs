@@ -26,9 +26,21 @@ static OPEN_FENCE: LazyLock<Regex> =
 /// Case-sensitive on the value: `FALSE` and `F` are R's false literals, while
 /// `false` is an ordinary symbol. A value this doesn't match (`eval = run_it`,
 /// `eval = nrow(x) > 0`) is decided at render time, and treating those as
-/// evaluated is the conservative reading — see [`RCodeChunk::evaluated`].
+/// evaluated is the conservative reading — see [`ChunkOptions::eval`].
+///
+/// Knitr option names can contain dots, so the name has to be preceded by a
+/// character that can't be part of one rather than by a mere word boundary:
+/// `fig.eval = FALSE` names a different option.
 static HEADER_EVAL_FALSE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\beval\s*=\s*(FALSE|F)\b").unwrap());
+    LazyLock::new(|| Regex::new(r"(?:^|[^\w.])eval\s*=\s*(FALSE|F)\b").unwrap());
+
+/// Matches `error = TRUE` among the options of a chunk header.
+///
+/// Same literal-only reading as [`HEADER_EVAL_FALSE`], down to the guard on
+/// the option name: `TRUE` and `T` are R's true literals, and a value decided
+/// at render time is left alone — see [`ChunkOptions::error`].
+static HEADER_ERROR_TRUE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?:^|[^\w.])error\s*=\s*(TRUE|T)\b").unwrap());
 
 /// Matches Quarto's `#| eval: false` chunk option.
 ///
@@ -37,6 +49,10 @@ static HEADER_EVAL_FALSE: LazyLock<Regex> =
 /// deliberately doesn't match.
 static YAML_EVAL_FALSE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?i)^[ \t]*#\|[ \t]*eval[ \t]*:[ \t]*false[ \t]*$").unwrap());
+
+/// Matches Quarto's `#| error: true` chunk option.
+static YAML_ERROR_TRUE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)^[ \t]*#\|[ \t]*error[ \t]*:[ \t]*true[ \t]*$").unwrap());
 
 /// Matches a Quarto chunk option whose value is R code: `#| key: !expr code`.
 ///
@@ -53,6 +69,39 @@ static YAML_EXPR_OPTION: LazyLock<Regex> =
 static INLINE_CODE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"`[rR][ \t\r\n]([^`]*)`").unwrap());
 
+/// The knitr chunk options that change how jarl reads a chunk's code.
+///
+/// Every field is named after the knitr option it comes from and holds the
+/// value that option would have at render time, so adding another one is a
+/// regex, a field, and a line in [`extract_r_chunks`].
+///
+/// Only literal values count. An option whose value is an expression
+/// (`eval = run_it`, `#| eval: !expr ...`) is decided at render time, so each
+/// field falls back to the reading that can only cost a diagnostic rather than
+/// invent one — which is also what [`Default`] gives.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ChunkOptions {
+    /// `eval`: whether the chunk runs when the document is rendered.
+    ///
+    /// Code in a chunk that doesn't run neither defines nor reads anything,
+    /// and cannot stop the chunks that follow. Guessing `false` is the harmful
+    /// direction: it would drop the chunk's reads, which can turn an object
+    /// used only there into a false `unused_object` report.
+    pub eval: bool,
+    /// `error`: whether an error raised by the chunk is tolerated.
+    ///
+    /// Under `error = TRUE` knitr prints the condition and carries on, both
+    /// through the rest of the chunk and through the rest of the document, so
+    /// a `stop()` there ends nothing.
+    pub error: bool,
+}
+
+impl Default for ChunkOptions {
+    fn default() -> Self {
+        Self { eval: true, error: false }
+    }
+}
+
 /// An R code chunk extracted from an Rmd/Qmd document.
 #[derive(Debug)]
 pub struct RCodeChunk {
@@ -63,25 +112,19 @@ pub struct RCodeChunk {
     pub start_byte: usize,
     /// The chunk options as written in the opening fence, i.e. everything
     /// between `{r` and `}` (`" my-chunk, echo = FALSE"`).
-    pub options: String,
-    /// Whether the chunk runs when the document is rendered, i.e. whether it
-    /// is *not* marked `eval = FALSE` (header form) or `#| eval: false`
-    /// (Quarto form).
-    ///
-    /// Only literal false values count. An `eval` whose value is an expression
-    /// is unknowable here, and guessing "not evaluated" is the harmful
-    /// direction: it would drop the chunk's reads, which can turn an object
-    /// used only there into a false `unused_object` report. Guessing
-    /// "evaluated" can only leave a diagnostic unreported.
-    pub evaluated: bool,
+    pub header: String,
+    /// The options that govern how the chunk is read, from either form.
+    pub options: ChunkOptions,
 }
 
 /// A chunk being accumulated between its opening and closing fence.
 struct PendingChunk {
     code: String,
     start_byte: usize,
-    header_eval_false: bool,
-    options: String,
+    /// The options the opening fence already settled. The Quarto `#|` block is
+    /// part of the code, so it can only be read once the chunk is complete.
+    header_options: ChunkOptions,
+    header: String,
 }
 
 /// Extract all executable R code chunks from Rmd/Qmd content.
@@ -105,10 +148,13 @@ pub fn extract_r_chunks(content: &str) -> Vec<RCodeChunk> {
                 // Closing fence found — emit the chunk.
                 let code = std::mem::take(&mut pending.code);
                 chunks.push(RCodeChunk {
-                    evaluated: !pending.header_eval_false && !yaml_says_eval_false(&code),
+                    options: ChunkOptions {
+                        eval: pending.header_options.eval && !yaml_says_eval_false(&code),
+                        error: pending.header_options.error || yaml_says_error_true(&code),
+                    },
                     code,
                     start_byte: pending.start_byte,
-                    options: std::mem::take(&mut pending.options),
+                    header: std::mem::take(&mut pending.header),
                 });
                 finished = true;
             } else {
@@ -117,15 +163,18 @@ pub fn extract_r_chunks(content: &str) -> Vec<RCodeChunk> {
         } else if let Some(caps) = OPEN_FENCE.captures(line) {
             // Opening fence found — start a new chunk.
             let fence = caps.get(1).unwrap().as_str().to_string();
-            let options = caps.get(2).unwrap().as_str().to_string();
+            let header = caps.get(2).unwrap().as_str().to_string();
             current = Some((
                 fence,
                 PendingChunk {
                     code: String::new(),
                     // The chunk code starts immediately after this line.
                     start_byte: byte_offset + line.len(),
-                    header_eval_false: HEADER_EVAL_FALSE.is_match(&options),
-                    options,
+                    header_options: ChunkOptions {
+                        eval: !HEADER_EVAL_FALSE.is_match(&header),
+                        error: HEADER_ERROR_TRUE.is_match(&header),
+                    },
+                    header,
                 },
             ));
         }
@@ -141,14 +190,24 @@ pub fn extract_r_chunks(content: &str) -> Vec<RCodeChunk> {
 }
 
 /// Whether the chunk's Quarto option block sets `eval: false`.
+fn yaml_says_eval_false(code: &str) -> bool {
+    yaml_option_matches(code, &YAML_EVAL_FALSE)
+}
+
+/// Whether the chunk's Quarto option block sets `error: true`.
+fn yaml_says_error_true(code: &str) -> bool {
+    yaml_option_matches(code, &YAML_ERROR_TRUE)
+}
+
+/// Whether any of the chunk's Quarto options matches `pattern`.
 ///
 /// Quarto only reads `#|` options from the run of lines at the very top of the
 /// chunk, so the scan stops at the first line that isn't one. A `#| eval:
 /// false` further down is a plain comment.
-fn yaml_says_eval_false(code: &str) -> bool {
+fn yaml_option_matches(code: &str, pattern: &Regex) -> bool {
     code.lines()
         .take_while(|line| line.trim_start().starts_with("#|"))
-        .any(|line| YAML_EVAL_FALSE.is_match(line))
+        .any(|line| pattern.is_match(line))
 }
 
 /// The R code found in a chunk's options, as snippets the caller can parse.
@@ -167,7 +226,7 @@ fn yaml_says_eval_false(code: &str) -> bool {
 pub fn chunk_option_code(chunk: &RCodeChunk) -> Vec<String> {
     let mut snippets = Vec::new();
 
-    if let Some(options) = header_options_without_label(&chunk.options) {
+    if let Some(options) = header_options_without_label(&chunk.header) {
         snippets.push(format!("list({options})"));
     }
 
@@ -375,11 +434,22 @@ pub struct VirtualSource {
     /// parse errors. Their code is absent from `source`, so anything they read
     /// is invisible to the analysis unless the caller accounts for it.
     pub skipped: Vec<usize>,
-    /// Spans in `source` covering the chunks that don't run when the document
-    /// is rendered (see [`RCodeChunk::evaluated`]). Their code is still linted
-    /// — it is code the author wrote and readers see — but it neither defines
-    /// nor reads anything, so use-def analysis has to leave it out.
-    pub unevaluated: Vec<TextRange>,
+    /// Where each chunk landed in `source`, with the options that govern it,
+    /// in document order and non-overlapping. Rules read this to tell what a
+    /// chunk's code does at render time — an `eval = FALSE` chunk is still
+    /// linted, because it is code the author wrote and readers see, but it
+    /// neither defines nor reads anything.
+    pub chunks: Vec<ChunkSpan>,
+}
+
+/// Where one chunk's code sits in a [`VirtualSource`], and the options that
+/// govern it.
+#[derive(Debug, Clone, Copy)]
+pub struct ChunkSpan {
+    /// The chunk's span in the virtual source.
+    pub range: TextRange,
+    /// The chunk's options.
+    pub options: ChunkOptions,
 }
 
 /// Build a virtual R source string by concatenating all valid R chunks,
@@ -392,7 +462,7 @@ pub fn build_virtual_r_source(chunks: &[RCodeChunk]) -> VirtualSource {
     let mut virtual_src = String::new();
     let mut segments: Vec<Segment> = Vec::new();
     let mut skipped: Vec<usize> = Vec::new();
-    let mut unevaluated: Vec<TextRange> = Vec::new();
+    let mut spans: Vec<ChunkSpan> = Vec::new();
 
     for (i, chunk) in chunks.iter().enumerate() {
         // Skip empty chunks.
@@ -436,19 +506,20 @@ pub fn build_virtual_r_source(chunks: &[RCodeChunk]) -> VirtualSource {
             virtual_src.push('\n');
         }
 
-        if !chunk.evaluated {
-            unevaluated.push(TextRange::new(
+        spans.push(ChunkSpan {
+            range: TextRange::new(
                 TextSize::from(chunk_start as u32),
                 TextSize::from(virtual_src.len() as u32),
-            ));
-        }
+            ),
+            options: chunk.options,
+        });
     }
 
     VirtualSource {
         source: virtual_src,
         offset_map: OffsetMap { segments },
         skipped,
-        unevaluated,
+        chunks: spans,
     }
 }
 
@@ -763,7 +834,7 @@ mod tests {
     fn evaluated(content: &str) -> bool {
         let chunks = extract_r_chunks(content);
         assert_eq!(chunks.len(), 1, "expected exactly one chunk");
-        chunks[0].evaluated
+        chunks[0].options.eval
     }
 
     #[test]
@@ -798,6 +869,7 @@ mod tests {
         // A different option whose name ends in `eval`, and a value that
         // merely mentions FALSE.
         assert!(evaluated("```{r, reeval = FALSE}\nx <- 1\n```\n"));
+        assert!(evaluated("```{r, fig.eval = FALSE}\nx <- 1\n```\n"));
         assert!(evaluated("```{r, echo = FALSE}\nx <- 1\n```\n"));
     }
 
@@ -832,15 +904,90 @@ mod tests {
         let virtual_source = build_virtual_r_source(&chunks);
 
         assert_eq!(virtual_source.source, "keep <- 1\ndead <- 2\n");
-        assert_eq!(virtual_source.unevaluated.len(), 1);
-        let range = virtual_source.unevaluated[0];
+        assert_eq!(virtual_source.chunks.len(), 2);
+        assert!(virtual_source.chunks[0].options.eval);
+        assert!(!virtual_source.chunks[1].options.eval);
+        let range = virtual_source.chunks[1].range;
         assert_eq!(&virtual_source.source[range], "dead <- 2\n");
     }
 
+    // --- error = TRUE ---
+
+    /// Whether the single chunk of `content` stops the render when it errors.
+    fn stops_on_error(content: &str) -> bool {
+        let chunks = extract_r_chunks(content);
+        assert_eq!(chunks.len(), 1, "expected exactly one chunk");
+        !chunks[0].options.error
+    }
+
     #[test]
-    fn test_evaluated_chunks_have_no_unevaluated_span() {
+    fn test_header_error_true_does_not_stop_on_error() {
+        assert!(!stops_on_error("```{r, error = TRUE}\nx <- 1\n```\n"));
+        assert!(!stops_on_error("```{r error=TRUE}\nx <- 1\n```\n"));
+        assert!(!stops_on_error(
+            "```{r label, error=T, echo=TRUE}\nx <- 1\n```\n"
+        ));
+    }
+
+    #[test]
+    fn test_header_error_false_stops_on_error() {
+        assert!(stops_on_error("```{r, error = FALSE}\nx <- 1\n```\n"));
+    }
+
+    #[test]
+    fn test_header_error_expression_stops_on_error() {
+        // Decided at render time, so take the reading that keeps reporting.
+        assert!(stops_on_error("```{r, error = allow_it}\nx <- 1\n```\n"));
+    }
+
+    #[test]
+    fn test_error_is_not_confused_with_another_option() {
+        assert!(stops_on_error("```{r, on.error = TRUE}\nx <- 1\n```\n"));
+        assert!(stops_on_error("```{r, echo = TRUE}\nx <- 1\n```\n"));
+    }
+
+    #[test]
+    fn test_quarto_error_true_does_not_stop_on_error() {
+        assert!(!stops_on_error("```{r}\n#| error: true\nx <- 1\n```\n"));
+        assert!(!stops_on_error(
+            "```{r}\n#| label: a\n#| error: TRUE\nx <- 1\n```\n"
+        ));
+    }
+
+    #[test]
+    fn test_quarto_error_false_stops_on_error() {
+        assert!(stops_on_error("```{r}\n#| error: false\nx <- 1\n```\n"));
+    }
+
+    #[test]
+    fn test_error_tolerant_chunk_span_covers_its_code() {
+        let content = "```{r}\nkeep <- 1\n```\n\n```{r, error = TRUE}\nboom <- 2\n```\n";
+        let chunks = extract_r_chunks(content);
+        let virtual_source = build_virtual_r_source(&chunks);
+
+        assert_eq!(virtual_source.source, "keep <- 1\nboom <- 2\n");
+        assert_eq!(virtual_source.chunks.len(), 2);
+        assert!(!virtual_source.chunks[0].options.error);
+        assert!(virtual_source.chunks[1].options.error);
+        let range = virtual_source.chunks[1].range;
+        assert_eq!(&virtual_source.source[range], "boom <- 2\n");
+    }
+
+    #[test]
+    fn test_ordinary_chunk_carries_the_default_options() {
         let chunks = extract_r_chunks("```{r}\nx <- 1\n```\n");
-        assert!(build_virtual_r_source(&chunks).unevaluated.is_empty());
+        let virtual_source = build_virtual_r_source(&chunks);
+        assert_eq!(virtual_source.chunks.len(), 1);
+        assert_eq!(virtual_source.chunks[0].options, ChunkOptions::default());
+    }
+
+    #[test]
+    fn test_skipped_chunk_has_no_span() {
+        // A chunk left out of the virtual source has no code there to govern.
+        let content = "```{r}\nx <- 1\n```\n\n```{r}\nif (y\n```\n";
+        let virtual_source = build_virtual_r_source(&extract_r_chunks(content));
+        assert_eq!(virtual_source.skipped, vec![1]);
+        assert_eq!(virtual_source.chunks.len(), 1);
     }
 
     // --- Skipped chunks ---

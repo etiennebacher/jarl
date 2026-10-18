@@ -9,6 +9,7 @@ const FORMALS_IFELSE: Formals = &["test", "yes", "no"];
 const FORMALS_IF_ELSE: Formals = &["condition", "true", "false", "missing"];
 const FORMALS_FIFELSE: Formals = &["test", "yes", "no", "na"];
 
+/// <!-- docs: start -->
 /// Version added: 0.4.0
 ///
 /// ## What it does
@@ -45,6 +46,7 @@ const FORMALS_FIFELSE: Formals = &["test", "yes", "no", "na"];
 /// x %in% letters
 /// !(x > 1) # (or `x <= 1`)
 /// ```
+/// <!-- docs: end -->
 pub fn redundant_ifelse(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     if fn_name != "ifelse" && fn_name != "if_else" && fn_name != "fifelse" {
         return Ok(None);

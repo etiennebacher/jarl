@@ -6,6 +6,7 @@ use biome_rowan::AstNode;
 
 pub struct Sort;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.16
 ///
 /// ## What it does
@@ -37,6 +38,7 @@ pub struct Sort;
 /// ## References
 ///
 /// See `?sort`
+/// <!-- docs: end -->
 impl Violation for Sort {
     fn rule(&self) -> Rule {
         Rule::Sort

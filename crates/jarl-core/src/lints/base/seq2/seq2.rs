@@ -6,6 +6,7 @@ use crate::{
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 
+/// <!-- docs: start -->
 /// Version added: 0.2.0
 ///
 /// ## What it does
@@ -43,6 +44,7 @@ use biome_rowan::{AstNode, AstSeparatedList};
 ///   print("hi")
 /// }
 /// ```
+/// <!-- docs: end -->
 pub fn seq2(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     if fn_name != "seq" {
         return Ok(None);

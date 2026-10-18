@@ -1,83 +1,14 @@
 //! Utility functions for the Jarl LSP server
 
-use std::path::Path;
-
-use air_workspace::resolve::PathResolver;
-use jarl_core::discovery::{
-    DEFAULT_EXCLUDE_PATTERNS, exclude_matcher, excluded_with_parents, include_matcher,
-};
-use jarl_core::settings::Settings;
-
-/// Check if a file should be excluded based on settings from jarl.toml
-///
-/// Honours the `exclude`, `default-exclude` and `include` options. The matching
-/// itself is delegated to `jarl_core::discovery` so that the LSP and
-/// `jarl check` exclude exactly the same files.
-///
-/// # Arguments
-/// * `file_path` - The path to the file to check
-/// * `resolver` - The path resolver containing the discovered settings
-///
-/// # Returns
-/// `true` if the file should be excluded from linting, `false` otherwise
-pub fn should_exclude_file_based_on_settings(
-    file_path: &Path,
-    resolver: &PathResolver<Settings>,
-) -> bool {
-    // Exclude patterns are anchored at the directory of the config they come
-    // from, so the nearest config wins. `resolve()` misses the user-level config
-    // directory, which is never an ancestor of the file, hence the fallback.
-    let Some(settings_item) = resolver
-        .resolve(file_path)
-        .or_else(|| resolver.items().first())
-    else {
-        // No settings found, don't exclude
-        return false;
-    };
-
-    excluded_by_settings(file_path, settings_item.value(), settings_item.path())
-}
-
-/// Whether `path` is filtered out by the `exclude`, `default-exclude` and
-/// `include` patterns of `settings`, whose configuration directory is `root`.
-///
-/// The matchers come from `jarl_core::discovery`, which is what makes the LSP
-/// and `jarl check` exclude the same files: one set of glob semantics, provided
-/// by the `ignore` crate.
-fn excluded_by_settings(path: &Path, settings: &Settings, root: &Path) -> bool {
-    let relative = path.strip_prefix(root).unwrap_or(path);
-
-    let mut exclude: Vec<&str> = Vec::new();
-    if let Some(patterns) = &settings.linter.exclude {
-        exclude.extend(patterns.iter().map(String::as_str));
-    }
-    if settings.linter.default_exclude.unwrap_or(true) {
-        exclude.extend_from_slice(DEFAULT_EXCLUDE_PATTERNS);
-    }
-    if let Some(overrides) = exclude_matcher(root, &exclude)
-        && excluded_with_parents(&overrides, relative)
-    {
-        return true;
-    }
-
-    // If `include` is set, only files matching at least one pattern are linted.
-    if let Some(patterns) = &settings.linter.include
-        && let Some(overrides) = include_matcher(root, patterns)
-        && !matches!(
-            overrides.matched(relative, false),
-            ignore::Match::Whitelist(_)
-        )
-    {
-        return true;
-    }
-
-    false
-}
+pub use jarl_core::discovery::should_exclude_file_based_on_settings;
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use air_workspace::resolve::PathResolver;
+    use jarl_core::settings::Settings;
     use std::fs;
+    use std::path::Path;
     use std::path::PathBuf;
 
     use jarl_core::discovery::discover_r_file_paths;

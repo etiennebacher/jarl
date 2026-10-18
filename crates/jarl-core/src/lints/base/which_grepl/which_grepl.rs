@@ -11,6 +11,7 @@ const FORMALS_WHICH: Formals = &["x", "arr.ind", "useNames"];
 
 pub struct WhichGrepl;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.8
 ///
 /// ## What it does
@@ -44,6 +45,7 @@ pub struct WhichGrepl;
 /// ## References
 ///
 /// See `?grep`
+/// <!-- docs: end -->
 impl Violation for WhichGrepl {
     fn rule(&self) -> Rule {
         Rule::WhichGrepl

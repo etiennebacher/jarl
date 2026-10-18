@@ -62,15 +62,17 @@ fn test_server_startup_basic() {
 
 #[test]
 fn test_diagnostic_fix_serialization() {
-    use jarl_lsp::lint::DiagnosticFix;
+    use jarl_lsp::lint::{DiagnosticEdit, DiagnosticFix};
     use serde_json;
 
     // Test that DiagnosticFix can be properly serialized/deserialized
-    // This is used when embedding fix data in LSP diagnostics
+    // This is used when embedding fix data in LSP diagnostics. A fix can hold
+    // several edits, so the round-trip has to preserve all of them.
     let fix = DiagnosticFix {
-        content: "x <- 1".to_string(),
-        start: 0,
-        end: 5,
+        edits: vec![
+            DiagnosticEdit { content: "x <- 1".to_string(), start: 0, end: 5 },
+            DiagnosticEdit { content: String::new(), start: 10, end: 14 },
+        ],
         is_safe: true,
         rule_name: "assignment".to_string(),
         diagnostic_start: 0,
@@ -80,9 +82,12 @@ fn test_diagnostic_fix_serialization() {
     let json_value = serde_json::to_value(&fix).unwrap();
     let deserialized: DiagnosticFix = serde_json::from_value(json_value).unwrap();
 
-    assert_eq!(deserialized.content, fix.content);
-    assert_eq!(deserialized.start, fix.start);
-    assert_eq!(deserialized.end, fix.end);
+    assert_eq!(deserialized.edits.len(), fix.edits.len());
+    for (got, expected) in deserialized.edits.iter().zip(&fix.edits) {
+        assert_eq!(got.content, expected.content);
+        assert_eq!(got.start, expected.start);
+        assert_eq!(got.end, expected.end);
+    }
     assert_eq!(deserialized.is_safe, fix.is_safe);
 }
 

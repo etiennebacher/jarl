@@ -165,6 +165,48 @@ mod tests {
     }
 
     #[test]
+    fn test_non_ascii_function_used_across_files_not_flagged() {
+        let dir = TempDir::new().unwrap();
+        let r_dir = dir.path().join("R");
+        fs::create_dir(&r_dir).unwrap();
+        fs::write(dir.path().join("DESCRIPTION"), "Package: test").unwrap();
+        fs::write(dir.path().join("NAMESPACE"), "export(public_fn)\n").unwrap();
+
+        let file_a = r_dir.join("definitions.R");
+        fs::write(
+            &file_a,
+            "中文函数 <- function(x) x\n未使用 <- function() 1\nunused_helper <- function() 2\n",
+        )
+        .unwrap();
+
+        let file_b = r_dir.join("uses.R");
+        fs::write(&file_b, "use_functions <- function(x) 中文函数(x)\n").unwrap();
+
+        let shared = scan_r_package_paths(&[file_a, file_b], true);
+        let result =
+            compute_unused_from_shared(&shared, &default_options(), &read_namespace(dir.path()));
+
+        assert!(
+            !result
+                .values()
+                .any(|v| v.iter().any(|(name, _, _)| name == "中文函数")),
+            "used non-ASCII function should not be flagged"
+        );
+        assert!(
+            result
+                .values()
+                .any(|v| v.iter().any(|(name, _, _)| name == "未使用")),
+            "unused non-ASCII function should still be flagged"
+        );
+        assert!(
+            result
+                .values()
+                .any(|v| v.iter().any(|(name, _, _)| name == "unused_helper")),
+            "unused ASCII function should still be flagged"
+        );
+    }
+
+    #[test]
     fn test_internal_s3_method_not_flagged() {
         let dir = TempDir::new().unwrap();
         let r_dir = dir.path().join("R");
@@ -789,16 +831,16 @@ mod tests {
          --> [PKG]/R/unused_1.R:1:1
           |
         1 | unused_fn_1 <- function() 1
-          | ----------- `unused_fn_1` is defined but never called in this package.
+          | ----------- `unused_fn_1` is defined but is never called in this package nor is it exported in NAMESPACE.
           |
-          = help: Defined at [PKG]/R/unused_1.R:1:1 but never called
+          = help: Defined at [PKG]/R/unused_1.R:1:1.
         warning: unused_function
          --> [PKG]/R/unused_2.R:1:1
           |
         1 | unused_fn_2 <- function() 2
-          | ----------- `unused_fn_2` is defined but never called in this package.
+          | ----------- `unused_fn_2` is defined but is never called in this package nor is it exported in NAMESPACE.
           |
-          = help: Defined at [PKG]/R/unused_2.R:1:1 but never called
+          = help: Defined at [PKG]/R/unused_2.R:1:1.
         Found 2 errors.
         "
         );

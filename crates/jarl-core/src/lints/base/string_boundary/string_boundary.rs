@@ -4,6 +4,7 @@ use crate::utils::{get_function_name, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.3.0
 ///
 /// ## What it does
@@ -33,6 +34,7 @@ use biome_rowan::AstNode;
 /// ## References
 ///
 /// See `?startsWith` and `?substr`
+/// <!-- docs: end -->
 pub fn string_boundary(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 

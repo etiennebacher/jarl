@@ -52,6 +52,9 @@ mod tests {
         expect_no_lint("mtcars$F", "true_false_symbol", None);
         expect_no_lint("mtcars$T", "true_false_symbol", None);
         expect_no_lint("T$F", "true_false_symbol", None);
+        expect_no_lint("pkg::T", "true_false_symbol", None);
+        expect_no_lint("pkg:::F", "true_false_symbol", None);
+        expect_no_lint("T::foo", "true_false_symbol", None);
     }
 
     #[test]

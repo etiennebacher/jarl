@@ -315,6 +315,20 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    ConsecutiveSigns => {
+        name: "consecutive_signs",
+        categories: [Read, Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    CyclomaticComplexity => {
+        name: "cyclomatic_complexity",
+        categories: [Read],
+        default: Disabled,
+        fix: None,
+        min_r_version: None,
+    },
     DownloadFile => {
         name: "download_file",
         categories: [Susp],
@@ -427,6 +441,7 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    #[deprecated(version = "0.7.0", replacement = "undesirable_operator")]
     InternalFunction => {
         name: "internal_function",
         categories: [Susp],
@@ -460,6 +475,13 @@ declare_rules! {
         categories: [Perf, Read],
         default: Enabled,
         fix: Safe,
+        min_r_version: None,
+    },
+    LibraryCall => {
+        name: "library_call",
+        categories: [Read],
+        default: Disabled,
+        fix: Unsafe,
         min_r_version: None,
     },
     List2df => {
@@ -651,6 +673,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    UndesirableOperator => {
+        name: "undesirable_operator",
+        categories: [Corr],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     UnnecessaryNesting => {
         name: "unnecessary_nesting",
         categories: [Read],
@@ -698,6 +727,14 @@ declare_rules! {
         categories: [Perf, Read],
         default: Enabled,
         fix: Safe,
+        min_r_version: None,
+    },
+
+    YodaCondition => {
+        name: "yoda_condition",
+        categories: [Read],
+        default: Disabled,
+        fix: Unsafe,
         min_r_version: None,
     },
 

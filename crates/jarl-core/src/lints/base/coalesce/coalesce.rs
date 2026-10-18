@@ -4,6 +4,7 @@ use crate::utils::{get_function_name, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstNodeList};
 
+/// <!-- docs: start -->
 /// Version added: 0.0.19
 ///
 /// ## What it does
@@ -62,9 +63,10 @@ use biome_rowan::{AstNode, AstNodeList};
 /// x %||% y # (in both cases)
 /// ```
 ///
-/// ## Reference
+/// ## References
 ///
 /// See `?Control`
+/// <!-- docs: end -->
 pub fn coalesce(ast: &RIfStatement) -> anyhow::Result<Option<Diagnostic>> {
     let condition = ast.condition()?;
     let consequence = ast.consequence()?;

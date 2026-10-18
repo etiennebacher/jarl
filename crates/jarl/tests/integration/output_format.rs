@@ -170,12 +170,17 @@ fn test_output_json() -> anyhow::Result<()> {
             "column": 0
           },
           "fix": {
-            "content": "anyNA(x)",
-            "range": [
-              0,
-              13
+            "edits": [
+              {
+                "range": [
+                  0,
+                  13
+                ],
+                "content": "anyNA(x)"
+              }
             ],
-            "to_skip": false
+            "to_skip": false,
+            "safety": "safe"
           }
         },
         {
@@ -194,12 +199,17 @@ fn test_output_json() -> anyhow::Result<()> {
             "column": 0
           },
           "fix": {
-            "content": "anyDuplicated(x) > 0",
-            "range": [
-              0,
-              18
+            "edits": [
+              {
+                "range": [
+                  0,
+                  18
+                ],
+                "content": "anyDuplicated(x) > 0"
+              }
             ],
-            "to_skip": false
+            "to_skip": false,
+            "safety": "safe"
           }
         }
       ],
@@ -243,12 +253,17 @@ fn test_output_json() -> anyhow::Result<()> {
             "column": 0
           },
           "fix": {
-            "content": "anyNA(x)",
-            "range": [
-              0,
-              13
+            "edits": [
+              {
+                "range": [
+                  0,
+                  13
+                ],
+                "content": "anyNA(x)"
+              }
             ],
-            "to_skip": false
+            "to_skip": false,
+            "safety": "safe"
           }
         },
         {
@@ -267,12 +282,17 @@ fn test_output_json() -> anyhow::Result<()> {
             "column": 0
           },
           "fix": {
-            "content": "anyDuplicated(x) > 0",
-            "range": [
-              0,
-              18
+            "edits": [
+              {
+                "range": [
+                  0,
+                  18
+                ],
+                "content": "anyDuplicated(x) > 0"
+              }
             ],
-            "to_skip": false
+            "to_skip": false,
+            "safety": "safe"
           }
         }
       ],
@@ -629,19 +649,37 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
             "column": 0
           },
           "fix": {
-            "content": "anyNA(x)",
-            "range": [
-              0,
-              13
+            "edits": [
+              {
+                "range": [
+                  0,
+                  13
+                ],
+                "content": "anyNA(x)"
+              }
             ],
-            "to_skip": false
+            "to_skip": false,
+            "safety": "safe"
           }
         }
       ],
       "errors": [
         {
           "file": "test2.R",
-          "error": "Failed to parse test2.R due to syntax errors."
+          "error": "Failed to parse test2.R due to syntax errors.",
+          "syntax_errors": [
+            {
+              "message": "expected `)` but instead the file ends",
+              "range": [
+                4,
+                4
+              ],
+              "location": {
+                "row": 1,
+                "column": 4
+              }
+            }
+          ]
         }
       ]
     }
@@ -666,7 +704,195 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
     ::warning title=Jarl (any_is_na),file=test.R,line=1,col=1::test.R:1:1 [any_is_na] `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
 
     ----- stderr -----
+    Error: test2.R:1:5 expected `)` but instead the file ends
     "
+    );
+
+    let sarif = case
+        .command()
+        .arg("check")
+        .arg(".")
+        .arg("--output-format")
+        .arg("sarif")
+        .run()
+        .normalize_os_executable_name();
+
+    assert_eq!(sarif.status.code(), Some(255));
+    assert!(
+        sarif
+            .stderr
+            .contains("Error: test2.R:1:5 expected `)` but instead the file ends")
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_output_json_fix_safety() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        ("safe.R", "any(is.na(x))"),
+        ("unsafe.R", "!all.equal(x, y)"),
+        ("none.R", "1 + + + 1"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("json")
+            .run()
+            .normalize_os_executable_name(),
+        @r#"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    {
+      "diagnostics": [
+        {
+          "message": {
+            "name": "consecutive_signs",
+            "body": "Consecutive `+` and `-` operators are usually unnecessary and look like a typo.",
+            "suggestion": "Consider removing the unnecessary operators or using parentheses to show that this is intentional."
+          },
+          "filename": "none.R",
+          "range": [
+            2,
+            7
+          ],
+          "location": {
+            "row": 1,
+            "column": 2
+          },
+          "fix": {
+            "edits": [],
+            "to_skip": true,
+            "safety": "none"
+          }
+        },
+        {
+          "message": {
+            "name": "any_is_na",
+            "body": "`any(is.na(...))` is inefficient.",
+            "suggestion": "Use `anyNA(...)` instead."
+          },
+          "filename": "safe.R",
+          "range": [
+            0,
+            13
+          ],
+          "location": {
+            "row": 1,
+            "column": 0
+          },
+          "fix": {
+            "edits": [
+              {
+                "range": [
+                  0,
+                  13
+                ],
+                "content": "anyNA(x)"
+              }
+            ],
+            "to_skip": false,
+            "safety": "safe"
+          }
+        },
+        {
+          "message": {
+            "name": "all_equal",
+            "body": "If `all.equal()` is false, it will return a string and not `FALSE`.",
+            "suggestion": "Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required."
+          },
+          "filename": "unsafe.R",
+          "range": [
+            0,
+            16
+          ],
+          "location": {
+            "row": 1,
+            "column": 0
+          },
+          "fix": {
+            "edits": [
+              {
+                "range": [
+                  0,
+                  16
+                ],
+                "content": "!isTRUE(all.equal(x, y))"
+              }
+            ],
+            "to_skip": false,
+            "safety": "unsafe"
+          }
+        }
+      ],
+      "errors": []
+    }
+    ----- stderr -----
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_output_json_multiple_syntax_errors() -> anyhow::Result<()> {
+    let case = CliTest::with_files([("test.R", "x <- (1 +\ny <- function(,) 1\nz <- [\n")])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("json")
+            .run()
+            .normalize_os_executable_name(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+    {
+      "diagnostics": [],
+      "errors": [
+        {
+          "file": "test.R",
+          "error": "Failed to parse test.R due to syntax errors.",
+          "syntax_errors": [
+            {
+              "message": "expected an identifier",
+              "range": [
+                24,
+                25
+              ],
+              "location": {
+                "row": 2,
+                "column": 14
+              }
+            },
+            {
+              "message": "expected an expression",
+              "range": [
+                34,
+                35
+              ],
+              "location": {
+                "row": 3,
+                "column": 5
+              }
+            }
+          ]
+        }
+      ]
+    }
+    ----- stderr -----
+    "#
     );
 
     Ok(())

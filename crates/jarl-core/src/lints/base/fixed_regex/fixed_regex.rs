@@ -35,6 +35,7 @@ const FORMALS_REGEXPR: Formals = &[
 
 pub struct FixedRegex;
 
+/// <!-- docs: start -->
 /// Version added: 0.3.0
 ///
 /// ## What it does
@@ -67,6 +68,7 @@ pub struct FixedRegex;
 /// ## References
 ///
 /// See `?grep` and `?fixed`
+/// <!-- docs: end -->
 impl Violation for FixedRegex {
     fn rule(&self) -> Rule {
         Rule::FixedRegex

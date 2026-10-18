@@ -62,8 +62,9 @@ pub struct Checker {
     pub suppression: SuppressionManager,
     // Per-rule options resolved from configuration (Arc to avoid expensive clones)
     pub rule_options: Arc<ResolvedRuleOptions>,
-    // Packages loaded via `library()` in this file (or from DESCRIPTION
-    // Depends/Imports when inside an R package), in load order.
+    // Packages attached to the file's search path, in load order: what
+    // `library()` attaches in the file itself, plus DESCRIPTION `Depends` and
+    // NAMESPACE `import()` when inside an R package.
     pub loaded_packages: Vec<String>,
     // Shared package cache for looking up installed package metadata.
     pub package_cache: Option<Arc<PackageCache>>,
@@ -83,10 +84,10 @@ pub struct Checker {
     // consumer. Fresh (empty) when the on-disk contents may drift from the
     // run's caches (fix mode, LSP buffers).
     pub source_index_cache: jarl_semantic::SourceIndexCache,
-    // Ranges of the file that are parsed but never evaluated, so use-def
-    // rules must not read a definition or a use out of them. Only Rmd/Qmd
-    // documents have any: the chunks marked `eval = FALSE`.
-    pub unevaluated_ranges: Vec<biome_rowan::TextRange>,
+    // The file's chunks and the knitr options that govern them, in order and
+    // non-overlapping. Only an Rmd/Qmd document has any; an R script is all
+    // ordinary code, which is what `ChunkOptions::default()` describes.
+    pub chunks: Vec<crate::rmd::ChunkSpan>,
 }
 
 impl Checker {
@@ -106,7 +107,7 @@ impl Checker {
             namespace_exports: HashSet::new(),
             file_path: std::path::PathBuf::new(),
             source_index_cache: jarl_semantic::SourceIndexCache::new(),
-            unevaluated_ranges: Vec::new(),
+            chunks: Vec::new(),
         }
     }
 
@@ -118,8 +119,52 @@ impl Checker {
         }
     }
 
+    /// The index in [`Self::chunks`] of the chunk `range` sits in, if any.
+    ///
+    /// The chunks are ordered and don't overlap, so this is a binary search.
+    /// An R script has none, and neither does a range that falls between two
+    /// chunks of a document — code outside a chunk runs on the ordinary terms
+    /// [`crate::rmd::ChunkOptions::default`] describes.
+    pub(crate) fn chunk_index_at(&self, range: biome_rowan::TextRange) -> Option<usize> {
+        let index = self
+            .chunks
+            .partition_point(|chunk| chunk.range.end() <= range.start());
+        self.chunks
+            .get(index)
+            .is_some_and(|chunk| chunk.range.contains_range(range))
+            .then_some(index)
+    }
+
+    /// The spans of the file that are parsed but never evaluated, so use-def
+    /// rules must not read a definition or a use out of them.
+    pub(crate) fn unevaluated_ranges(&self) -> Vec<biome_rowan::TextRange> {
+        self.chunks
+            .iter()
+            .filter(|chunk| !chunk.options.eval)
+            .map(|chunk| chunk.range)
+            .collect()
+    }
+
     pub(crate) fn is_rule_enabled(&mut self, rule: Rule) -> bool {
         self.rule_set.contains(&rule)
+    }
+
+    /// Every package the file's code can name, whether or not it is attached:
+    /// the search path plus the packages a NAMESPACE `importFrom()` binds into
+    /// the package namespace.
+    ///
+    /// Attachment is what decides which package a bare call belongs to, so
+    /// call-resolution rules go through [`Self::resolve_package`] instead. This
+    /// wider view is for idioms that only need the package to be *reachable* —
+    /// `glue("{x}")` interpolates whenever `glue` resolves, however it got there.
+    pub fn packages_in_reach(&self) -> Vec<String> {
+        let mut packages = self.loaded_packages.clone();
+        for package in self.import_from.values() {
+            if !packages.contains(package) {
+                packages.push(package.clone());
+            }
+        }
+        packages
     }
 
     /// Resolve which package a bare function name comes from.
@@ -151,6 +196,28 @@ impl Checker {
             1 => PackageOrigin::Resolved(candidates.into_iter().next().unwrap()),
             _ => PackageOrigin::Ambiguous(candidates),
         }
+    }
+
+    /// Whether `pkg` is attached in this file, and so whether a bare call to
+    /// one of its functions could really be that function.
+    ///
+    /// Unlike [`Self::resolve_package`] this needs no `PackageCache`, hence no
+    /// `Rscript` call: it only asks what the search path contains, not what
+    /// each package exports.
+    pub fn package_available(&self, pkg: &str) -> bool {
+        self.loaded_packages.iter().any(|p| p == pkg)
+    }
+
+    /// Whether `pkg` is reachable from this file at all: attached, or bound
+    /// into the package namespace by a NAMESPACE `importFrom()`.
+    ///
+    /// This is the cheap gate for a whole family of package rules — none of
+    /// them can match in a file that can't name the package — and unlike
+    /// [`Self::packages_in_reach`] it answers without allocating. A `pkg::`
+    /// prefix reaches the package on its own, so a caller holding one needs
+    /// no file-wide reach at all.
+    pub fn package_in_reach(&self, pkg: &str) -> bool {
+        self.package_available(pkg) || self.import_from.values().any(|p| p == pkg)
     }
 
     /// Look up the installed version of a package.
