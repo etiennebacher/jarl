@@ -128,9 +128,6 @@ R/foo.R:3:6  any_is_na
 Apply this fix?
 ```
 
-Each fix is drawn over the previous one, so the terminal shows a single fix at
-a time.
-
 Answering `i` leaves the code untouched and inserts a
 [suppression comment](../howto/suppression-comments.md) above it instead. Jarl
 then asks for the reason to write in the comment; leaving it empty writes the

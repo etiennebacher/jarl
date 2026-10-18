@@ -369,7 +369,7 @@ fn test_eof_stops_asking() -> anyhow::Result<()> {
 
 #[test]
 fn test_cascading_fix_is_offered() -> anyhow::Result<()> {
-    let case = clean_repo([("test.R", "expect_true(all(!is.na(x)))\n")])?;
+    let case = clean_repo([("test.R", "testthat::expect_true(all(!is.na(x)))\n")])?;
 
     let output = case
         .command()
@@ -383,7 +383,7 @@ fn test_cascading_fix_is_offered() -> anyhow::Result<()> {
     // Fixing the outer negation reveals fixes that only apply to the rewritten
     // code, so accepting everything must converge like `--fix` does.
     assert!(output.stdout.contains("Applied 3 fix(es), skipped 0."));
-    insta::assert_snapshot!(case.read_file("test.R")?, @"expect_false(anyNA(x))");
+    insta::assert_snapshot!(case.read_file("test.R")?, @"testthat::expect_false(anyNA(x))");
 
     Ok(())
 }
