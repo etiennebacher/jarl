@@ -97,7 +97,6 @@ fn run_check(
         min_r_version: min_r_version.map(|s| s.to_string()),
         allow_dirty: false,
         allow_no_vcs: true,
-        assignment: None,
     };
 
     let resolver = setup_resolver(&temp_file, settings);
@@ -144,7 +143,6 @@ fn apply_fixes(
         min_r_version: min_r_version.map(|s| s.to_string()),
         allow_dirty: false,
         allow_no_vcs: true,
-        assignment: None,
     };
 
     let resolver = setup_resolver(&temp_file, settings);

@@ -575,7 +575,6 @@ mod tests {
             min_r_version: None,
             allow_dirty: false,
             allow_no_vcs: true,
-            assignment: None,
         };
 
         let config = build_config(&args, None, paths).unwrap();

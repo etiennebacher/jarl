@@ -139,7 +139,6 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         min_r_version: args.min_r_version.clone(),
         allow_dirty: args.allow_dirty,
         allow_no_vcs: args.allow_no_vcs,
-        assignment: args.assignment.clone(),
     };
 
     // Group paths by their closest resolved config directory, so each file is
@@ -324,13 +323,6 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
 
         // ── Warnings ──
         let mut warnings: Vec<String> = Vec::new();
-
-        if check_config.assignment.is_some() {
-            warnings.push(
-                "`--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead."
-                    .to_string(),
-            );
-        }
 
         if unused_fn_hidden {
             warnings.push(format!(

@@ -137,14 +137,6 @@ Output serialization format for violations. Possible values:
 
 ---
 
-**`--assignment <ASSIGNMENT>`**
-
-[DEPRECATED: use `[lint.assignment]` in `jarl.toml`]
-
-Assignment operator to use, can be either `<-` or `=`.
-
----
-
 **`--statistics`**
 
 Show counts for every rule with at least one violation.

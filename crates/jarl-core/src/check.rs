@@ -1015,7 +1015,6 @@ mod tests {
             min_r_version: None,
             allow_dirty: false,
             allow_no_vcs: true,
-            assignment: None,
         };
         let mut config = crate::config::build_config(&args, None, vec![target_path.clone()])
             .expect("build config");
@@ -1131,7 +1130,6 @@ mod tests {
             min_r_version: None,
             allow_dirty: false,
             allow_no_vcs: true,
-            assignment: None,
         };
         let config = crate::config::build_config(&args, None, vec![target_path.clone()])
             .expect("build config");

@@ -195,13 +195,6 @@ pub struct CheckCommand {
     pub output_format: OutputFormat,
     #[arg(
         long,
-        value_enum,
-        help_heading = "Other options",
-        help = "[DEPRECATED: use `[lint.assignment]` in jarl.toml] Assignment operator to use, can be either `<-` or `=`."
-    )]
-    pub assignment: Option<String>,
-    #[arg(
-        long,
         default_value = "false",
         conflicts_with = "fix",
         conflicts_with = "unsafe_fixes",

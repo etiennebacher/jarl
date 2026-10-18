@@ -6,11 +6,8 @@ use crate::{
     rule_set::{ALL_RULES, Category, Rule, RuleSet},
     settings::Settings,
 };
-use air_r_syntax::RSyntaxKind;
 use anyhow::Result;
 use std::{collections::HashSet, path::PathBuf, sync::Arc};
-
-use crate::lints::base::assignment::options::ResolvedAssignmentOptions;
 
 /// Parsed rule selection from CLI or TOML configuration.
 ///
@@ -48,8 +45,6 @@ pub struct ArgsConfig {
     pub allow_dirty: bool,
     /// Apply fixes even if there is no version control system?
     pub allow_no_vcs: bool,
-    /// Which assignment operator to use? Can be `"<-"` or `"="`.
-    pub assignment: Option<String>,
 }
 
 #[derive(Clone)]
@@ -158,14 +153,9 @@ pub fn build_config(
         rules_to_apply
     };
 
-    let mut rule_options = toml_settings
+    let rule_options = toml_settings
         .map(|s| s.linter.rule_options.clone())
         .unwrap_or_default();
-
-    // CLI --assignment overrides the TOML-resolved value
-    if let Some(cli_assignment) = &check_config.assignment {
-        rule_options.assignment = parse_assignment_cli(cli_assignment)?;
-    }
 
     let check_roxygen = toml_settings
         .and_then(|s| s.linter.check_roxygen)
@@ -615,16 +605,5 @@ pub(crate) fn filter_rules_by_version(
                 })
                 .collect::<RuleSet>()
         }
-    }
-}
-
-fn parse_assignment_cli(value: &str) -> Result<ResolvedAssignmentOptions> {
-    match value {
-        "<-" => Ok(ResolvedAssignmentOptions { operator: RSyntaxKind::ASSIGN }),
-        "=" => Ok(ResolvedAssignmentOptions { operator: RSyntaxKind::EQUAL }),
-        _ => Err(anyhow::anyhow!(
-            "Invalid value in `--assignment`: {}",
-            value
-        )),
     }
 }

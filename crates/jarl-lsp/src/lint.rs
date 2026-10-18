@@ -150,7 +150,6 @@ fn run_jarl_linting(
         min_r_version: None,
         allow_dirty: false,
         allow_no_vcs: false,
-        assignment: None,
     };
 
     let toml_settings = resolver.items().first().map(|item| item.value());
