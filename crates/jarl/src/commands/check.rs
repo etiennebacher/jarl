@@ -181,7 +181,9 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         // the same way `--fix-only` does. Which entry point actually runs is
         // decided by `run_check`.
         fix: args.fix || args.interactive,
-        unsafe_fixes: args.unsafe_fixes,
+        // Every fix is shown (and tagged when unsafe) before it is applied, so
+        // there is no reason to hide the ones that need `--unsafe-fixes`.
+        unsafe_fixes: args.unsafe_fixes || args.interactive,
         fix_only: args.fix_only,
         select: args.select.clone(),
         extend_select: args.extend_select.clone(),

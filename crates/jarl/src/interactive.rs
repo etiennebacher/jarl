@@ -328,13 +328,12 @@ fn diff(contents: &str, diagnostic: &Diagnostic, width: usize) -> String {
         .find('\n')
         .map_or(contents.len(), |p| end + p);
 
+    // Everything the fix touches lies within `start..end`, so the lines around
+    // that range are the same before and after.
+    let fixed = jarl_core::fix::apply_fixes(std::slice::from_ref(diagnostic), contents);
+    let fixed_end = line_end + fixed.len() - contents.len();
     let before = &contents[line_start..line_end];
-    let after = format!(
-        "{}{}{}",
-        &contents[line_start..start],
-        diagnostic.fix.content,
-        &contents[end..line_end]
-    );
+    let after = &fixed[line_start..fixed_end];
 
     let leading: Vec<&str> = {
         let mut lines: Vec<&str> = contents[..line_start]

@@ -392,7 +392,7 @@ struct Declined {
     rule: crate::rule_set::Rule,
     start: usize,
     end: usize,
-    content: String,
+    contents: Vec<String>,
 }
 
 impl Declined {
@@ -401,7 +401,12 @@ impl Declined {
             rule: diagnostic.message.rule,
             start: diagnostic.fix.start(),
             end: diagnostic.fix.end(),
-            content: diagnostic.fix.content.clone(),
+            contents: diagnostic
+                .fix
+                .edits
+                .iter()
+                .map(|e| e.content.clone())
+                .collect(),
         }
     }
 
@@ -409,7 +414,10 @@ impl Declined {
         self.rule == diagnostic.message.rule
             && self.start == diagnostic.fix.start()
             && self.end == diagnostic.fix.end()
-            && self.content == diagnostic.fix.content
+            && self
+                .contents
+                .iter()
+                .eq(diagnostic.fix.edits.iter().map(|e| &e.content))
     }
 
     /// Move this fix to where it sits after `start..end` was replaced by
@@ -503,7 +511,16 @@ pub fn lint_fix_interactive(
                         apply_fixes(std::slice::from_ref(diagnostic), &contents),
                         diagnostic.fix.start(),
                         diagnostic.fix.end(),
-                        diagnostic.fix.content.len(),
+                        // The span from the first to the last edit counts as one
+                        // replacement, which is all `Declined::shift` needs.
+                        (diagnostic.fix.end() - diagnostic.fix.start()).saturating_add_signed(
+                            diagnostic
+                                .fix
+                                .edits
+                                .iter()
+                                .map(|e| e.content.len() as isize - (e.end() - e.start()) as isize)
+                                .sum(),
+                        ),
                     ));
                     break;
                 }
