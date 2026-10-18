@@ -57,6 +57,10 @@
 
 ### Bug fixes
 
+* `for_loop_index` no longer mistakes argument names for sequence variables,
+  and now detects reused variables in parentheses, operators, and extracted or
+  subsetted objects (#752, @Yousa-Mirage).
+
 * Prevent `unused_function` and `unused_object` from falsely reporting non-ASCII
   names (#706, @Yousa-Mirage).
 

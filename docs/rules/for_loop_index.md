@@ -5,8 +5,10 @@
 
 ## What it does
 
-Checks whether the index symbol in a for loop is already used anywhere in
-the sequence of the same for loop.
+Checks whether the index variable in a `for` loop also occurs in its
+sequence expression, including inside calls, parentheses, and arithmetic.
+Argument labels, field and namespace names, subscript expressions, and
+function definitions are ignored.
 
 ## Why is this bad?
 
@@ -25,7 +27,7 @@ for (x in x) {
 Use instead:
 ```r
 x <- c(1, 2, 3)
-for (xi in x) {
-  xi + 1
+for (i in x) {
+  i + 1
 }
 ```

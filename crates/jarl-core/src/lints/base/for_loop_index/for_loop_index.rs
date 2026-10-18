@@ -1,7 +1,8 @@
 use crate::diagnostic::*;
 use crate::rule_set::Rule;
 use air_r_syntax::*;
-use biome_rowan::{AstNode, Text};
+use biome_rowan::AstNode;
+use oak_core::syntax_ext::RIdentifierExt;
 
 pub struct ForLoopIndex;
 
@@ -10,8 +11,10 @@ pub struct ForLoopIndex;
 ///
 /// ## What it does
 ///
-/// Checks whether the index symbol in a for loop is already used anywhere in
-/// the sequence of the same for loop.
+/// Checks whether the index variable in a `for` loop also occurs in its
+/// sequence expression, including inside calls, parentheses, and arithmetic.
+/// Argument labels, field and namespace names, subscript expressions, and
+/// function definitions are ignored.
 ///
 /// ## Why is this bad?
 ///
@@ -30,8 +33,8 @@ pub struct ForLoopIndex;
 /// Use instead:
 /// ```r
 /// x <- c(1, 2, 3)
-/// for (xi in x) {
-///   xi + 1
+/// for (i in x) {
+///   i + 1
 /// }
 /// ```
 /// <!-- docs: end -->
@@ -46,56 +49,52 @@ impl Violation for ForLoopIndex {
 
 pub fn for_loop_index(ast: &RForStatement) -> anyhow::Result<Option<Diagnostic>> {
     let RForStatementFields { variable, sequence, .. } = ast.as_fields();
-
-    let variable_text = variable?.to_trimmed_text();
+    let variable = variable?;
+    let name = variable.name_text();
     let sequence = sequence?;
 
-    if contains_identifier(&sequence, &variable_text)? {
-        let range_start = ast.variable()?.range().start();
-        let range_end = ast.sequence()?.range().end();
-        let range = TextRange::new(range_start, range_end);
-        let diagnostic = Diagnostic::new(ForLoopIndex, range, Fix::empty());
-        Ok(Some(diagnostic))
-    } else {
-        Ok(None)
-    }
-}
-
-fn contains_identifier(expr: &AnyRExpression, target: &str) -> anyhow::Result<bool> {
-    let out = match expr {
-        AnyRExpression::RIdentifier(ident) => ident.to_trimmed_text() == target,
-        AnyRExpression::RCall(call) => {
-            let arguments = call.arguments()?.items();
-
-            let arg_names: Vec<Text> = arguments
-                .clone()
-                .into_iter()
-                .filter_map(|x| {
-                    let expr = x.ok()?; // Convert Result to Option
-                    let name_clause = expr.as_fields().name_clause?;
-                    let name = name_clause.name().unwrap();
-                    Some(name.to_trimmed_text())
-                })
-                .collect();
-
-            if arg_names.iter().any(|x| *x == target) {
-                return Ok(true);
-            }
-
-            let arg_values: Vec<AnyRExpression> = arguments
-                .into_iter()
-                .filter_map(|x| x.unwrap().as_fields().value)
-                .collect();
-
-            for expr in arg_values {
-                if contains_identifier(&expr, target)? {
-                    return Ok(true);
-                }
-            }
-            false
+    let mut walk = sequence.syntax().preorder();
+    while let Some(event) = walk.next() {
+        let WalkEvent::Enter(node) = event else {
+            continue;
+        };
+        // Labels and qualified names are not sequence variables. Subscripts
+        // may refer to columns (e.g. DT[, col]); functions have their own scope.
+        if matches!(
+            node.kind(),
+            RSyntaxKind::R_ARGUMENT_NAME_CLAUSE
+                | RSyntaxKind::R_NAMESPACE_EXPRESSION
+                | RSyntaxKind::R_SUBSET_ARGUMENTS
+                | RSyntaxKind::R_SUBSET2_ARGUMENTS
+                | RSyntaxKind::R_FUNCTION_DEFINITION
+        ) {
+            walk.skip_subtree();
+            continue;
         }
-        _ => false,
-    };
 
-    Ok(out)
+        let Some(identifier) = RIdentifier::cast(node) else {
+            continue;
+        };
+        if identifier.name_text() != name {
+            continue;
+        }
+        // In `x()` and `obj$x`, the bare function name and field selector
+        // are not the sequence object. The `obj` expression is still visited.
+        if let Some(parent) = identifier.syntax().parent() {
+            if let Some(call) = RCall::cast_ref(&parent)
+                && call.function()?.syntax() == identifier.syntax()
+            {
+                continue;
+            }
+            if let Some(extract) = RExtractExpression::cast_ref(&parent)
+                && extract.right()?.syntax() == identifier.syntax()
+            {
+                continue;
+            }
+        }
+        let range = TextRange::new(variable.range().start(), sequence.range().end());
+        return Ok(Some(Diagnostic::new(ForLoopIndex, range, Fix::empty())));
+    }
+
+    Ok(None)
 }
