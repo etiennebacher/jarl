@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.10.18">
+<meta name="generator" content="quarto-1.10.19">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -77,7 +77,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-bf27225e3a48a9273f3daa8f8e829971.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="site_libs/bootstrap/bootstrap-9ad4a8038d6fc6fa1ff54a4bf65b5188.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
@@ -331,13 +331,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="menu-text"></span></a>
   </li>  
   <li class="nav-item dropdown ">
-    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-stable-(0.6.0" role="link" data-bs-toggle="dropdown" aria-expanded="false">
- <span class="menu-text">stable (0.6.0)</span>
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-stable-(0.7.0" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">stable (0.7.0)</span>
     </a>
-    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-stable-(0.6.0">    
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-stable-(0.7.0">    
         <li>
     <a class="dropdown-item" href="https://jarl.etiennebacher.com/">
- <span class="dropdown-text">stable (0.6.0)</span></a>
+ <span class="dropdown-text">stable (0.7.0)</span></a>
   </li>  
         <li>
     <a class="dropdown-item" href="https://jarl.etiennebacher.com/dev/">
@@ -369,6 +369,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#list-of-existing-rules" id="toc-list-of-existing-rules" class="nav-link" data-scroll-target="#list-of-existing-rules">List of existing rules</a></li>
   <li><a href="#lint-definition" id="toc-lint-definition" class="nav-link" data-scroll-target="#lint-definition">Lint definition</a></li>
   <li><a href="#adding-a-new-rule" id="toc-adding-a-new-rule" class="nav-link" data-scroll-target="#adding-a-new-rule">Adding a new rule</a></li>
+  <li><a href="#documenting-a-new-rule" id="toc-documenting-a-new-rule" class="nav-link" data-scroll-target="#documenting-a-new-rule">Documenting a new rule</a></li>
   <li><a href="#useful-commands" id="toc-useful-commands" class="nav-link" data-scroll-target="#useful-commands">Useful commands</a></li>
   </ul></li>
   <li><a href="#integration-tests" id="toc-integration-tests" class="nav-link" data-scroll-target="#integration-tests">Integration tests</a></li>
@@ -403,8 +404,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Jarl is written in Rust, so you must <a href="https://rust-lang.org/tools/install/" target="_blank">install the Rust toolchain</a>.</p>
 <p>Jarl relies on Insta to run snapshot tests. You can install it with:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> install cargo-insta</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Jarl uses <a href="https://github.com/casey/just" target="_blank">just</a> to quickly run several useful commands, such as <code>just document</code> or <code>just lint</code> (see the list of commands with <code>just -l</code>). This is not mandatory but convenient.</p>
-<p>For documentation, you will need to have <a href="https://quarto.org/" target="_blank">Quarto</a> and the R packages <code>reactable</code> and <code>rmarkdown</code> installed.</p>
+<p>Jarl uses <a href="https://github.com/casey/just" target="_blank">just</a> to quickly run several useful commands, such as <code>just document</code> or <code>just lint</code> (see the list of commands with <code>just -l</code>). When updating a rule, use <code>just document --no-quarto</code> to regenerate its Markdown page without rendering the full website. Run <code>just document</code> when you also need to render the website.</p>
+<p>For full website rendering, you will need <a href="https://quarto.org/" target="_blank">Quarto</a> and the R packages <code>reactable</code>, <code>rmarkdown</code>, and <code>yaml12</code> installed.</p>
 </section>
 <section id="ai-policy" class="level2">
 <h2 class="anchored" data-anchor-id="ai-policy">AI policy</h2>
@@ -416,11 +417,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="basic-structure-of-the-repository" class="level2">
 <h2 class="anchored" data-anchor-id="basic-structure-of-the-repository">Basic structure of the repository</h2>
-<p>The folder <code>crates</code> contains several sub-crates. At the time of writing (October 2025), there are three:</p>
+<p>The folder <code>crates</code> contains several sub-crates. At the time of writing (September 2026), there are four:</p>
 <ul>
 <li><code>jarl</code> contains the structure of the command-line tool with which users interact. This is where we can add or modify arguments to be passed to the CLI.</li>
 <li><code>jarl-core</code> contains the “meat” of the linter. It is where the R code is parsed and checked, and where the rules are defined. <strong>This is probably the crate you will have to modify.</strong></li>
 <li><code>jarl-lsp</code> contains the code to integrate the linter with the Language Server Protocol, which allows editors such as VS Code or Positron to highlight diagnostics and provide “Quick Fix” buttons for example.</li>
+<li><code>jarl-semantic</code> contains the code to build the semantic index used in some rules (e.g.&nbsp;<code>unused_object</code>). It is unlikely you need to edit this crate.</li>
 </ul>
 </section>
 <section id="adding-or-modifying-a-rule" class="level2">
@@ -450,13 +452,40 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>Add the rule in the <code>src/analyze</code> folder. This depends on the initial node in the AST. For instance, for the rule <code>equals_na</code>, we check the presence of code such as <code>x == NA</code>. Since the top node for this expression is a <code>R_BINARY_EXPRESSION</code>, this rule is ran in <code>src/analyze/binary_expression.rs</code>.</li>
 </ol>
 </section>
+<section id="documenting-a-new-rule" class="level3">
+<h3 class="anchored" data-anchor-id="documenting-a-new-rule">Documenting a new rule</h3>
+<p>The documentation used in <code>jarl rule &lt;rulename&gt;</code> and on the Jarl website is generated from the documentation block in the <code>&lt;rulename.rs&gt;</code> file.</p>
+<p>The documentation block is positioned after any imports and declarations but before any of the code that operates the rule checks. The documentation block must be commented out using three slashes (<code>///</code>), it must start with the marker <code>&lt;!-- docs: start --&gt;</code> and end with the marker <code>&lt;!-- docs: end --&gt;</code>. Commented content outside of these markers will be ignored. The content of the documentation block uses standard markdown notation. Although the documentation website is built using Quarto, do not include any executable code as the documentation is extracted into plain markdown files.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">/// &lt;!-- docs: start --&gt;</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co">/// Version added: 0.1.2</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">///</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co">/// ## What it does</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">///</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co">/// Checks for usage of `do.call(cbind.data.frame, x)`.</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co">///</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co">/// [...]</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co">/// &lt;!-- docs: end --&gt;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The first line of a documentation block must declare the version added (in <code>MAJOR.MINOR.PATCH</code> format). The documentation block should have the following subsections (each using a level 2 (<code>##</code>) markdown header):</p>
+<ul>
+<li>“What is does” to explain what the rule does</li>
+<li>“Why is this bad?” to explain the rationale for the rule and potential caveats</li>
+<li>“Example” to illustrate code that will be flagged by the rule and code that will not be flagged by the rule</li>
+<li>Potentially a “References” section, such as <code>?&lt;function&gt;</code> if more details about the <code>&lt;function&gt;</code> the rule relates to can be found in R help, and/or links to external websites.</li>
+</ul>
+<p>If the rule has configuration options, these should be documented in the rule’s <code>options.rs</code> file and will be automatically included in the rule’s documentation page under the subsection heading “Configuration options”. Options documentation should also be commented out using three slashes and include <code>&lt;!-- docs: start --&gt;</code> and <code>&lt;!-- docs: end --&gt;</code> markers. The options documentation should explain the purpose of any option(s), their possible values and their effect(s). It should also have the following level 3 (<code>###</code>) subsections:</p>
+<ul>
+<li>“Default values” to specify the default settings (if any) used by Jarl when checking the rule, for example any functions that the rule check skips.</li>
+<li>“TOML settings” to show how to set the rule’s configuration options in the <code>jarl.toml</code> file.</li>
+</ul>
+<p>Use <code>just document</code> to build the documentation.</p>
+</section>
 <section id="useful-commands" class="level3">
 <h3 class="anchored" data-anchor-id="useful-commands">Useful commands</h3>
 <ul>
 <li><code>cargo run --bin jarl -- check file.R</code> (or any other paths to check). The <code>--</code> in the middle is required to use the CLI in development mode (i.e.&nbsp;without installing it with <code>cargo install</code>)</li>
 <li><code>cargo insta test</code> and <code>cargo insta review</code> (if necessary) for snapshot tests only.</li>
 <li><code>cargo test</code> to run all tests, including snapshot tests.</li>
-<li><code>cargo install --path crates/jarl --profile=release</code> (or <code>--profile=dev</code>) to have a system-wide install and test the crate in other R projects.</li>
+<li><code>cargo install --path crates/jarl --profile=release</code> (or <code>--profile=dev</code>) to have a system-wide install and test the crate in other R projects. Note that you might need to use the full path to this binary (e.g.&nbsp;<code>/home/etienne/.cargo/bin/jarl</code>) if you have previously installed Jarl in another way.</li>
 </ul>
 </section>
 </section>
@@ -464,7 +493,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="integration-tests">Integration tests</h2>
 <p>When you add a new rule, it is usually sufficient to add tests in the directory of this rule only, e.g.&nbsp;in <code>crates/jarl-core/src/lints/base/any_duplicated</code>.</p>
 <p>However, in some cases you may affect the way users interact with Jarl as a whole, for instance by adding new command line arguments or arguments that can be set in <code>jarl.toml</code>. For those changes, it is important to check that the general behavior of Jarl is correct (check what happens when there are no R files, how TOML and CLI arguments interact, etc.).</p>
-<p>Tests for this are stored in <code>crates/jarl/tests/integration</code>. It is likely that you will need to edit one of the files instead of creating a new one. For example, adding an extra argument in <code>crates/jarl-core/src/toml.rs</code> would require adding tests in <code>crates/jarl/tests/integration/toml_rule_args.rs</code>.</p>
+<p>Tests for this are stored in <code>crates/jarl/tests/integration</code>. You will likely need to edit one of the files instead of creating a new one. For example, adding an extra argument in <code>crates/jarl-core/src/toml.rs</code> would require adding tests in <code>crates/jarl/tests/integration/toml_rule_args.rs</code>.</p>
 </section>
 <section id="pr-title" class="level2">
 <h2 class="anchored" data-anchor-id="pr-title">PR title</h2>

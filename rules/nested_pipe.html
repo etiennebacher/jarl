@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.10.18">
+<meta name="generator" content="quarto-1.10.19">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -77,7 +77,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-bf27225e3a48a9273f3daa8f8e829971.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="../site_libs/bootstrap/bootstrap-9ad4a8038d6fc6fa1ff54a4bf65b5188.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
@@ -331,13 +331,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="menu-text"></span></a>
   </li>  
   <li class="nav-item dropdown ">
-    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-stable-(0.6.0" role="link" data-bs-toggle="dropdown" aria-expanded="false">
- <span class="menu-text">stable (0.6.0)</span>
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-stable-(0.7.0" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">stable (0.7.0)</span>
     </a>
-    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-stable-(0.6.0">    
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-stable-(0.7.0">    
         <li>
     <a class="dropdown-item" href="https://jarl.etiennebacher.com/">
- <span class="dropdown-text">stable (0.6.0)</span></a>
+ <span class="dropdown-text">stable (0.7.0)</span></a>
   </li>  
         <li>
     <a class="dropdown-item" href="https://jarl.etiennebacher.com/dev/">
@@ -415,12 +415,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../rules/browser.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">browser</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
   <a href="../rules/class_equals.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">class_equals</span></a>
   </div>
@@ -447,6 +441,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <div class="sidebar-item-container"> 
   <a href="../rules/condition_message.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">condition_message</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../rules/consecutive_signs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">consecutive_signs</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../rules/cyclomatic_complexity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">cyclomatic_complexity</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -655,6 +661,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../rules/library_call.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">library_call</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../rules/list2df.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">list2df</span></a>
   </div>
@@ -841,6 +853,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../rules/undesirable_operator.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">undesirable_operator</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../rules/unexplained_suppression.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">unexplained_suppression</span></a>
   </div>
@@ -893,6 +911,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
  <span class="menu-text">which_grepl</span></a>
   </div>
 </li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../rules/yoda_condition.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">yoda_condition</span></a>
+  </div>
+</li>
       </ul>
   </li>
     </ul>
@@ -909,6 +933,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#what-it-does" id="toc-what-it-does" class="nav-link" data-scroll-target="#what-it-does">What it does</a></li>
   <li><a href="#why-is-this-bad" id="toc-why-is-this-bad" class="nav-link" data-scroll-target="#why-is-this-bad">Why is this bad?</a></li>
+  <li><a href="#configuration-options" id="toc-configuration-options" class="nav-link" data-scroll-target="#configuration-options">Configuration options</a>
+  <ul class="collapse">
+  <li><a href="#default-values" id="toc-default-values" class="nav-link" data-scroll-target="#default-values">Default values</a></li>
+  <li><a href="#toml-settings" id="toc-toml-settings" class="nav-link" data-scroll-target="#toml-settings">TOML settings</a></li>
+  </ul></li>
   <li><a href="#example" id="toc-example" class="nav-link" data-scroll-target="#example">Example</a></li>
   </ul></li>
   </ul>
@@ -944,15 +973,37 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Nesting a pipe inside another call hides the data flow and makes the code harder to read. Extracting the pipe into its own statement keeps each step on its own line.</p>
 <p><code>try()</code>, <code>tryCatch()</code>, and <code>withCallingHandlers()</code> are automatically skipped. The list of skipped functions can be customized with <a href="https://jarl.etiennebacher.com/reference/config-file#rule-specific-arguments" target="_blank">rule-specific arguments</a> in <code>jarl.toml</code>.</p>
 </section>
+<section id="configuration-options" class="level2">
+<h2 class="anchored" data-anchor-id="configuration-options">Configuration options</h2>
+<p>The operation of the <code>nested_pipe</code> rule can be customised in the <a href="../reference/config-file.html" target="_blank">configuration file</a>.</p>
+<p>Use <code>skipped-functions</code> to fully replace the default list of outer calls whose nested pipes are allowed. Use <code>extend-skipped-functions</code> to add to the default list. Specifying both is an error.</p>
+<section id="default-values" class="level3">
+<h3 class="anchored" data-anchor-id="default-values">Default values</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="dt">skipped-functions</span> <span class="op">=</span> <span class="op">[</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"try"</span><span class="op">,</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"tryCatch"</span><span class="op">,</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"withCallingHandlers"</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="toml-settings" class="level3">
+<h3 class="anchored" data-anchor-id="toml-settings">TOML settings</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="dt">...</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.nested_pipe]</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># also allow in stopifnot()</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="dt">extend-skipped-fuctions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"stopifnot"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
 <section id="example" class="level2">
 <h2 class="anchored" data-anchor-id="example">Example</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(x <span class="sc">%&gt;%</span> <span class="fu">foo</span>() <span class="sc">%&gt;%</span> <span class="fu">bar</span>())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(x <span class="sc">%&gt;%</span> <span class="fu">foo</span>() <span class="sc">%&gt;%</span> <span class="fu">bar</span>())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Use instead:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>out <span class="ot">&lt;-</span> x <span class="sc">%&gt;%</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foo</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bar</span>()</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(out)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>out <span class="ot">&lt;-</span> x <span class="sc">%&gt;%</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foo</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bar</span>()</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(out)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
 </section>
