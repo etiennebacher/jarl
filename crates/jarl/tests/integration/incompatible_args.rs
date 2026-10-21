@@ -216,3 +216,128 @@ fn test_statistics_and_unsafe_fixes_incompatible() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn test_interactive_and_statistics_incompatible() -> anyhow::Result<()> {
+    let case = CliTest::with_files([("foo.R", "any(is.na(x))")])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--interactive")
+            .arg("--statistics")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 2
+    ----- stdout -----
+
+    ----- stderr -----
+    error: the argument '--interactive' cannot be used with '--statistics'
+
+    Usage: jarl check --interactive <FILES>...
+
+    For more information, try '--help'.
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_interactive_and_add_jarl_ignore_incompatible() -> anyhow::Result<()> {
+    let case = CliTest::with_files([("foo.R", "any(is.na(x))")])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--interactive")
+            .arg("--add-jarl-ignore")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 2
+    ----- stdout -----
+
+    ----- stderr -----
+    error: the argument '--interactive' cannot be used with '--add-jarl-ignore[=<REASON>]'
+
+    Usage: jarl check --interactive <FILES>...
+
+    For more information, try '--help'.
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_interactive_and_output_format_incompatible() -> anyhow::Result<()> {
+    let case = CliTest::with_files([("foo.R", "any(is.na(x))")])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--interactive")
+            .arg("--output-format")
+            .arg("json")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 2
+    ----- stdout -----
+
+    ----- stderr -----
+    error: the argument '--interactive' cannot be used with '--output-format <OUTPUT_FORMAT>'
+
+    Usage: jarl check --interactive <FILES>...
+
+    For more information, try '--help'.
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_interactive_and_stdin_file_path_incompatible() -> anyhow::Result<()> {
+    let case = CliTest::new()?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("--interactive")
+            .arg("--stdin-file-path")
+            .arg("a.R")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 2
+    ----- stdout -----
+
+    ----- stderr -----
+    error: the argument '--interactive' cannot be used with '--stdin-file-path <PATH>'
+
+    Usage: jarl check --interactive [FILES]...
+
+    For more information, try '--help'.
+    "
+    );
+
+    Ok(())
+}

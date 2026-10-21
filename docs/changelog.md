@@ -14,6 +14,13 @@ Therefore, I release 0.7.1 so that all releases with 0.7.1 match, no matter wher
 ::: {.callout-note icon=false title="Released on 2026-10-20" .low-opacity}
 :::
 
+### CLI improvements
+
+* New argument `--interactive`, which (when paired with `--fix`) shows each
+  automatic fix as a diff (with the surrounding lines for context) and asks
+  whether to apply the fix or ignore the violation before moving on to the next
+  one.
+
 ### Breaking changes
 
 * The command-line argument `--assignment` and the `jarl.toml` argument `assignment`

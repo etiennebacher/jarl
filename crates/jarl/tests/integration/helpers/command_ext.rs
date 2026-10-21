@@ -1,6 +1,8 @@
 use std::fmt::Display;
+use std::io::Write;
 use std::process::Command;
 use std::process::ExitStatus;
+use std::process::Stdio;
 
 pub trait CommandExt {
     /// Executes the command as a child process, waiting for it to finish and collecting all of its output.
@@ -9,6 +11,12 @@ pub trait CommandExt {
     ///
     /// The [Output] has a suitable [Display] method for capturing with insta
     fn run(&mut self) -> Output;
+
+    /// Like [CommandExt::run], but feeds `input` to the child's stdin.
+    ///
+    /// `--interactive` reads one answer per line when stdin is not a terminal,
+    /// so `"y\nn\n"` answers the first two questions it asks.
+    fn run_with_stdin(&mut self, input: &str) -> Output;
 }
 
 /// Like [std::process::Output], but augmented with `arguments` and a few extra methods
@@ -59,20 +67,40 @@ impl Output {
 impl CommandExt for Command {
     fn run(&mut self) -> Output {
         let output = self.output().unwrap();
-
-        // Go ahead and turn these into `String`
-        let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
-        let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
-
-        let arguments: Vec<String> = self
-            .get_args()
-            .map(|x| x.to_string_lossy().into_owned())
-            .collect();
-
-        let arguments = arguments.join(" ");
-
-        Output { status: output.status, stdout, stderr, arguments }
+        collect(self, output)
     }
+
+    fn run_with_stdin(&mut self, input: &str) -> Output {
+        let mut child = self
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+
+        // Dropping the handle closes the pipe, so the child sees EOF once it
+        // has read every answer we gave it.
+        let mut stdin = child.stdin.take().unwrap();
+        stdin.write_all(input.as_bytes()).unwrap();
+        drop(stdin);
+
+        collect(self, child.wait_with_output().unwrap())
+    }
+}
+
+fn collect(command: &Command, output: std::process::Output) -> Output {
+    // Go ahead and turn these into `String`
+    let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+    let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+
+    let arguments: Vec<String> = command
+        .get_args()
+        .map(|x| x.to_string_lossy().into_owned())
+        .collect();
+
+    let arguments = arguments.join(" ");
+
+    Output { status: output.status, stdout, stderr, arguments }
 }
 
 impl Display for Output {

@@ -28,13 +28,41 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use crate::args::CheckCommand;
-use crate::output_format::{self, GithubEmitter, print_notes, print_summary, print_warnings};
+use crate::interactive::TerminalPrompt;
+use crate::output_format::{
+    self, GithubEmitter, print_notes, print_section_header, print_summary, print_warnings,
+};
 use crate::statistics::print_statistics;
 use crate::status::ExitStatus;
 
 use output_format::{
     ConciseEmitter, Emitter, FullEmitter, JsonEmitter, OutputFormat, SarifEmitter,
 };
+
+fn is_human_format(format: OutputFormat) -> bool {
+    matches!(format, OutputFormat::Full | OutputFormat::Concise)
+}
+
+/// Check the files of `config`, or the stdin buffer standing in for its only
+/// path when there is one. Otherwise ask about each fix when `--interactive`
+/// is on.
+fn run_check(
+    config: jarl_core::config::Config,
+    stdin: Option<&(PathBuf, String)>,
+    prompter: Option<&mut TerminalPrompt>,
+) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
+    if let Some((path, contents)) = stdin {
+        let name = air_fs::relativize_path(path);
+        return vec![(
+            name,
+            jarl_core::check::check_contents(contents, path, config),
+        )];
+    }
+    match prompter {
+        Some(prompt) => jarl_core::check::check_interactive(config, prompt),
+        None => jarl_core::check::check(config),
+    }
+}
 
 pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     let start = if args.with_timing {
@@ -46,6 +74,8 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     // Fail fast on invalid `--exclude` glob patterns instead of silently
     // ignoring them during discovery.
     validate_exclude_patterns(&args.exclude)?;
+
+    let mut prompter = args.interactive.then(TerminalPrompt::default);
 
     let mut resolver = PathResolver::new(Settings::default());
 
@@ -130,8 +160,13 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
 
     let check_config = ArgsConfig {
         files: files.iter().map(|s| s.into()).collect(),
-        fix: args.fix,
-        unsafe_fixes: args.unsafe_fixes,
+        // `--interactive` is a way of applying fixes, so it enables fix mode
+        // the same way `--fix-only` does. Which entry point actually runs is
+        // decided by `run_check`.
+        fix: args.fix || args.interactive,
+        // Every fix is shown (and tagged when unsafe) before it is applied, so
+        // there is no reason to hide the ones that need `--unsafe-fixes`.
+        unsafe_fixes: args.unsafe_fixes || args.interactive,
         fix_only: args.fix_only,
         select: args.select.clone(),
         extend_select: args.extend_select.clone(),
@@ -166,7 +201,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         let config = build_config(&check_config, settings, group_paths.clone())?;
 
         if !config.rules_to_apply.has_package_specific_rules() {
-            file_results.extend(run_check(config, stdin.as_ref()));
+            file_results.extend(run_check(config, stdin.as_ref(), prompter.as_mut()));
             continue;
         }
 
@@ -204,7 +239,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
             config.rules_to_apply = config
                 .rules_to_apply
                 .filter(|r| !r.categories().iter().any(|c| c.is_package_specific()));
-            file_results.extend(run_check(config, stdin.as_ref()));
+            file_results.extend(run_check(config, stdin.as_ref(), prompter.as_mut()));
             continue;
         }
 
@@ -227,8 +262,14 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
                 .clone();
 
             config.package_cache = cache;
-            file_results.extend(run_check(config, stdin.as_ref()));
+            file_results.extend(run_check(config, stdin.as_ref(), prompter.as_mut()));
         }
+    }
+
+    // Every fix has been answered for, so wipe the last preview: the report
+    // below should not follow a fix the user already decided on.
+    if let Some(prompt) = &mut prompter {
+        prompt.clear_preview()?;
     }
 
     let mut all_errors = Vec::new();
@@ -306,12 +347,19 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
 
     // For human-readable formats, print sections (summary, warnings, notes).
     // Skip for JSON/GitHub to avoid corrupting structured output.
-    let is_human_format = matches!(
-        args.output_format,
-        OutputFormat::Full | OutputFormat::Concise
-    );
+    if let Some(prompt) = &prompter {
+        println!();
+        print_section_header("Interactive fixes");
+        println!(
+            "Applied {} fix(es), skipped {}.",
+            prompt.applied, prompt.skipped
+        );
+        if prompt.suppressed > 0 {
+            println!("Added {} suppression comment(s).", prompt.suppressed);
+        }
+    }
 
-    if is_human_format {
+    if is_human_format(args.output_format) {
         // ── Summary ──
         print_summary(&all_diagnostics_flat, !all_errors.is_empty());
 
@@ -622,20 +670,4 @@ fn read_stdin_source(args: &CheckCommand) -> Result<Option<(PathBuf, String)>> {
         air_fs::normalize_path(PathBuf::from(file_path)),
         contents,
     )))
-}
-
-/// Check the files of `config`, or the stdin buffer standing in for its only
-/// path when there is one.
-fn run_check(
-    config: jarl_core::config::Config,
-    stdin: Option<&(PathBuf, String)>,
-) -> Vec<(String, Result<Vec<Diagnostic>>)> {
-    let Some((path, contents)) = stdin else {
-        return jarl_core::check::check(config);
-    };
-    let name = air_fs::relativize_path(path);
-    vec![(
-        name,
-        jarl_core::check::check_contents(contents, path, config),
-    )]
 }
