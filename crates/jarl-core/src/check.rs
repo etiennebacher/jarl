@@ -6,12 +6,13 @@ use crate::package::{
 };
 use crate::roxygen::{extract_roxygen_examples, remap_roxygen_fix, remap_roxygen_range};
 use crate::suppression::SuppressionManager;
+use crate::utils::StatementsExt;
 use crate::vcs::check_version_control;
 use air_fs::relativize_path;
 use air_r_parser::RParserOptions;
 use air_r_syntax::RSyntaxNode;
 use anyhow::{Context, Result};
-use biome_rowan::{AstNode, AstNodeList, TextRange, TextSize};
+use biome_rowan::{AstNode, TextRange, TextSize};
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::fs;
@@ -27,6 +28,7 @@ use crate::diagnostic::*;
 use crate::fix::*;
 use crate::rule_set::RuleSet;
 use crate::utils::*;
+use air_r_syntax::AnyRExpression;
 
 /// The package-level analysis shared by every file of `paths`: what each file
 /// is within its package, the packages' own context, and the cross-file pre-pass.
@@ -339,7 +341,7 @@ pub fn get_checks(
     // in a bogus node and the rest of the file is parsed normally, so we can
     // still lint the valid code. Autofixes are disabled for the whole file
     // because edits computed around broken code are not reliable.
-    let has_parse_errors = parsed.has_error();
+    let has_parse_errors = parsed.has_errors();
 
     let syntax = &parsed.syntax();
     let expressions = &parsed.tree().expressions();
@@ -409,9 +411,7 @@ pub fn get_checks(
     // We run checks at expression-level. This gathers all violations, no matter
     // whether they are suppressed or not. They are filtered out in the next
     // step (this is also Ruff's approach).
-    for expr in expressions {
-        check_expression(&expr, &mut checker)?;
-    }
+    check_expressions(expressions, &mut checker, has_parse_errors)?;
 
     // Lint R code inside roxygen @examples / @examplesIf sections.
     // Collected before check_document so that suppression filtering (which
@@ -498,13 +498,33 @@ pub fn get_checks(
     Ok(diagnostics)
 }
 
+/// Run the expression-level rules over the top-level expressions.
+///
+/// The parser recovers inside a statement, so a broken expression can have
+/// required children missing and traversing it fails. When the file has parse
+/// errors, that expression is skipped so that the rest of the file is still
+/// linted.
+fn check_expressions(
+    expressions: &[AnyRExpression],
+    checker: &mut Checker,
+    has_parse_errors: bool,
+) -> Result<()> {
+    for expr in expressions {
+        match check_expression(expr, checker) {
+            Err(_) if has_parse_errors => {}
+            result => result?,
+        }
+    }
+    Ok(())
+}
+
 /// Convert the parser's diagnostics (message + span) into the `SyntaxError`s
 /// carried by [`ParseError`], resolving each span to a (row, column) location.
 ///
 /// Locations are computed against `contents` (not the parsed tree) because
 /// `find_new_lines` reads the serialized tree, which can be truncated once the
 /// parser has recovered from an error, throwing later offsets off.
-fn collect_syntax_errors(parsed: &air_r_parser::Parse, contents: &str) -> Vec<SyntaxError> {
+fn collect_syntax_errors(parsed: &air_r_parser::RParse, contents: &str) -> Vec<SyntaxError> {
     // `Diagnostic::location` (the trait method) is the only public accessor for
     // a `ParseDiagnostic`'s span.
     use biome_diagnostics::Diagnostic as _;
@@ -687,7 +707,7 @@ fn get_checks_roxygen(
 
     for chunk in &chunks {
         let parsed = air_r_parser::parse(&chunk.code, RParserOptions::default());
-        if parsed.has_error() {
+        if parsed.has_errors() {
             // Examples may contain pseudo-code, \dontrun{} wrappers, etc.
             continue;
         }
@@ -704,7 +724,7 @@ fn get_checks_roxygen(
         checker.import_from = context.import_from.clone();
 
         for expr in expressions {
-            check_expression(&expr, &mut checker)?;
+            check_expression(expr, &mut checker)?;
         }
 
         // Objects created by an example live in the throwaway environment that
@@ -823,7 +843,7 @@ fn all_symbols(code: &str) -> impl Iterator<Item = String> {
 /// read is the more damaging error.
 fn read_symbols(code: &str) -> Vec<String> {
     let parsed = air_r_parser::parse(code, RParserOptions::default());
-    if parsed.has_error() {
+    if parsed.has_errors() {
         return all_symbols(code).collect();
     }
 
@@ -877,7 +897,7 @@ fn get_checks_rmd(
     }
 
     let parsed = air_r_parser::parse(&virtual_source, RParserOptions::default());
-    let has_parse_errors = parsed.has_error();
+    let has_parse_errors = parsed.has_errors();
 
     let syntax = parsed.syntax();
     let suppression = SuppressionManager::from_node(&syntax, &virtual_source);
@@ -905,9 +925,7 @@ fn get_checks_rmd(
     checker.package_cache = config.package_cache.clone();
 
     let expressions = &parsed.tree().expressions();
-    for expr in expressions {
-        check_expression(&expr, &mut checker)?;
-    }
+    check_expressions(expressions, &mut checker, has_parse_errors)?;
     // check_document runs suppression filtering internally, so
     // checker.diagnostics is the post-suppression list after this call.
     // Rmd chunks don't participate in package-level analysis; the one

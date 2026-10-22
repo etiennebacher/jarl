@@ -1,3 +1,4 @@
+use crate::utils::StatementsExt;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -138,7 +139,7 @@ fn help_message(function: &RFunctionDefinition, score: usize) -> String {
 /// scored alone, in a function where it isn't the last expression: the points it
 /// adds are the ones above the 1 of an empty body.
 fn biggest_parts(function: &RFunctionDefinition, score: usize) -> Vec<(String, usize)> {
-    let Ok(AnyRExpression::RBracedExpressions(braced)) = function.body() else {
+    let Ok(AnyRExpression::RBracedStatements(braced)) = function.body() else {
         return vec![];
     };
     let statements: Vec<AnyRExpression> = braced.expressions().into_iter().collect();

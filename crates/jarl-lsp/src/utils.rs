@@ -38,7 +38,7 @@ mod tests {
     }
 
     fn resolver_for(root: &Path, settings: Settings) -> PathResolver<Settings> {
-        let mut resolver = PathResolver::new(Settings::default());
+        let mut resolver = PathResolver::new();
         resolver.add(root, settings);
         resolver
     }
@@ -145,7 +145,7 @@ mod tests {
 
     #[test]
     fn no_settings_excludes_nothing() {
-        let resolver = PathResolver::new(Settings::default());
+        let resolver = PathResolver::new();
         assert!(!should_exclude_file_based_on_settings(
             &PathBuf::from("/project/renv/activate.R"),
             &resolver

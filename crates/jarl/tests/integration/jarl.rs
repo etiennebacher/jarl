@@ -98,7 +98,7 @@ fn test_parsing_error() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected an expression
+    error: Expected an expression but instead found the end of the file.
      --> test.R:1:5
       |
     1 | f <-
@@ -140,7 +140,7 @@ fn test_parsing_error_for_some_files() -> anyhow::Result<()> {
     1 fixable with the `--fix` option.
 
     ----- stderr -----
-    error: expected an expression
+    error: Expected an expression but instead found the end of the file.
      --> test.R:1:5
       |
     1 | f <-
@@ -181,7 +181,7 @@ fn test_parsing_error_with_valid_code_in_same_file() -> anyhow::Result<()> {
     Found 1 error.
 
     ----- stderr -----
-    error: expected an expression
+    error: Expected an expression but instead found the end of the file.
      --> test.R:2:5
       |
     2 | f <-

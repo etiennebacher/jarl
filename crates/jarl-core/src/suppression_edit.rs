@@ -152,7 +152,7 @@ pub fn compute_suppression_insert_point(
     diagnostic_end: usize,
 ) -> Option<SuppressionInsertPoint> {
     let parsed = air_r_parser::parse(source, RParserOptions::default());
-    if parsed.has_error() {
+    if parsed.has_errors() {
         // Fall back to simple line-based insertion
         return compute_simple_insert_point(source, diagnostic_start);
     }

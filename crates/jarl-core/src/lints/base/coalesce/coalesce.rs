@@ -1,8 +1,9 @@
 use crate::diagnostic::*;
 use crate::rule_set::Rule;
+use crate::utils::StatementsExt;
 use crate::utils::{get_function_name, node_contains_comments};
 use air_r_syntax::*;
-use biome_rowan::{AstNode, AstNodeList};
+use biome_rowan::AstNode;
 
 /// <!-- docs: start -->
 /// Version added: 0.0.19
@@ -197,7 +198,7 @@ pub fn coalesce(ast: &RIfStatement) -> anyhow::Result<Option<Diagnostic>> {
 
 // Check if an expression has multiple statements
 fn has_multiple_expressions(input: &AnyRExpression) -> bool {
-    if let Some(braced) = input.as_r_braced_expressions() {
+    if let Some(braced) = input.as_r_braced_statements() {
         let expressions = braced.expressions();
         expressions.len() > 1
     } else {
@@ -207,7 +208,7 @@ fn has_multiple_expressions(input: &AnyRExpression) -> bool {
 
 // Extract single expression from braced expressions, or return the expression as-is
 fn extract_single_expression(input: &AnyRExpression) -> String {
-    if let Some(braced) = input.as_r_braced_expressions() {
+    if let Some(braced) = input.as_r_braced_statements() {
         let expressions: Vec<_> = braced.expressions().into_iter().collect();
         if expressions.len() == 1 {
             // Single expression in braces, extract it

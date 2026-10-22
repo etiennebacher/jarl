@@ -1,5 +1,5 @@
-use air_r_syntax::{RExpressionList, RSyntaxNode};
-use biome_rowan::{AstNode, AstNodeList};
+use air_r_syntax::{AnyRExpression, RSyntaxNode};
+use biome_rowan::AstNode;
 use oak_semantic::semantic_index::SemanticIndex;
 
 use crate::checker::Checker;
@@ -22,7 +22,7 @@ use crate::package::PackageFileAnalysis;
 use crate::rule_set::Rule;
 
 pub(crate) fn check_document(
-    expressions: &RExpressionList,
+    expressions: &[AnyRExpression],
     syntax: &RSyntaxNode,
     contents: &str,
     checker: &mut Checker,

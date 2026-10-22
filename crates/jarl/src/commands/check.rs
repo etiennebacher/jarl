@@ -47,7 +47,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     // ignoring them during discovery.
     validate_exclude_patterns(&args.exclude)?;
 
-    let mut resolver = PathResolver::new(Settings::default());
+    let mut resolver = PathResolver::new();
 
     // Track if we're using a config from a parent directory
     let mut parent_config_path: Option<PathBuf> = None;

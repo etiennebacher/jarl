@@ -10,10 +10,10 @@ repository = "https://github.com/etiennebacher/jarl/"
 readme = "README.md"
 
 [workspace.dependencies]
-air_fs = { package = "fs", git = "https://github.com/etiennebacher/air_pratt" }
-air_r_parser = { git = "https://github.com/etiennebacher/air_pratt" }
-air_r_syntax = { git = "https://github.com/etiennebacher/air_pratt" }
-air_workspace = { package = "workspace", git = "https://github.com/etiennebacher/air_pratt" }
+air_fs = { package = "fs", git = "https://github.com/posit-dev/air" }
+air_r_parser = { git = "https://github.com/posit-dev/air" }
+air_r_syntax = { git = "https://github.com/posit-dev/air" }
+air_workspace = { package = "workspace", git = "https://github.com/posit-dev/air" }
 aether_path = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
 oak_core = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
 oak_db = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }

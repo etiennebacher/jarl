@@ -472,7 +472,7 @@ pub fn build_virtual_r_source(chunks: &[RCodeChunk]) -> VirtualSource {
 
         // Pre-validate: skip chunks with parse errors.
         let parsed = air_r_parser::parse(&chunk.code, RParserOptions::default());
-        if parsed.has_error() {
+        if parsed.has_errors() {
             skipped.push(i);
             continue;
         }

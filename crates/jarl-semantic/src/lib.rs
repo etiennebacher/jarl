@@ -20,7 +20,7 @@ use air_r_syntax::{
 use biome_rowan::{AstNode, AstSeparatedList, SyntaxNodeCast, TextRange, TextSize};
 use oak_core::syntax_ext::{AnyRSelectorExt, RIdentifierExt, RStringValueExt};
 use oak_semantic::DefinitionId;
-use oak_semantic::effects::CallContext;
+use oak_semantic::effects::BoundArguments;
 use oak_semantic::semantic_index::{
     Definition, DefinitionKind, ScopeId, SemanticCallKind, SemanticIndex,
 };
@@ -102,7 +102,7 @@ fn source_target_index(
     }
     let contents = std::fs::read_to_string(path).ok()?;
     let parsed = air_r_parser::parse(&contents, RParserOptions::default());
-    if parsed.has_error() {
+    if parsed.has_errors() {
         return None;
     }
     let index = std::sync::Arc::new(oak_semantic::build_index(&parsed.tree(), resolver(path)));
@@ -494,7 +494,7 @@ impl<'a> SemanticInfo<'a> {
     /// (`{sapply(v, function(a) a)}`) consumes nothing outside it.
     fn collect_interpolation_reads(&mut self, src: &str, read_range: TextRange) {
         let parsed = air_r_parser::parse(src, RParserOptions::default());
-        if parsed.has_error() {
+        if parsed.has_errors() {
             return;
         }
         // A snippet can't `source()` anything or attach a package, so it has
@@ -586,8 +586,8 @@ impl<'a> SemanticInfo<'a> {
             // Only the quoted `expr` argument is NSE. Any other argument is
             // evaluated normally, so its identifiers stay real uses.
             "Quote" => {
-                let bound = CallContext::default().bind_arguments(call, &["expr"]);
-                if let Some(expr) = bound.get("expr") {
+                let bound = BoundArguments::new(call, &["expr"]);
+                if let Some(expr) = bound.as_ref().and_then(|b| b.get("expr")) {
                     self.nse_ranges.push(expr.syntax().text_trimmed_range());
                 }
             }
@@ -606,8 +606,8 @@ impl<'a> SemanticInfo<'a> {
             // assignment there is the call's output. Only the quoted `expr`
             // argument gets that treatment; `data` is evaluated normally.
             "within" => {
-                let bound = CallContext::default().bind_arguments(call, &["data", "expr"]);
-                if let Some(expr) = bound.get("expr") {
+                let bound = BoundArguments::new(call, &["data", "expr"]);
+                if let Some(expr) = bound.as_ref().and_then(|b| b.get("expr")) {
                     let node = expr.syntax();
                     self.returned_env_ranges.push(node.text_trimmed_range());
                     self.returned_env_functions.extend(
@@ -1508,7 +1508,7 @@ impl oak_semantic::ImportsResolver for JarlImportsResolver {
         &mut self,
         name: &str,
         attached: &[String],
-    ) -> Option<oak_semantic::EffectsHandlers> {
+    ) -> Option<oak_semantic::FunctionHandlers> {
         // Packages attached in the file (flow order, latest last) shadow the
         // lenient defaults, so walk them LIFO first.
         attached

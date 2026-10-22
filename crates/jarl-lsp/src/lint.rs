@@ -21,7 +21,6 @@ use jarl_core::config::{ArgsConfig, build_config};
 use jarl_core::diagnostic::Diagnostic as JarlDiagnostic;
 use jarl_core::discovery::{DiscoveredSettings, discover_settings};
 use jarl_core::rule_set::Rule;
-use jarl_core::settings::Settings;
 
 /// A single replacement making up a fix
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -126,7 +125,7 @@ fn run_jarl_linting(
 
     // Discover settings from the actual file path.
     let actual_file_path = vec![file_path.to_string_lossy().to_string()];
-    let mut resolver = PathResolver::new(Settings::default());
+    let mut resolver = PathResolver::new();
     for DiscoveredSettings { directory, settings, .. } in discover_settings(&actual_file_path)? {
         resolver.add(&directory, settings);
         tracing::debug!("Discovered settings from directory: {:?}", directory);
