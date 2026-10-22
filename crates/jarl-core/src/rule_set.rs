@@ -539,6 +539,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    PipeCall => {
+        name: "pipe_call",
+        categories: [Read],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
     PipeConsistency => {
         name: "pipe_consistency",
         categories: [Read],
