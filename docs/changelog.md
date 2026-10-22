@@ -9,12 +9,16 @@
   * The `seq2` rule now also reports `seq_len(length(...))` and suggests `seq_along(...)`
     (#761, @JosephBARBIERDARNAL).
 
+* Jarl handles parsing errors better, which may lead to more code being analysed
+  in files with parsing errors (#762). Thanks to Davis Vaughan for his work
+  upstream in Air and Aether.
+
 ## 0.7.1
 
 This release doesn't contain any change compared to the 0.7.0 release found on Github.
 
 For releases found on PyPI, 0.7.1 contains the fix in https://github.com/etiennebacher/jarl/commit/9ad3bd56c141673bbcbd47f99e6878007a6fa6a8 and 0.7.0 doesn't.
-This fix was made shortly after 0.7.0 was released, so I wanted to backport it and release a new 0.7.0. 
+This fix was made shortly after 0.7.0 was released, so I wanted to backport it and release a new 0.7.0.
 However, PyPI doesn't allow to publish twice the same version, even if the first release is deleted.
 Therefore, I release 0.7.1 so that all releases with 0.7.1 match, no matter where they are installed from.
 
@@ -42,7 +46,7 @@ Therefore, I release 0.7.1 so that all releases with 0.7.1 match, no matter wher
 
 ### Deprecations
 
-* The `internal_function` rule is deprecated and disabled by default. Use 
+* The `internal_function` rule is deprecated and disabled by default. Use
   `undesirable_operator` instead (#657).
 
 ### New and improved rules
@@ -60,7 +64,7 @@ Therefore, I release 0.7.1 so that all releases with 0.7.1 match, no matter wher
   * `expect_length` no longer reports cases where `length()` is in the `expected`
     argument, e.g. `expect_equal(nrow(x), length(y))` (#684).
 
-  * `nzchar` now also reports comparisons of `nchar(x)` with zero, such as 
+  * `nzchar` now also reports comparisons of `nchar(x)` with zero, such as
     `nchar(x) == 0`, and its fixes preserve missing values with
     `keepNA = TRUE` (#705, @Yousa-Mirage).
 
