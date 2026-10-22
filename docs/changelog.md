@@ -52,6 +52,7 @@ Therefore, I release 0.7.1 so that all releases with 0.7.1 match, no matter wher
   * `consecutive_signs` (#745, @Yousa-Mirage)
   * `cyclomatic_complexity` (#731)
   * `library_call` (#701)
+  * `one_call_pipe` (#737, @Yousa-Mirage)
   * `undesirable_operator` (#657, @christopherkenny)
   * `yoda_condition` (#733, @Yousa-Mirage)
 
