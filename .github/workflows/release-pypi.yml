@@ -144,3 +144,22 @@ jobs:
       - name: "Publish"
         if: ${{ github.event_name == 'release' || inputs.dry_run == false }}
         run: uv publish wheels/*
+
+  # jarl-pre-commit installs Jarl from PyPI, so it must only be updated once
+  # the wheels are published.
+  pre-commit:
+    name: "Update jarl-pre-commit"
+    runs-on: ubuntu-latest
+    needs:
+      - resolve-version
+      - publish
+    # Do not trigger on dry runs or alpha binaries release
+    if: ${{ (github.event_name == 'release' || inputs.dry_run == false) && !contains(needs.resolve-version.outputs.version, '-') }}
+    env:
+      GH_TOKEN: ${{ secrets.JARL_DISPATCH_PRE_COMMIT }}
+    steps:
+      - name: Update jarl-pre-commit
+        run: |
+          gh api repos/etiennebacher/jarl-pre-commit/dispatches \
+            -f event_type=jarl-release \
+            -f "client_payload[version]=${{ needs.resolve-version.outputs.version }}"
