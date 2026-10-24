@@ -369,6 +369,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#development-version" id="toc-development-version" class="nav-link" data-scroll-target="#development-version">Development version</a>
   <ul class="collapse">
   <li><a href="#new-features" id="toc-new-features" class="nav-link" data-scroll-target="#new-features">New features</a></li>
+  <li><a href="#bug-fixes" id="toc-bug-fixes" class="nav-link" data-scroll-target="#bug-fixes">Bug fixes</a></li>
   </ul></li>
   <li><a href="#section" id="toc-section" class="nav-link" data-scroll-target="#section">0.7.1</a></li>
   <li><a href="#section-1" id="toc-section-1" class="nav-link" data-scroll-target="#section-1">0.7.0</a>
@@ -377,7 +378,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#deprecations" id="toc-deprecations" class="nav-link" data-scroll-target="#deprecations">Deprecations</a></li>
   <li><a href="#new-and-improved-rules" id="toc-new-and-improved-rules" class="nav-link" data-scroll-target="#new-and-improved-rules">New and improved rules</a></li>
   <li><a href="#other-improvements" id="toc-other-improvements" class="nav-link" data-scroll-target="#other-improvements">Other improvements</a></li>
-  <li><a href="#bug-fixes" id="toc-bug-fixes" class="nav-link" data-scroll-target="#bug-fixes">Bug fixes</a></li>
+  <li><a href="#bug-fixes-1" id="toc-bug-fixes-1" class="nav-link" data-scroll-target="#bug-fixes-1">Bug fixes</a></li>
   </ul></li>
   <li><a href="#section-2" id="toc-section-2" class="nav-link" data-scroll-target="#section-2">0.6.0</a>
   <ul class="collapse">
@@ -386,20 +387,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#cli-improvements" id="toc-cli-improvements" class="nav-link" data-scroll-target="#cli-improvements">CLI improvements</a></li>
   <li><a href="#toml-improvements" id="toc-toml-improvements" class="nav-link" data-scroll-target="#toml-improvements">TOML improvements</a></li>
   <li><a href="#other-improvements-1" id="toc-other-improvements-1" class="nav-link" data-scroll-target="#other-improvements-1">Other improvements</a></li>
-  <li><a href="#bug-fixes-1" id="toc-bug-fixes-1" class="nav-link" data-scroll-target="#bug-fixes-1">Bug fixes</a></li>
+  <li><a href="#bug-fixes-2" id="toc-bug-fixes-2" class="nav-link" data-scroll-target="#bug-fixes-2">Bug fixes</a></li>
   </ul></li>
   <li><a href="#section-3" id="toc-section-3" class="nav-link" data-scroll-target="#section-3">0.5.0</a>
   <ul class="collapse">
   <li><a href="#deprecations-1" id="toc-deprecations-1" class="nav-link" data-scroll-target="#deprecations-1">Deprecations</a></li>
   <li><a href="#features" id="toc-features" class="nav-link" data-scroll-target="#features">Features</a></li>
-  <li><a href="#bug-fixes-2" id="toc-bug-fixes-2" class="nav-link" data-scroll-target="#bug-fixes-2">Bug fixes</a></li>
+  <li><a href="#bug-fixes-3" id="toc-bug-fixes-3" class="nav-link" data-scroll-target="#bug-fixes-3">Bug fixes</a></li>
   </ul></li>
   <li><a href="#section-4" id="toc-section-4" class="nav-link" data-scroll-target="#section-4">0.4.0</a>
   <ul class="collapse">
   <li><a href="#breaking-changes-2" id="toc-breaking-changes-2" class="nav-link" data-scroll-target="#breaking-changes-2">Breaking changes</a></li>
   <li><a href="#features-1" id="toc-features-1" class="nav-link" data-scroll-target="#features-1">Features</a></li>
   <li><a href="#other-changes" id="toc-other-changes" class="nav-link" data-scroll-target="#other-changes">Other changes</a></li>
-  <li><a href="#bug-fixes-3" id="toc-bug-fixes-3" class="nav-link" data-scroll-target="#bug-fixes-3">Bug fixes</a></li>
+  <li><a href="#bug-fixes-4" id="toc-bug-fixes-4" class="nav-link" data-scroll-target="#bug-fixes-4">Bug fixes</a></li>
   <li><a href="#documentation" id="toc-documentation" class="nav-link" data-scroll-target="#documentation">Documentation</a></li>
   </ul></li>
   <li><a href="#section-5" id="toc-section-5" class="nav-link" data-scroll-target="#section-5">0.3.0</a>
@@ -460,6 +461,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </ul></li>
 <li><p>Jarl handles parsing errors better, which may lead to more code being analysed in files with parsing errors (<a href="https://github.com/etiennebacher/jarl/issues/762" target="_blank">#762</a>). Thanks to Davis Vaughan for his work upstream in Air and Aether.</p></li>
 <li><p><code>undesirable_operator</code> now accepts inline tables in <code>operators</code> and <code>extend-operators</code> to attach custom messages to undesirable operators (<a href="https://github.com/etiennebacher/jarl/issues/742" target="_blank">#742</a>).</p></li>
+</ul>
+</section>
+<section id="bug-fixes" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes">Bug fixes</h3>
+<ul>
+<li>Prevent <code>unused_object</code> from reporting objects exported by <code>exportPattern()</code> (<a href="https://github.com/etiennebacher/jarl/issues/711" target="_blank">#711</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</li>
 </ul>
 </section>
 </section>
@@ -528,8 +535,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><p>The JSON output now contains information on the fix (“safe”, “unsafe”, or “none”) (<a href="https://github.com/etiennebacher/jarl/issues/747" target="_blank">#747</a>) and reports more information on syntax errors (<code>message</code>, <code>range</code>, <code>location</code>) (<a href="https://github.com/etiennebacher/jarl/issues/748" target="_blank">#748</a>).</p></li>
 </ul>
 </section>
-<section id="bug-fixes" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes">Bug fixes</h3>
+<section id="bug-fixes-1" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-1">Bug fixes</h3>
 <ul>
 <li><p>Fix <code>string_boundary</code> false positives for mismatched substring widths and reordered named arguments, and mark its fixes as unsafe (<a href="https://github.com/etiennebacher/jarl/issues/698" target="_blank">#698</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
 <li><p>Prevent <code>unused_function</code> and <code>unused_object</code> from falsely reporting non-ASCII names (<a href="https://github.com/etiennebacher/jarl/issues/706" target="_blank">#706</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
@@ -640,8 +647,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><p>Fixed outdated paths in the contributing guide (<a href="https://github.com/etiennebacher/jarl/issues/658" target="_blank">#658</a>, <span class="citation" data-cites="christopherkenny"><a href="https://github.com/christopherkenny" target="_blank">@christopherkenny</a></span>).</p></li>
 </ul>
 </section>
-<section id="bug-fixes-1" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes-1">Bug fixes</h3>
+<section id="bug-fixes-2" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-2">Bug fixes</h3>
 <ul>
 <li><p><code>--statistics</code> now reports syntax errors and returns a non-zero status when parsing fails (<a href="https://github.com/etiennebacher/jarl/issues/577" target="_blank">#577</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
 <li><p><code>--fix-only</code> now implies <code>--fix</code> and no longer applies unsafe fixes by default (<a href="https://github.com/etiennebacher/jarl/issues/579" target="_blank">#579</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
@@ -732,8 +739,8 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 <li><p>The CLI now errors early when some incompatible arguments are used (<a href="https://github.com/etiennebacher/jarl/issues/437" target="_blank">#437</a>).</p></li>
 </ul>
 </section>
-<section id="bug-fixes-2" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes-2">Bug fixes</h3>
+<section id="bug-fixes-3" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-3">Bug fixes</h3>
 <ul>
 <li><p><code>fixed_regex</code> could loop infinitely trying to add <code>fixed = TRUE</code>. This is fixed (<a href="https://github.com/etiennebacher/jarl/issues/388" target="_blank">#388</a>).</p></li>
 <li><p>Some fixes to ensure that automatic fixes don’t introduce new violations or new parsing errors (<a href="https://github.com/etiennebacher/jarl/issues/389" target="_blank">#389</a>).</p></li>
@@ -805,8 +812,8 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 <li><p>There are now binaries available for <code>linux-musl</code> (<code>x64</code> and <code>arm64</code>) (<a href="https://github.com/etiennebacher/jarl/issues/287" target="_blank">#287</a>).</p></li>
 </ul>
 </section>
-<section id="bug-fixes-3" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes-3">Bug fixes</h3>
+<section id="bug-fixes-4" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-4">Bug fixes</h3>
 <ul>
 <li><p>When <code>output-format</code> is <code>json</code> or <code>github</code>, additional information displayed in the terminal (e.g.&nbsp;timing) isn’t included anymore to avoid parsing errors (<a href="https://github.com/etiennebacher/jarl/issues/254" target="_blank">#254</a>).</p></li>
 <li><p>Fixed a bug in the number of “fixable diagnostics” reported when the arg <code>fixable</code> is present in <code>jarl.toml</code> but <code>--fix</code> is not passed (<a href="https://github.com/etiennebacher/jarl/issues/255" target="_blank">#255</a>).</p></li>
