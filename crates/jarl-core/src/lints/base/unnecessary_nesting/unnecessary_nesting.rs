@@ -1,9 +1,11 @@
 use crate::diagnostic::*;
 use crate::rule_set::Rule;
+use crate::utils::StatementsExt;
 use crate::utils::node_contains_comments;
 use air_r_syntax::*;
-use biome_rowan::{AstNode, AstNodeList};
+use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.4.0
 ///
 /// ## What it does
@@ -35,6 +37,7 @@ use biome_rowan::{AstNode, AstNodeList};
 ///   print("x and y are greather than 0")
 /// }
 /// ```
+/// <!-- docs: end -->
 pub fn unnecessary_nesting(ast: &RIfStatement) -> anyhow::Result<Option<Diagnostic>> {
     let body = ast.consequence()?;
     let has_else = ast.else_clause().is_some();
@@ -44,8 +47,8 @@ pub fn unnecessary_nesting(ast: &RIfStatement) -> anyhow::Result<Option<Diagnost
     }
 
     let outer_condition = ast.condition()?;
-    let inner_if = unwrap_or_return_none!(body.as_r_braced_expressions());
-    let inner_if = inner_if.expressions().iter().collect::<Vec<_>>();
+    let inner_if = unwrap_or_return_none!(body.as_r_braced_statements());
+    let inner_if = inner_if.expressions();
 
     let inner_if = if inner_if.len() == 1 {
         inner_if.first().unwrap()

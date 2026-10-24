@@ -118,13 +118,16 @@ fn test_help_check() -> anyhow::Result<()> {
     ----- stdout -----
     Check a set of files or directories
 
-    Usage: jarl check [OPTIONS] <FILES>...
+    Usage: jarl check [OPTIONS] [FILES]...
 
     Arguments:
-      <FILES>...
+      [FILES]...
               List of files or directories to check or fix lints, for example `jarl check .`.
 
     File selection:
+          --stdin-file-path <PATH>
+              Read the code to check from stdin. The path is not read and doesn't have to exist: it is used to find the configuration and package, to apply `exclude` patterns, and as file name in diagnostics, e.g. `jarl check --stdin-file-path R/foo.R`.
+
           --exclude=<FILES>
               List of file patterns to exclude from linting, separated by a comma (no spaces). Must be passed with an equals sign, e.g. `--exclude=R/*.R`, so the shell does not expand glob patterns.
 
@@ -182,9 +185,6 @@ fn test_help_check() -> anyhow::Result<()> {
               
               [default: full]
 
-          --assignment <ASSIGNMENT>
-              [DEPRECATED: use `[lint.assignment]` in jarl.toml] Assignment operator to use, can be either `<-` or `=`.
-
           --statistics
               Show counts for every rule with at least one violation.
 
@@ -217,14 +217,15 @@ fn test_help_check() -> anyhow::Result<()> {
     ----- stdout -----
     Check a set of files or directories
 
-    Usage: jarl check [OPTIONS] <FILES>...
+    Usage: jarl check [OPTIONS] [FILES]...
 
     Arguments:
-      <FILES>...  List of files or directories to check or fix lints, for example `jarl check .`.
+      [FILES]...  List of files or directories to check or fix lints, for example `jarl check .`.
 
     File selection:
-          --exclude=<FILES>     List of file patterns to exclude from linting, separated by a comma (no spaces). Must be passed with an equals sign, e.g. `--exclude=R/*.R`, so the shell does not expand glob patterns.
-          --no-default-exclude  Do not apply the default set of file patterns that should be excluded.
+          --stdin-file-path <PATH>  Read the code to check from stdin. The path is not read and doesn't have to exist: it is used to find the configuration and package, to apply `exclude` patterns, and as file name in diagnostics, e.g. `jarl check --stdin-file-path R/foo.R`.
+          --exclude=<FILES>         List of file patterns to exclude from linting, separated by a comma (no spaces). Must be passed with an equals sign, e.g. `--exclude=R/*.R`, so the shell does not expand glob patterns.
+          --no-default-exclude      Do not apply the default set of file patterns that should be excluded.
 
     Rule selection:
       -s, --select <RULES>         Names of rules to include, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF". [default: ""]
@@ -242,7 +243,6 @@ fn test_help_check() -> anyhow::Result<()> {
       -w, --with-timing                    Show the time taken by the function.
       -m, --min-r-version <MIN_R_VERSION>  The mimimum R version to be used by the linter. Some rules only work starting from a specific version.
           --output-format <OUTPUT_FORMAT>  Output serialization format for violations. [default: full] [possible values: full, concise, github, json, sarif]
-          --assignment <ASSIGNMENT>        [DEPRECATED: use `[lint.assignment]` in jarl.toml] Assignment operator to use, can be either `<-` or `=`.
           --statistics                     Show counts for every rule with at least one violation.
           --add-jarl-ignore[=<REASON>]     Automatically insert a `# jarl-ignore` comment to suppress all violations.
                                            The default reason can be customized with `--add-jarl-ignore="my_reason"`.

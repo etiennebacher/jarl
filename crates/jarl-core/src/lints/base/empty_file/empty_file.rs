@@ -5,6 +5,7 @@ use biome_rowan::TextRange;
 
 pub struct EmptyFile;
 
+/// <!-- docs: start -->
 /// Version added: 0.6.0
 ///
 /// ## What it does
@@ -29,6 +30,7 @@ pub struct EmptyFile;
 /// ```
 ///
 /// Instead, delete the file or add the intended code.
+/// <!-- docs: end -->
 impl Violation for EmptyFile {
     fn rule(&self) -> Rule {
         Rule::EmptyFile

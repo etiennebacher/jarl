@@ -5,6 +5,7 @@ use biome_rowan::AstNode;
 
 pub struct ForLoopDupIndex;
 
+/// <!-- docs: start -->
 /// Version added: 0.4.0
 ///
 /// ## What it does
@@ -36,6 +37,7 @@ pub struct ForLoopDupIndex;
 ///   }
 /// }
 /// ```
+/// <!-- docs: end -->
 impl Violation for ForLoopDupIndex {
     fn rule(&self) -> Rule {
         Rule::ForLoopDupIndex

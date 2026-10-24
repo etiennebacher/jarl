@@ -12,6 +12,7 @@ const FORMALS_GREPL: Formals = &["pattern", "x", "ignore.case", "perl", "fixed",
 
 pub struct ExpectNoMatch;
 
+/// <!-- docs: start -->
 /// Version added: 0.5.0
 ///
 /// ## What it does
@@ -42,6 +43,7 @@ pub struct ExpectNoMatch;
 /// expect_no_match(x, "foo")
 /// expect_no_match(x, "bar", perl = FALSE, fixed = FALSE)
 /// ```
+/// <!-- docs: end -->
 impl Violation for ExpectNoMatch {
     fn rule(&self) -> Rule {
         Rule::TestthatExpectNoMatch

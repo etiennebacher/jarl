@@ -8,6 +8,7 @@ const FORMALS_DO_CALL: Formals = &["what", "args", "quote", "envir"];
 
 pub struct List2Df;
 
+/// <!-- docs: start -->
 /// Version added: 0.1.2
 ///
 /// ## What it does
@@ -41,6 +42,7 @@ pub struct List2Df;
 /// ## References
 ///
 /// See `?list2DF`
+/// <!-- docs: end -->
 impl Violation for List2Df {
     fn rule(&self) -> Rule {
         Rule::List2df

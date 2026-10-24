@@ -6,12 +6,14 @@ use crate::{
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 
+/// <!-- docs: start -->
 /// Version added: 0.2.0
 ///
 /// ## What it does
 ///
 /// Checks for `seq(length(...))`, `seq(nrow(...))`, `seq(ncol(...))`,
-/// `seq(NROW(...))`, `seq(NCOL(...))`. See also [seq](https://jarl.etiennebacher.com/rules/seq).
+/// `seq(NROW(...))`, `seq(NCOL(...))`, `seq_len(length(...))`.
+/// See also [seq](https://jarl.etiennebacher.com/rules/seq).
 ///
 /// ## Why is this bad?
 ///
@@ -31,6 +33,10 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// for (i in seq(length(data))) {
 ///   print("hi")
 /// }
+///
+/// for (i in seq_len(length(data))) {
+///   print("hi")
+/// }
 /// ```
 ///
 /// Use instead:
@@ -42,9 +48,14 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// for (i in seq_along(data)) {
 ///   print("hi")
 /// }
+///
+/// for (i in seq_along(data)){
+///   print("hi")
+/// }
 /// ```
+/// <!-- docs: end -->
 pub fn seq2(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
-    if fn_name != "seq" {
+    if !["seq", "seq_len"].contains(&fn_name) {
         return Ok(None);
     }
 
@@ -71,12 +82,29 @@ pub fn seq2(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
         let function = function?;
         let inner_fn_name = get_function_name(function);
 
-        if !["length", "nrow", "ncol", "NROW", "NCOL"].contains(&inner_fn_name.as_str()) {
+        if fn_name == "seq_len" && inner_fn_name != "length" {
             return Ok(None);
         }
 
-        let inner_fun_content = arguments?.items().into_syntax().to_string();
+        let arguments = arguments?;
+        if fn_name == "seq_len" {
+            let inner_items = arguments.items();
+            if inner_items.iter().count() != 1 {
+                return Ok(None);
+            }
 
+            let inner_argument = unwrap_or_return_none!(inner_items.into_iter().next())?;
+            if inner_argument.name_clause().is_some() || inner_argument.value().is_none() {
+                return Ok(None);
+            }
+        }
+
+        let inner_fun_content = arguments.items().into_syntax().to_string();
+        let message = if fn_name == "seq_len" {
+            "`seq_len(length(...))` is more verbose than `seq_along(...)`.".to_string()
+        } else {
+            format!("`seq({inner_fn_name}(...))` can be wrong if the argument has length 0.")
+        };
         let (suggestion, replacement) = match inner_fn_name.as_str() {
             "length" => ("seq_along(...)", format!("seq_along({inner_fun_content})")),
             "nrow" => (
@@ -95,16 +123,14 @@ pub fn seq2(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
                 "seq_len(NCOL(...))",
                 format!("seq_len(NCOL({inner_fun_content}))"),
             ),
-            // We checked the choices of inner_fn_name above.
-            _ => unreachable!(),
+            _ => return Ok(None),
         };
 
         let range = ast.syntax().text_trimmed_range();
         let diagnostic = Diagnostic::new(
             ViolationData::new(
                 Rule::Seq2,
-                format!("`seq({inner_fn_name}(...))` can be wrong if the argument has length 0.")
-                    .to_string(),
+                message,
                 Some(format!("Use `{suggestion}` instead.").to_string()),
             ),
             range,

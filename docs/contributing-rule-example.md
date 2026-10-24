@@ -178,6 +178,7 @@ const FORMALS_DO_CALL: Formals = &["what", "args", "quote", "envir"];
 
 pub struct List2Df;
 
+/// <!-- docs: start -->
 /// Version added: 0.1.2
 ///
 /// ## What it does
@@ -185,6 +186,7 @@ pub struct List2Df;
 /// Checks for usage of `do.call(cbind.data.frame, x)`.
 ///
 /// [...]
+/// <!-- docs: end -->
 impl Violation for List2Df {
     fn rule(&self) -> Rule {
         Rule::List2df
@@ -410,7 +412,7 @@ The rule can then read its options from the checker, e.g. `checker.rule_options.
 Finally:
 
 * run `just gen-schema` to update `artifacts/jarl.schema.json`;
-* document the option for users in `docs/reference/config-file.md` (this page is written by hand, it is not generated from the Rust code);
+* document the option for users (see the section below on adding documentation);
 * add integration tests in `crates/jarl/tests/integration/toml_rule_args.rs`, covering invalid values, unknown fields in the rule table, and the option actually changing what is reported.
 
 :::
@@ -538,6 +540,9 @@ Looking at tests for `list2df`, there are four blocks:
 Since we have snapshot tests, we first need to run `cargo insta test` to generate the snapshots and then `cargo insta review` to review and validate them.
 After that, run `cargo test` to ensure that all tests pass.
 
+### Add documentation
+
+The documentation used in `jarl rule <rulename>` and on the Jarl website is automatically generated from a documentation block in the `<rulename.rs>` file. See the details in the [general information on contributing](contributing.md#documenting-a-new-rule).
 
 ### All the rest
 
@@ -545,7 +550,8 @@ The rule is implemented, all tests pass, perfect!
 We now need to document this change:
 
 * update `docs/changelog.md`
-* run `just document` to add or update the rule page in `docs/rules/<rule_name>.md` (you need to have `just` installed as [explained in the general guide](contributing.md#tools))
+* run `just document --no-quarto` to add or update the rule page in `docs/rules/<rule_name>.md` (you need to have `just` installed as [explained in the general guide](contributing.md#tools))
+* run `just document` if you want to render the full website
 
 Finally, run `just lint` to ensure that `clippy` (the Rust linter) doesn't report any issue and that the code is properly formatted.
 You can also run `just lint-fix` to apply `clippy`'s automatic fixes if there are any.

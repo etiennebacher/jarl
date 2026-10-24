@@ -26,7 +26,7 @@ use std::sync::Arc;
 
 use aether_path::FilePath;
 use air_r_parser::RParserOptions;
-use oak_db::{Db, File, OakDatabase, Package, workspace_files};
+use oak_db::{Db, File, OakDatabase, Package, SourceDb, workspace_files};
 use oak_scan::ScanScheduler;
 use oak_semantic::semantic_index::{DefinitionKind, SemanticCallKind, SemanticIndex};
 use rayon::prelude::*;
@@ -347,7 +347,7 @@ impl AnalysisDb {
             .filter_map(|path| {
                 let source = std::fs::read_to_string(path).ok()?;
                 let parsed = air_r_parser::parse(&source, RParserOptions::default());
-                if parsed.has_error() {
+                if parsed.has_errors() {
                     return None;
                 }
                 let index = oak_semantic::build_index(

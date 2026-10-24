@@ -12,6 +12,7 @@ const FORMALS_EXPECT_EQUAL: Formals = &["object", "expected"];
 const FORMALS_EXPECT_TRUE: Formals = &["object", "info", "label"];
 const FORMALS_TYPEOF: Formals = &["x"];
 
+/// <!-- docs: start -->
 /// Version added: 0.3.0
 ///
 /// ## What it does
@@ -42,6 +43,7 @@ const FORMALS_TYPEOF: Formals = &["x"];
 /// expect_type(x, "integer")
 /// expect_type(x, "character")
 /// ```
+/// <!-- docs: end -->
 pub fn expect_type(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     // Case 1: expect_equal(typeof(x), type) or expect_identical(typeof(x), type)
     if fn_name == "expect_equal" || fn_name == "expect_identical" {

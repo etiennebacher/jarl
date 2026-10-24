@@ -21,7 +21,7 @@ any(is.na(x))",
         expect_no_lint(
             "
 # jarl-ignore-file any_is_na: reason 1
-# jarl-ignore-file browser: reason 2
+# jarl-ignore-file class_equals: reason 2
 any(is.na(x))",
             "misplaced_file_suppression",
             None,
@@ -48,13 +48,13 @@ any(is.na(x))"), @"
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore-file any_is_na: reason 1
 x <- 1
-# jarl-ignore-file browser: reason 2
+# jarl-ignore-file class_equals: reason 2
 any(is.na(x))"), @"
         warning: misplaced_file_suppression
          --> <test>:4:1
           |
-        4 | # jarl-ignore-file browser: reason 2
-          | ------------------------------------ This comment isn't used by Jarl because `# jarl-ignore-file` must be at the top of the file.
+        4 | # jarl-ignore-file class_equals: reason 2
+          | ----------------------------------------- This comment isn't used by Jarl because `# jarl-ignore-file` must be at the top of the file.
           |
           = help: Move this comment to the beginning of the file, before any code.
         Found 1 error.

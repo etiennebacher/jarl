@@ -1,0 +1,47 @@
+---
+source: crates/jarl-core/src/lints/base/library_call/mod.rs
+expression: "get_unsafe_fixed_text(vec![\"x <- 1\\n\\nlibrary(foo)\\n\",\n\"# Header\\nx <- 1\\nlibrary(foo)\\ny <- 2\\nlibrary(bar)\\n\",\n\"options(warn = 1)\\nSys.setenv(LANG = \\\"en\\\")\\nx <- 1\\nlibrary(foo)\\n\",],\n\"library_call\",)"
+---
+OLD:
+====
+x <- 1
+
+library(foo)
+
+NEW:
+====
+library(foo)
+x <- 1
+
+
+
+OLD:
+====
+# Header
+x <- 1
+library(foo)
+y <- 2
+library(bar)
+
+NEW:
+====
+library(foo)
+library(bar)
+# Header
+x <- 1
+y <- 2
+
+
+OLD:
+====
+options(warn = 1)
+Sys.setenv(LANG = "en")
+x <- 1
+library(foo)
+
+NEW:
+====
+options(warn = 1)
+Sys.setenv(LANG = "en")
+library(foo)
+x <- 1

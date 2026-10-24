@@ -2,6 +2,7 @@ use crate::diagnostic::*;
 use crate::rule_set::Rule;
 use biome_rowan::TextRange;
 
+/// <!-- docs: start -->
 /// Version added: 0.4.0
 ///
 /// ## What it does
@@ -31,6 +32,7 @@ use biome_rowan::TextRange;
 /// x <- 1
 /// any(is.na(x))
 /// ```
+/// <!-- docs: end -->
 pub fn misplaced_file_suppression(ranges: &[TextRange]) -> Vec<Diagnostic> {
     ranges
         .iter()

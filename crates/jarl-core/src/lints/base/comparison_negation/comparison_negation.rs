@@ -4,6 +4,7 @@ use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.23
 ///
 /// ## What it does
@@ -40,6 +41,7 @@ use biome_rowan::AstNode;
 /// x >= y + 1
 /// x != y + 1
 /// ```
+/// <!-- docs: end -->
 pub fn comparison_negation(ast: &RUnaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let operator = ast.operator()?;
 

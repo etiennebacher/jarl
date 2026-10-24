@@ -3,11 +3,15 @@ use crate::rule_set::Rule;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.4.0
 ///
 /// ## What it does
 ///
 /// Checks for usage of `:::`.
+///
+/// **This rule is deprecated and will be removed in a future version. Use
+/// `undesirable_operator` instead.**
 ///
 /// ## Why is this bad?
 ///
@@ -17,6 +21,7 @@ use biome_rowan::AstNode;
 /// instead.
 ///
 /// This rule doesn't have an automatic fix.
+/// <!-- docs: end -->
 pub fn internal_function(ast: &RNamespaceExpression) -> anyhow::Result<Option<Diagnostic>> {
     let op = ast.operator()?;
     if op.kind() != RSyntaxKind::COLON3 {

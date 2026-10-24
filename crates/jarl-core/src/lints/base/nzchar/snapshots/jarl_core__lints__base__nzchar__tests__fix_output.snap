@@ -7,39 +7,39 @@ OLD:
 x == ''
 NEW:
 ====
-!nzchar(x)
+!nzchar(x, keepNA = TRUE)
 
 OLD:
 ====
 x != ''
 NEW:
 ====
-nzchar(x)
+nzchar(x, keepNA = TRUE)
 
 OLD:
 ====
 x == r"()"
 NEW:
 ====
-!nzchar(x)
+!nzchar(x, keepNA = TRUE)
 
 OLD:
 ====
 foo(x(y)) == ''
 NEW:
 ====
-!nzchar(foo(x(y)))
+!nzchar(foo(x(y)), keepNA = TRUE)
 
 OLD:
 ====
 '' == x
 NEW:
 ====
-!nzchar(x)
+!nzchar(x, keepNA = TRUE)
 
 OLD:
 ====
 which(c(a, b, c) == '')
 NEW:
 ====
-which(!nzchar(c(a, b, c)))
+which(!nzchar(c(a, b, c), keepNA = TRUE))

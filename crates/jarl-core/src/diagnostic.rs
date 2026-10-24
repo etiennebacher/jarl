@@ -142,6 +142,25 @@ pub struct ViolationData {
     pub suggestion: Option<String>,
 }
 
+/// An extra annotated range shown alongside the diagnostic's own range, to
+/// point at the code that explains the violation (the earlier assignment a
+/// later one overwrites, say).
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct Label {
+    pub range: TextRange,
+    pub text: String,
+    /// Row and column of the start of `range`, filled in once the diagnostic
+    /// location is computed.
+    #[serde(default)]
+    pub location: Option<Location>,
+}
+
+impl Label {
+    pub fn new(range: TextRange, text: String) -> Self {
+        Self { range, text, location: None }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 // The object that is eventually reported and printed in the console.
 pub struct Diagnostic {
@@ -158,6 +177,10 @@ pub struct Diagnostic {
     /// the user why an otherwise fixable rule is reported as unfixable.
     #[serde(skip)]
     pub fix_disabled_in_roxygen: bool,
+    /// Extra ranges that explain the violation. Suppression matching, fixes and
+    /// the primary location of every emitter keep using `range`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub labels: Vec<Label>,
 }
 
 impl<T: Violation> From<T> for ViolationData {
@@ -185,7 +208,13 @@ impl Diagnostic {
             fix,
             filename: "".into(),
             fix_disabled_in_roxygen: false,
+            labels: Vec::new(),
         }
+    }
+
+    pub fn with_labels(mut self, labels: Vec<Label>) -> Self {
+        self.labels = labels;
+        self
     }
 
     // TODO: in these three functions, the first condition should be removed
@@ -234,20 +263,34 @@ pub fn render_diagnostic(
     diagnostic: &Diagnostic,
     renderer: &Renderer,
 ) -> String {
-    let start_offset: usize = diagnostic.range.start().into();
-    let end_offset: usize = diagnostic.range.end().into();
+    let range = |r: TextRange| -> std::ops::Range<usize> { r.start().into()..r.end().into() };
+    let main = range(diagnostic.range);
+    let spans =
+        std::iter::once(main.clone()).chain(diagnostic.labels.iter().map(|l| range(l.range)));
+    let (window, window_start, first_line) = snippet_window(source, spans);
+    let rebase = |r: std::ops::Range<usize>| (r.start - window_start)..(r.end - window_start);
 
-    let (window, adj_start, adj_end, first_line) = snippet_window(source, start_offset, end_offset);
-
-    let snippet = Snippet::source(window)
+    // With no labels there is a single annotation, and `Context` is what every
+    // other rule renders. With labels, the diagnostic's own range must be
+    // `Primary` so that the `-->` header keeps pointing at it rather than at
+    // the earliest label.
+    let kind = if diagnostic.labels.is_empty() {
+        AnnotationKind::Context
+    } else {
+        AnnotationKind::Primary
+    };
+    let mut snippet = Snippet::source(window)
         .path(origin)
         .line_start(first_line)
         .fold(true)
-        .annotation(
+        .annotation(kind.span(rebase(main)).label(&diagnostic.message.body));
+    for label in &diagnostic.labels {
+        snippet = snippet.annotation(
             AnnotationKind::Context
-                .span(adj_start..adj_end)
-                .label(&diagnostic.message.body),
+                .span(rebase(range(label.range)))
+                .label(&label.text),
         );
+    }
 
     let mut group = Level::WARNING.secondary_title(title).element(snippet);
 
@@ -275,13 +318,17 @@ pub fn render_syntax_error(
     let start_offset: usize = error.range.start().into();
     let end_offset: usize = error.range.end().into();
 
-    let (window, adj_start, adj_end, first_line) = snippet_window(source, start_offset, end_offset);
+    let (window, window_start, first_line) =
+        snippet_window(source, std::iter::once(start_offset..end_offset));
 
     let snippet = Snippet::source(window)
         .path(origin)
         .line_start(first_line)
         .fold(true)
-        .annotation(AnnotationKind::Primary.span(adj_start..adj_end));
+        .annotation(
+            AnnotationKind::Primary
+                .span((start_offset - window_start)..(end_offset - window_start)),
+        );
 
     let group = Level::ERROR
         .primary_title(error.message.as_str())
@@ -291,21 +338,31 @@ pub fn render_syntax_error(
     renderer.render(&[group]).to_string()
 }
 
-/// Narrow `source` down to the lines the annotation actually covers.
+/// Narrow `source` down to the lines the annotations actually cover.
 ///
 /// `annotate_snippets` indexes every line of the source it is handed, once per
 /// rendered diagnostic, so passing whole files makes rendering cost scale with
 /// file size times diagnostic count. Folding hides the surrounding lines but
 /// does not skip that indexing, so the trimming has to happen here.
 ///
+/// The window stretches from the first span to the last, so with several spans
+/// its cost is bounded by the distance between them.
+///
 /// The line number is counted from `source` rather than taken from the
 /// diagnostic's `location`, so the gutter always agrees with the lines actually
 /// shown.
 ///
-/// Returns the window, the span rebased into it, and the 1-based number of the
-/// window's first line.
-fn snippet_window(source: &str, start: usize, end: usize) -> (&str, usize, usize, usize) {
-    // Find the line range covering the span: from the newline before `start`
+/// Returns the window, the byte offset of its start in `source` (to rebase the
+/// spans into it), and the 1-based number of its first line.
+fn snippet_window(
+    source: &str,
+    spans: impl Iterator<Item = std::ops::Range<usize>>,
+) -> (&str, usize, usize) {
+    let (start, end) = spans.fold((usize::MAX, 0), |(start, end), span| {
+        (start.min(span.start), end.max(span.end))
+    });
+
+    // Find the line range covering the spans: from the newline before `start`
     // to the newline after `end`.
     let line_start = source[..start].rfind('\n').map_or(0, |p| p + 1);
     let line_end = source[end..].find('\n').map_or(source.len(), |p| end + p);
@@ -315,10 +372,5 @@ fn snippet_window(source: &str, start: usize, end: usize) -> (&str, usize, usize
         .filter(|&&b| b == b'\n')
         .count();
 
-    (
-        &source[line_start..line_end],
-        start - line_start,
-        end - line_start,
-        first_line,
-    )
+    (&source[line_start..line_end], line_start, first_line)
 }

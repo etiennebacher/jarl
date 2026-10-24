@@ -14,6 +14,7 @@ const FORMALS_EXPECT_TRUE: Formals = &["object", "info", "label"];
 const FORMALS_CLASS: Formals = &["x"];
 const FORMALS_INHERITS: Formals = &["x", "what", "which"];
 
+/// <!-- docs: start -->
 /// Version added: 0.3.0
 ///
 /// ## What it does
@@ -71,6 +72,7 @@ const FORMALS_INHERITS: Formals = &["x", "what", "which"];
 /// expect_s3_class(x, "factor")
 /// expect_s3_class(x, "foo")
 /// ```
+/// <!-- docs: end -->
 pub fn expect_s3_class(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     match fn_name {
         "expect_equal" | "expect_identical" => check_expect_class_comparison(ast, fn_name),
@@ -365,8 +367,8 @@ fn classify_class_expression(expression: &AnyRExpression) -> ClassExpressionKind
         return ClassExpressionKind::Dynamic;
     };
 
-    let content = string.content_token();
-    let class_name = content.as_ref().map_or("", |token| token.text_trimmed());
+    let class_name = string.inner_string_text().ok();
+    let class_name = class_name.as_ref().map_or("", |text| text.text());
 
     if NON_S3_CLASSES.contains(&class_name) {
         ClassExpressionKind::UnsupportedLiteral

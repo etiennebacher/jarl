@@ -15,12 +15,12 @@ use std::collections::HashSet;
 use air_r_parser::RParserOptions;
 use air_r_syntax::{
     AnyRArgumentName, AnyRExpression, RArgument, RBinaryExpression, RCall, RForStatement,
-    RStringValue, RSyntaxKind, RSyntaxNode,
+    RIfStatement, RStringValue, RSyntaxKind, RSyntaxNode,
 };
 use biome_rowan::{AstNode, AstSeparatedList, SyntaxNodeCast, TextRange, TextSize};
 use oak_core::syntax_ext::{AnyRSelectorExt, RIdentifierExt, RStringValueExt};
 use oak_semantic::DefinitionId;
-use oak_semantic::effects::CallContext;
+use oak_semantic::effects::BoundArguments;
 use oak_semantic::semantic_index::{
     Definition, DefinitionKind, ScopeId, SemanticCallKind, SemanticIndex,
 };
@@ -102,7 +102,7 @@ fn source_target_index(
     }
     let contents = std::fs::read_to_string(path).ok()?;
     let parsed = air_r_parser::parse(&contents, RParserOptions::default());
-    if parsed.has_error() {
+    if parsed.has_errors() {
         return None;
     }
     let index = std::sync::Arc::new(oak_semantic::build_index(&parsed.tree(), resolver(path)));
@@ -275,6 +275,84 @@ impl<'a> SemanticInfo<'a> {
         self.reaching_used.contains(&(scope_id, def_id))
     }
 
+    /// The name range of the last assignment before `range` that defines `name`
+    /// and is reachable at `range`, whether or not it is read in between. This is
+    /// useful for rules that diagnose a later assignment which silently
+    /// overwrites a value the author may have expected to keep using.
+    pub fn last_assignment_before(&self, name: &str, range: TextRange) -> Option<TextRange> {
+        let (scope, current_id) = self.index.scope_ids().find_map(|scope| {
+            self.index
+                .definitions(scope)
+                .iter()
+                .find(|(_, def)| {
+                    self.definition_syntax_range(def) == Some(range)
+                        && self.index.symbols(scope).symbol(def.symbol()).name() == name
+                })
+                .map(|(id, _)| (scope, id))
+        })?;
+
+        self.index
+            .ancestor_scope_ids(scope)
+            .filter_map(|owner| Some((owner, self.index.symbols(owner).id(name)?)))
+            .flat_map(|(owner, symbol_id)| {
+                self.index
+                    .definitions(owner)
+                    .iter()
+                    .filter(move |(def_id, def)| {
+                        !(owner == scope && *def_id == current_id)
+                            && def.symbol() == symbol_id
+                            && def.range().start() < range.start()
+                            && matches!(
+                                def.kind(),
+                                DefinitionKind::Assignment(_)
+                                    | DefinitionKind::SuperAssignment(_)
+                                    | DefinitionKind::Assign { .. }
+                            )
+                            && !self.is_in_nse(def.range())
+                            && self.assignment_reaches(range, def.range())
+                    })
+                    .map(|(_, def)| def.range())
+            })
+            .max_by_key(|previous| previous.start())
+    }
+
+    /// Assignments in different arms of the same `if` cannot reach one
+    /// another. Other control-flow cases remain conservative: a definition in
+    /// a branch can reach code after the branch, where it may have run.
+    fn assignment_reaches(&self, current: TextRange, previous: TextRange) -> bool {
+        self.root
+            .descendants()
+            .filter_map(RIfStatement::cast)
+            .all(|if_statement| {
+                let consequence = if_statement
+                    .consequence()
+                    .ok()
+                    .map(|expression| expression.syntax().text_trimmed_range());
+                let alternative = if_statement
+                    .else_clause()
+                    .and_then(|clause| clause.alternative().ok())
+                    .map(|expression| expression.syntax().text_trimmed_range());
+
+                let current_branch = Self::branch_for_range(current, consequence, alternative);
+                let previous_branch = Self::branch_for_range(previous, consequence, alternative);
+                current_branch.is_none()
+                    || previous_branch.is_none()
+                    || current_branch == previous_branch
+            })
+    }
+
+    fn definition_syntax_range(&self, def: &Definition) -> Option<TextRange> {
+        match def.kind() {
+            DefinitionKind::Assignment(pointer) | DefinitionKind::SuperAssignment(pointer) => {
+                Some(pointer.to_node(&self.root).syntax().text_trimmed_range())
+            }
+            DefinitionKind::Assign { node, .. } => {
+                Some(node.to_node(&self.root).syntax().text_trimmed_range())
+            }
+            _ => None,
+        }
+    }
+
     // ── Low-level predicates (compose for new rules) ──────────────────
 
     pub fn is_in_formula(&self, range: TextRange) -> bool {
@@ -307,6 +385,20 @@ impl<'a> SemanticInfo<'a> {
     pub fn is_in_returned_env(&self, range: TextRange) -> bool {
         in_any_range(range, &self.returned_env_ranges)
             && !in_any_range(range, &self.returned_env_functions)
+    }
+
+    fn branch_for_range(
+        range: TextRange,
+        consequence: Option<TextRange>,
+        alternative: Option<TextRange>,
+    ) -> Option<bool> {
+        if consequence.is_some_and(|branch| branch.contains_range(range)) {
+            Some(true)
+        } else if alternative.is_some_and(|branch| branch.contains_range(range)) {
+            Some(false)
+        } else {
+            None
+        }
     }
 
     // ── Internal: AST pass ────────────────────────────────────────────
@@ -494,7 +586,7 @@ impl<'a> SemanticInfo<'a> {
     /// (`{sapply(v, function(a) a)}`) consumes nothing outside it.
     fn collect_interpolation_reads(&mut self, src: &str, read_range: TextRange) {
         let parsed = air_r_parser::parse(src, RParserOptions::default());
-        if parsed.has_error() {
+        if parsed.has_errors() {
             return;
         }
         // A snippet can't `source()` anything or attach a package, so it has
@@ -586,8 +678,8 @@ impl<'a> SemanticInfo<'a> {
             // Only the quoted `expr` argument is NSE. Any other argument is
             // evaluated normally, so its identifiers stay real uses.
             "Quote" => {
-                let bound = CallContext::default().bind_arguments(call, &["expr"]);
-                if let Some(expr) = bound.get("expr") {
+                let bound = BoundArguments::new(call, &["expr"]);
+                if let Some(expr) = bound.as_ref().and_then(|b| b.get("expr")) {
                     self.nse_ranges.push(expr.syntax().text_trimmed_range());
                 }
             }
@@ -606,8 +698,8 @@ impl<'a> SemanticInfo<'a> {
             // assignment there is the call's output. Only the quoted `expr`
             // argument gets that treatment; `data` is evaluated normally.
             "within" => {
-                let bound = CallContext::default().bind_arguments(call, &["data", "expr"]);
-                if let Some(expr) = bound.get("expr") {
+                let bound = BoundArguments::new(call, &["data", "expr"]);
+                if let Some(expr) = bound.as_ref().and_then(|b| b.get("expr")) {
                     let node = expr.syntax();
                     self.returned_env_ranges.push(node.text_trimmed_range());
                     self.returned_env_functions.extend(
@@ -1508,7 +1600,7 @@ impl oak_semantic::ImportsResolver for JarlImportsResolver {
         &mut self,
         name: &str,
         attached: &[String],
-    ) -> Option<oak_semantic::EffectsHandlers> {
+    ) -> Option<oak_semantic::FunctionHandlers> {
         // Packages attached in the file (flow order, latest last) shadow the
         // lenient defaults, so walk them LIFO first.
         attached

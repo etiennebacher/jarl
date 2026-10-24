@@ -1,4 +1,5 @@
 # unused_function
+
 ::: {.callout-note title="Added in 0.5.0" .low-opacity}
 :::
 
@@ -29,6 +30,43 @@ means that reporting a function that is actually used somewhere (false positive)
 is considered a bug, but not reporting a function that isn't used anywhere
 (false negative) isn't considered a bug (but can be suggested as a feature
 request).
+
+## Configuration options
+
+The operation of the `unused_function` rule can be customised in the [configuration file](../reference/config-file.md).
+
+Use `skipped-functions` to fully replace the default list of functions that are
+allowed to be unused in the R package. Function names in `skipped-functions`
+**are parsed as regular expressions** (this differs from other rules that have a
+`skipped-functions` argument).
+
+`unused_function` might return false positives because Jarl cannot statically
+determine whether a function is used. By default, Jarl will hide `unused_function`
+diagnostics if there are more than 50, as this would suggest that the package
+has some internal mechanism to use those functions. This number can be changed
+with the `threshold-ignore` argument.
+
+### Default values
+
+```toml
+skipped-functions = []
+threshold-ignore = 5
+```
+
+### TOML settings
+
+```toml
+[lint]
+...
+
+[lint.unused_function]
+# Ignore all functions that start with "pl_" or "cs_", and the function
+# "my.function"
+skipped-functions = ["^cs_", "^pl_", "my\\.function"]
+# Set a custom threshold above which diagnostics for this rule aren't reported
+# (this is basically equivalent to never hiding unused functions).
+threshold-ignore = 10000
+```
 
 ## Example
 

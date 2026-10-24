@@ -18,7 +18,7 @@ fn test_expected_an_expression() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected an expression
+    error: Expected a loop body but instead found the end of the file.
      --> test.R:1:7
       |
     1 | repeat
@@ -37,7 +37,7 @@ fn test_expected_an_identifier_in_for_loop_variable() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected an identifier
+    error: Expected a loop variable but instead found '1'.
      --> test.R:1:6
       |
     1 | for (1 in x) 1
@@ -56,7 +56,7 @@ fn test_expected_an_identifier_in_parameter() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected an identifier
+    error: Expected a parameter name but instead found '1'.
      --> test.R:1:10
       |
     1 | function(1) 1
@@ -75,7 +75,7 @@ fn test_expected_double_bracket() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected `]]`
+    error: expected `]]` but instead found `]`
      --> test.R:1:5
       |
     1 | x[[1] ]
@@ -94,7 +94,7 @@ fn test_expected_a_comma_between_arguments() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected a comma between arguments
+    error: expected `,` but instead found `b`
      --> test.R:1:5
       |
     1 | f(a b)
@@ -113,11 +113,11 @@ fn test_expected_an_identifier_or_string_before_double_colon() -> anyhow::Result
     ----- stdout -----
 
     ----- stderr -----
-    error: expected an identifier or string before `::`
-     --> test.R:1:4
+    error: Expected a name.
+     --> test.R:1:1
       |
     1 | f()::x
-      |    ^^
+      | ^^^
       |
     ");
     Ok(())
@@ -130,13 +130,23 @@ fn test_expected_an_identifier_or_string_before_triple_colon() -> anyhow::Result
     success: false
     exit_code: 255
     ----- stdout -----
-
-    ----- stderr -----
-    error: expected an identifier or string before `:::`
+    warning: undesirable_operator
      --> test.R:1:4
       |
     1 | f():::x
-      |    ^^^
+      |    --- `:::` is listed as an undesirable operator.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    error: Expected a name.
+     --> test.R:1:1
+      |
+    1 | f():::x
+      | ^^^
       |
     ");
     Ok(())
@@ -151,7 +161,7 @@ fn test_expected_a_parameter() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected a parameter
+    error: Expected a parameter name but instead found ')'.
      --> test.R:1:13
       |
     1 | function(x, ) 1
@@ -170,7 +180,7 @@ fn test_expected_in() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected `in`
+    error: expected `in` but instead found `y`
      --> test.R:1:8
       |
     1 | for (x y) 1
@@ -208,11 +218,17 @@ fn test_expected_closing_paren_found_other_token() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected `)` but instead found `{`
+    error: expected `,` but instead found `{`
      --> test.R:1:17
       |
     1 | f <- function(x { }
       |                 ^
+      |
+    error: expected `)` but instead found `}`
+     --> test.R:1:19
+      |
+    1 | f <- function(x { }
+      |                   ^
       |
     ");
     Ok(())
@@ -252,6 +268,12 @@ fn test_expected_opening_paren_found_other_token() -> anyhow::Result<()> {
     1 | if x
       |    ^
       |
+    error: expected `)` but instead the file ends
+     --> test.R:1:5
+      |
+    1 | if x
+      |     ^
+      |
     ");
     Ok(())
 }
@@ -284,17 +306,11 @@ fn test_unterminated_string() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected the end of the string
-     --> test.R:1:7
-      |
-    1 | x <- "abc
-      |       ^^^
-      |
     error: Unterminated string.
-     --> test.R:1:7
+     --> test.R:1:6
       |
     1 | x <- "abc
-      |       ^^^
+      |      ^
       |
     "#);
     Ok(())
@@ -311,21 +327,11 @@ fn test_unterminated_string_before_valid_code() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected the end of the string
-     --> test.R:1:7
-      |
-    1 |   x <- "abc
-      |  _______^
-    2 | | y <- 1
-      | |______^
-      |
     error: Unterminated string.
-     --> test.R:1:7
+     --> test.R:1:6
       |
-    1 |   x <- "abc
-      |  _______^
-    2 | | y <- 1
-      | |______^
+    1 | x <- "abc
+      |      ^
       |
     "#);
     Ok(())
@@ -340,17 +346,11 @@ fn test_unterminated_raw_string() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected the end of the string
-     --> test.R:1:9
+    error: Unterminated string.
+     --> test.R:1:6
       |
     1 | x <- r"(abc
-      |         ^^^
-      |
-    error: Unterminated raw string.
-     --> test.R:1:9
-      |
-    1 | x <- r"(abc
-      |         ^^^
+      |      ^^^
       |
     "#);
     Ok(())
@@ -365,17 +365,11 @@ fn test_unterminated_quoted_identifier() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected an expression
+    error: Unterminated backtick-quoted name.
      --> test.R:1:1
       |
     1 | `abc
-      | ^^^^
-      |
-    error: Unterminated quoted identifier.
-     --> test.R:1:1
-      |
-    1 | `abc
-      | ^^^^
+      | ^
       |
     ");
     Ok(())
@@ -390,17 +384,17 @@ fn test_unterminated_special_operator() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected an expression
+    error: Unterminated `%` operator.
      --> test.R:1:3
       |
     1 | x %in
-      |   ^^^
+      |   ^
       |
-    error: Unterminated special operator.
-     --> test.R:1:3
+    error: Expected an expression but instead found the end of the file.
+     --> test.R:1:6
       |
     1 | x %in
-      |   ^^^
+      |      ^
       |
     ");
     Ok(())
@@ -417,7 +411,7 @@ fn test_unexpected_semicolon() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: Unexpected `;`.
+    error: expected `,` but instead found `;`
      --> test.R:1:4
       |
     1 | f(a;)
@@ -438,19 +432,19 @@ fn test_several_syntax_errors_in_one_file() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected a comma between arguments
+    error: expected `,` but instead found `b`
      --> test.R:1:5
       |
     1 | f(a b)
       |     ^
       |
-    error: expected `in`
+    error: expected `in` but instead found `y`
      --> test.R:2:8
       |
     2 | for (x y) 1
       |        ^
       |
-    error: expected `]]`
+    error: expected `]]` but instead found `]`
      --> test.R:3:5
       |
     3 | z[[1] ]
@@ -500,9 +494,9 @@ fn test_several_syntax_errors_concise() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    Error: test.R:1:5 expected a comma between arguments
-    Error: test.R:2:8 expected `in`
-    Error: test.R:3:5 expected `]]`
+    Error: test.R:1:5 expected `,` but instead found `b`
+    Error: test.R:2:8 expected `in` but instead found `y`
+    Error: test.R:3:5 expected `]]` but instead found `]`
     "
     );
     Ok(())
