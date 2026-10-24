@@ -264,15 +264,19 @@ df <- if (cond) { data.frame() }",
     fn test_assignment_on_if_no_else_labels_elide_distant_lines() {
         // One line in between is printed rather than elided.
         assert_snapshot!(
-            snapshot_lint("df <- 1\nprint(1)\ndf <- if (cond) 2"),
+            snapshot_lint("
+df <- 1
+print(1)
+df <- if (cond) 2
+"),
             @"
         warning: assignment_on_if_no_else
-         --> <test>:3:1
+         --> <test>:4:1
           |
-        1 | df <- 1
+        2 | df <- 1
           | -- `df` was last assigned here
-        2 | print(1)
-        3 | df <- if (cond) 2
+        3 | print(1)
+        4 | df <- if (cond) 2
           | ^^^^^^^^^^^^^^^^^ This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
           |
           = help: Add a final `else` branch if `NULL` is the intended fallback, or move the assignment into the `if` branches.
@@ -281,15 +285,22 @@ df <- if (cond) { data.frame() }",
         );
         // Several lines in between are replaced by a separator.
         assert_snapshot!(
-            snapshot_lint("df <- 1\nprint(1)\nprint(2)\nprint(3)\nprint(4)\ndf <- if (cond) 2"),
+            snapshot_lint("
+df <- 1
+print(1)
+print(2)
+print(3)
+print(4)
+df <- if (cond) 2
+"),
             @"
         warning: assignment_on_if_no_else
-         --> <test>:6:1
+         --> <test>:7:1
           |
-        1 | df <- 1
+        2 | df <- 1
           | -- `df` was last assigned here
         ...
-        6 | df <- if (cond) 2
+        7 | df <- if (cond) 2
           | ^^^^^^^^^^^^^^^^^ This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
           |
           = help: Add a final `else` branch if `NULL` is the intended fallback, or move the assignment into the `if` branches.
@@ -298,14 +309,18 @@ df <- if (cond) { data.frame() }",
         );
         // The label points at the last assignment before the `if` one.
         assert_snapshot!(
-            snapshot_lint("df <- 1\ndf <- 2\ndf <- if (cond) 3"),
+            snapshot_lint("
+df <- 1
+df <- 2
+df <- if (cond) 3
+"),
             @"
         warning: assignment_on_if_no_else
-         --> <test>:3:1
+         --> <test>:4:1
           |
-        2 | df <- 2
+        3 | df <- 2
           | -- `df` was last assigned here
-        3 | df <- if (cond) 3
+        4 | df <- if (cond) 3
           | ^^^^^^^^^^^^^^^^^ This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
           |
           = help: Add a final `else` branch if `NULL` is the intended fallback, or move the assignment into the `if` branches.
