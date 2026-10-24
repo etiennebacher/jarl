@@ -29,7 +29,7 @@ pub const DEFAULT_EXCLUDE_PATTERNS: &[&str] = &[
     "import-standalone-*.R",
 ];
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct DiscoveredSettings {
     pub directory: PathBuf,
     pub settings: Settings,
@@ -172,6 +172,85 @@ fn discover_nested_settings(
     }
 
     Ok(())
+}
+
+/// Load [Settings] from an explicitly given config file, with its relative paths
+/// anchored at `root`.
+///
+/// This is what `--config` is for: when the user names the file, it wins over any
+/// `jarl.toml` that discovery would have found above or below the checked paths. Several
+/// `DiscoveredSettings` can be built from the same file, one per directory being checked,
+/// so that `exclude`, `include` and `per-file-ignores` are anchored the same way.
+pub fn discover_settings_from_config(
+    config: &Path,
+    root: &Path,
+) -> anyhow::Result<DiscoveredSettings> {
+    let config = air_fs::normalize_path(config);
+
+    if !config.exists() {
+        anyhow::bail!("Configuration file not found: {}", config.display());
+    }
+    if !config.is_file() {
+        anyhow::bail!(
+            "`--config` expects a file, but {} is not a file",
+            config.display()
+        );
+    }
+
+    let settings = parse_settings(&config, root)?;
+
+    Ok(DiscoveredSettings {
+        directory: root.to_path_buf(),
+        settings,
+        config_path: Some(config),
+    })
+}
+
+/// Directories the explicit configuration applies to: its own directory plus the checked
+/// paths that are not below it.
+///
+/// The file named by `--config` can live anywhere, and a generated file outside the
+/// project is the reason the flag exists, so the paths discovery would not have covered
+/// need their own entry. A path that does not exist yet (e.g. `--stdin-file-path`) is
+/// anchored at its deepest existing ancestor, so that patterns like `renv/` still match
+/// what they name.
+pub fn explicit_config_roots<P: AsRef<Path>>(
+    paths: &[P],
+    config_root: &Path,
+    cwd: Option<&Path>,
+) -> Vec<PathBuf> {
+    let mut roots = vec![config_root.to_path_buf()];
+    let cwd = cwd.map(air_fs::normalize_path);
+
+    for path in paths {
+        let path = match &cwd {
+            Some(cwd) => cwd.join(path),
+            None => path.as_ref().to_path_buf(),
+        };
+        let path = air_fs::normalize_path(&path);
+
+        // A file argument is anchored the way the rest of the linter reads it: relative to
+        // the directory the command was run from, so that a pattern like `renv/` still
+        // names what it says. Paths given from elsewhere keep their own directory.
+        let directory = if path.is_dir() {
+            path
+        } else if let Some(cwd) = cwd.as_ref().filter(|cwd| path.starts_with(cwd)) {
+            cwd.clone()
+        } else {
+            // An absolute path always has an ancestor that exists, so this only keeps the
+            // function total for callers that pass something exotic.
+            path.ancestors()
+                .find(|ancestor| ancestor.is_dir())
+                .map(Path::to_path_buf)
+                .unwrap_or_else(|| path.clone())
+        };
+
+        if !directory.starts_with(config_root) && !roots.contains(&directory) {
+            roots.push(directory);
+        }
+    }
+
+    roots
 }
 
 /// Parse [Settings] from a given `jarl.toml`

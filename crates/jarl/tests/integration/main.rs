@@ -11,6 +11,7 @@ mod allow_dirty;
 mod allow_no_vcs;
 mod assignment;
 mod comments;
+mod config_flag;
 mod edge_cases;
 mod exclude;
 mod help;

@@ -6,6 +6,7 @@ use clap::{Parser, Subcommand};
 use clap_complete::engine::{ArgValueCompleter, CompletionCandidate};
 use jarl_core::rule_set::{Category, Rule};
 use std::ffi::OsStr;
+use std::path::PathBuf;
 
 // Configures Clap v3-style help menu colors
 const STYLES: Styles = Styles::styled()
@@ -185,6 +186,15 @@ pub struct CheckCommand {
         help = "The mimimum R version to be used by the linter. Some rules only work starting from a specific version."
     )]
     pub min_r_version: Option<String>,
+    #[arg(
+        long,
+        value_name = "PATH",
+        value_hint = clap::ValueHint::FilePath,
+        help_heading = "Other options",
+        help = "Path to the configuration file to use instead of discovering the nearest `jarl.toml`.",
+        long_help = "Path to the configuration file to use instead of discovering the nearest `jarl.toml`. Takes precedence over any `jarl.toml` found above or below the checked paths."
+    )]
+    pub config: Option<PathBuf>,
     #[arg(
         long,
         value_enum,
