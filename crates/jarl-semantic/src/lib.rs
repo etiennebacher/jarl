@@ -280,7 +280,7 @@ impl<'a> SemanticInfo<'a> {
     /// useful for rules that diagnose a later assignment which silently
     /// overwrites a value the author may have expected to keep using.
     pub fn last_assignment_before(&self, name: &str, range: TextRange) -> Option<TextRange> {
-        let Some((scope, current_id)) = self.index.scope_ids().find_map(|scope| {
+        let (scope, current_id) = self.index.scope_ids().find_map(|scope| {
             self.index
                 .definitions(scope)
                 .iter()
@@ -289,9 +289,7 @@ impl<'a> SemanticInfo<'a> {
                         && self.index.symbols(scope).symbol(def.symbol()).name() == name
                 })
                 .map(|(id, _)| (scope, id))
-        }) else {
-            return None;
-        };
+        })?;
 
         self.index
             .ancestor_scope_ids(scope)
