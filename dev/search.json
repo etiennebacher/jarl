@@ -2159,7 +2159,7 @@
     "href": "rules/assignment_on_if_no_else.html",
     "title": "assignment_on_if_no_else",
     "section": "",
-    "text": "NoteAdded in 0.8.0\n\n\n\n\n\n\n\n\nReports assignments whose value is an if expression without a final else branch, when the assignment overwrites an earlier value.\n\n\n\nWhen no branch is taken, an if expression without a final else evaluates to NULL. This can be unexpected since one could believe that if no branch is taken then the previous value is kept.\n\n\n\ndf &lt;- mtcars\n# If `condition` is `FALSE`, `df` becomes `NULL` instead of\n# keeping its original value (`mtcars`).\ndf &lt;- if (condition) {\n  mtcars[1:5, ]\n}\n\nvalue &lt;- 1\n# If neither `a` nor `b` is `TRUE`, `value` becomes `NULL`\n# instead of keeping its original value (`1`).\nvalue &lt;- if (a) {\n  1\n} else if (b) {\n  2\n}\nUse instead:\nif (condition) {\n  df &lt;- mtcars[1:5, ]\n}\n\nif (a) {\n  value &lt;- 1\n} else if (b) {\n  value &lt;- 2\n}\nIf assigning a fallback value is appropriate, add a final else branch.",
+    "text": "NoteAdded in 0.8.0\n\n\n\n\n\n\n\n\nReports assignments whose value is an if expression without a final else branch, when the assignment overwrites an earlier value.\n\n\n\nWhen no branch is taken, an if expression without a final else evaluates to NULL. This can be unexpected since one could believe that if no branch is taken then the previous value is kept.\n\n\n\ndf &lt;- mtcars\n# If `condition` is `FALSE`, `df` becomes `NULL` instead of\n# keeping its original value (`mtcars`).\ndf &lt;- if (condition) {\n  mtcars[1:5, ]\n}\n\nvalue &lt;- 1\n# If neither `a` nor `b` is `TRUE`, `value` becomes `NULL`\n# instead of keeping its original value (`1`).\nvalue &lt;- if (a) {\n  1\n} else if (b) {\n  2\n}\nUse instead:\nif (condition) {\n  df &lt;- mtcars[1:5, ]\n}\n\nif (a) {\n  value &lt;- 1\n} else if (b) {\n  value &lt;- 2\n}\nIf NULL is the intended fallback, add a final else branch that says so.",
     "crumbs": [
       "List of rules",
       "assignment_on_if_no_else"
@@ -2192,7 +2192,7 @@
     "href": "rules/assignment_on_if_no_else.html#example",
     "title": "assignment_on_if_no_else",
     "section": "",
-    "text": "df &lt;- mtcars\n# If `condition` is `FALSE`, `df` becomes `NULL` instead of\n# keeping its original value (`mtcars`).\ndf &lt;- if (condition) {\n  mtcars[1:5, ]\n}\n\nvalue &lt;- 1\n# If neither `a` nor `b` is `TRUE`, `value` becomes `NULL`\n# instead of keeping its original value (`1`).\nvalue &lt;- if (a) {\n  1\n} else if (b) {\n  2\n}\nUse instead:\nif (condition) {\n  df &lt;- mtcars[1:5, ]\n}\n\nif (a) {\n  value &lt;- 1\n} else if (b) {\n  value &lt;- 2\n}\nIf assigning a fallback value is appropriate, add a final else branch.",
+    "text": "df &lt;- mtcars\n# If `condition` is `FALSE`, `df` becomes `NULL` instead of\n# keeping its original value (`mtcars`).\ndf &lt;- if (condition) {\n  mtcars[1:5, ]\n}\n\nvalue &lt;- 1\n# If neither `a` nor `b` is `TRUE`, `value` becomes `NULL`\n# instead of keeping its original value (`1`).\nvalue &lt;- if (a) {\n  1\n} else if (b) {\n  2\n}\nUse instead:\nif (condition) {\n  df &lt;- mtcars[1:5, ]\n}\n\nif (a) {\n  value &lt;- 1\n} else if (b) {\n  value &lt;- 2\n}\nIf NULL is the intended fallback, add a final else branch that says so.",
     "crumbs": [
       "List of rules",
       "assignment_on_if_no_else"
