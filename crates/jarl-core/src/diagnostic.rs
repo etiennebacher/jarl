@@ -145,10 +145,20 @@ pub struct ViolationData {
 /// An extra annotated range shown alongside the diagnostic's own range, to
 /// point at the code that explains the violation (the earlier assignment a
 /// later one overwrites, say).
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Label {
     pub range: TextRange,
     pub text: String,
+    /// Row and column of the start of `range`, filled in once the diagnostic
+    /// location is computed.
+    #[serde(default)]
+    pub location: Option<Location>,
+}
+
+impl Label {
+    pub fn new(range: TextRange, text: String) -> Self {
+        Self { range, text, location: None }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
@@ -167,9 +177,9 @@ pub struct Diagnostic {
     /// the user why an otherwise fixable rule is reported as unfixable.
     #[serde(skip)]
     pub fix_disabled_in_roxygen: bool,
-    /// Extra ranges annotated in the rendered snippet. Suppression matching,
-    /// fixes and the primary location of every emitter keep using `range`.
-    #[serde(skip)]
+    /// Extra ranges that explain the violation. Suppression matching, fixes and
+    /// the primary location of every emitter keep using `range`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub labels: Vec<Label>,
 }
 

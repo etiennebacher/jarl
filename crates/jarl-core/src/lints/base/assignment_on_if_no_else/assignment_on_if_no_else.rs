@@ -109,10 +109,10 @@ pub fn assignment_on_if_no_else(
     };
 
     Ok(Some(
-        Diagnostic::new(AssignmentOnIfNoElse, range, Fix::empty()).with_labels(vec![Label {
-            range: previous,
-            text: format!("`{name}` was last assigned here"),
-        }]),
+        Diagnostic::new(AssignmentOnIfNoElse, range, Fix::empty()).with_labels(vec![Label::new(
+            previous,
+            format!("`{name}` was last assigned here"),
+        )]),
     ))
 }
 
