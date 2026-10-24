@@ -48,4 +48,4 @@ if (a) {
 }
 ```
 
-If assigning a fallback value is appropriate, add a final `else` branch.
+If `NULL` is the intended fallback, add a final `else` branch that says so.

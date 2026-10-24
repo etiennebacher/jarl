@@ -20,10 +20,12 @@ df <- if (cond) { data.frame() }
         warning: assignment_on_if_no_else
          --> <test>:3:1
           |
+        2 | df <- 1
+          | -- `df` was last assigned here
         3 | df <- if (cond) { data.frame() }
-          | -------------------------------- This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
           |
-          = help: Move the assignment into the `if` branches or add a final `else` branch.
+          = help: Add a final `else` branch if `NULL` is the intended fallback, or move the assignment into the `if` branches.
         Found 1 error.
         "
         );
@@ -36,10 +38,12 @@ value <- if (a) { 1 } else if (b) { 2 }
         warning: assignment_on_if_no_else
          --> <test>:3:1
           |
+        2 | value <- 1
+          | ----- `value` was last assigned here
         3 | value <- if (a) { 1 } else if (b) { 2 }
-          | --------------------------------------- This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
           |
-          = help: Move the assignment into the `if` branches or add a final `else` branch.
+          = help: Add a final `else` branch if `NULL` is the intended fallback, or move the assignment into the `if` branches.
         Found 1 error.
         "
         );
@@ -80,10 +84,13 @@ value <- if (a) 1
         warning: assignment_on_if_no_else
          --> <test>:4:1
           |
+        2 | value <- 1
+          | ----- `value` was last assigned here
+        3 | print(value)
         4 | value <- if (a) 1
-          | ----------------- This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
+          | ^^^^^^^^^^^^^^^^^ This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
           |
-          = help: Move the assignment into the `if` branches or add a final `else` branch.
+          = help: Add a final `else` branch if `NULL` is the intended fallback, or move the assignment into the `if` branches.
         Found 1 error.
         "
         );
@@ -100,10 +107,12 @@ value = if (a) 1
         warning: assignment_on_if_no_else
          --> <test>:3:1
           |
+        2 | value <- 1
+          | ----- `value` was last assigned here
         3 | value = if (a) 1
-          | ---------------- This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
+          | ^^^^^^^^^^^^^^^^ This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
           |
-          = help: Move the assignment into the `if` branches or add a final `else` branch.
+          = help: Add a final `else` branch if `NULL` is the intended fallback, or move the assignment into the `if` branches.
         Found 1 error.
         "
         );
@@ -116,10 +125,12 @@ value <<- if (a) 1
         warning: assignment_on_if_no_else
          --> <test>:3:1
           |
+        2 | value <- 1
+          | ----- `value` was last assigned here
         3 | value <<- if (a) 1
-          | ------------------ This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
+          | ^^^^^^^^^^^^^^^^^^ This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
           |
-          = help: Move the assignment into the `if` branches or add a final `else` branch.
+          = help: Add a final `else` branch if `NULL` is the intended fallback, or move the assignment into the `if` branches.
         Found 1 error.
         "
         );
@@ -132,10 +143,12 @@ value <- 1
         warning: assignment_on_if_no_else
          --> <test>:3:1
           |
+        2 | value <- 1
+          | ----- `value` was last assigned here
         3 | (if (a) 1) -> value
-          | ------------------- This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
+          | ^^^^^^^^^^^^^^^^^^^ This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
           |
-          = help: Move the assignment into the `if` branches or add a final `else` branch.
+          = help: Add a final `else` branch if `NULL` is the intended fallback, or move the assignment into the `if` branches.
         Found 1 error.
         "
         );
@@ -148,10 +161,12 @@ value <- 1
         warning: assignment_on_if_no_else
          --> <test>:3:1
           |
+        2 | value <- 1
+          | ----- `value` was last assigned here
         3 | (if (a) 1) ->> value
-          | -------------------- This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
+          | ^^^^^^^^^^^^^^^^^^^^ This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
           |
-          = help: Move the assignment into the `if` branches or add a final `else` branch.
+          = help: Add a final `else` branch if `NULL` is the intended fallback, or move the assignment into the `if` branches.
         Found 1 error.
         "
         );
@@ -164,10 +179,12 @@ value <- (if (a) 1)
         warning: assignment_on_if_no_else
          --> <test>:3:1
           |
+        2 | value <- 1
+          | ----- `value` was last assigned here
         3 | value <- (if (a) 1)
-          | ------------------- This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
+          | ^^^^^^^^^^^^^^^^^^^ This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
           |
-          = help: Move the assignment into the `if` branches or add a final `else` branch.
+          = help: Add a final `else` branch if `NULL` is the intended fallback, or move the assignment into the `if` branches.
         Found 1 error.
         "
         );
@@ -197,10 +214,13 @@ foo <- function() {
         warning: assignment_on_if_no_else
          --> <test>:4:3
           |
+        2 | df <- 1
+          | -- `df` was last assigned here
+        3 | foo <- function() {
         4 |   df <- if (cond) { data.frame() }
-          |   -------------------------------- This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
+          |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
           |
-          = help: Move the assignment into the `if` branches or add a final `else` branch.
+          = help: Add a final `else` branch if `NULL` is the intended fallback, or move the assignment into the `if` branches.
         Found 1 error.
         "
         );
@@ -218,10 +238,13 @@ bar <- function() {
         warning: assignment_on_if_no_else
          --> <test>:5:5
           |
+        3 |   df <- 1
+          |   -- `df` was last assigned here
+        4 |   foo <- function() {
         5 |     df <- if (cond) { data.frame() }
-          |     -------------------------------- This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
+          |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
           |
-          = help: Move the assignment into the `if` branches or add a final `else` branch.
+          = help: Add a final `else` branch if `NULL` is the intended fallback, or move the assignment into the `if` branches.
         Found 1 error.
         "
         );
@@ -234,6 +257,60 @@ bar <- function() {
 df <- if (cond) { data.frame() }",
             "assignment_on_if_no_else",
             None,
+        );
+    }
+
+    #[test]
+    fn test_assignment_on_if_no_else_labels_elide_distant_lines() {
+        // One line in between is printed rather than elided.
+        assert_snapshot!(
+            snapshot_lint("df <- 1\nprint(1)\ndf <- if (cond) 2"),
+            @"
+        warning: assignment_on_if_no_else
+         --> <test>:3:1
+          |
+        1 | df <- 1
+          | -- `df` was last assigned here
+        2 | print(1)
+        3 | df <- if (cond) 2
+          | ^^^^^^^^^^^^^^^^^ This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
+          |
+          = help: Add a final `else` branch if `NULL` is the intended fallback, or move the assignment into the `if` branches.
+        Found 1 error.
+        "
+        );
+        // Several lines in between are replaced by a separator.
+        assert_snapshot!(
+            snapshot_lint("df <- 1\nprint(1)\nprint(2)\nprint(3)\nprint(4)\ndf <- if (cond) 2"),
+            @"
+        warning: assignment_on_if_no_else
+         --> <test>:6:1
+          |
+        1 | df <- 1
+          | -- `df` was last assigned here
+        ...
+        6 | df <- if (cond) 2
+          | ^^^^^^^^^^^^^^^^^ This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
+          |
+          = help: Add a final `else` branch if `NULL` is the intended fallback, or move the assignment into the `if` branches.
+        Found 1 error.
+        "
+        );
+        // The label points at the last assignment before the `if` one.
+        assert_snapshot!(
+            snapshot_lint("df <- 1\ndf <- 2\ndf <- if (cond) 3"),
+            @"
+        warning: assignment_on_if_no_else
+         --> <test>:3:1
+          |
+        2 | df <- 2
+          | -- `df` was last assigned here
+        3 | df <- if (cond) 3
+          | ^^^^^^^^^^^^^^^^^ This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
+          |
+          = help: Add a final `else` branch if `NULL` is the intended fallback, or move the assignment into the `if` branches.
+        Found 1 error.
+        "
         );
     }
 }

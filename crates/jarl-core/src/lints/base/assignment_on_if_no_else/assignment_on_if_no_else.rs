@@ -54,7 +54,7 @@ pub struct AssignmentOnIfNoElse;
 /// }
 /// ```
 ///
-/// If assigning a fallback value is appropriate, add a final `else` branch.
+/// If `NULL` is the intended fallback, add a final `else` branch that says so.
 /// <!-- docs: end -->
 impl Violation for AssignmentOnIfNoElse {
     fn rule(&self) -> Rule {
@@ -67,7 +67,10 @@ impl Violation for AssignmentOnIfNoElse {
     }
 
     fn suggestion(&self) -> Option<String> {
-        Some("Move the assignment into the `if` branches or add a final `else` branch.".to_string())
+        Some(
+            "Add a final `else` branch if `NULL` is the intended fallback, or move the assignment into the `if` branches."
+                .to_string(),
+        )
     }
 }
 
@@ -101,15 +104,16 @@ pub fn assignment_on_if_no_else(
     };
 
     let range = ast.syntax().text_trimmed_range();
-    if !semantic.has_assignment_before(&name, range) {
+    let Some(previous) = semantic.last_assignment_before(&name, range) else {
         return Ok(None);
-    }
+    };
 
-    Ok(Some(Diagnostic::new(
-        AssignmentOnIfNoElse,
-        range,
-        Fix::empty(),
-    )))
+    Ok(Some(
+        Diagnostic::new(AssignmentOnIfNoElse, range, Fix::empty()).with_labels(vec![Label {
+            range: previous,
+            text: format!("`{name}` was last assigned here"),
+        }]),
+    ))
 }
 
 fn as_if_statement(expression: AnyRExpression) -> Option<RIfStatement> {

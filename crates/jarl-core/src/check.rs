@@ -803,6 +803,9 @@ fn get_checks_roxygen(
 
         for mut d in checker.diagnostics {
             d.range = remap_roxygen_range(d.range, chunk);
+            for label in &mut d.labels {
+                label.range = remap_roxygen_range(label.range, chunk);
+            }
             if config.fix_roxygen {
                 d.fix = remap_roxygen_fix(&d.fix, chunk, contents);
             } else {
@@ -980,6 +983,9 @@ fn get_checks_rmd(
             d.filename = file.to_path_buf();
             d.fix = Fix::empty();
             d.range = offset_map.remap_range(d.range);
+            for label in &mut d.labels {
+                label.range = offset_map.remap_range(label.range);
+            }
             d
         })
         .collect();

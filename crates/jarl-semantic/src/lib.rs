@@ -275,11 +275,11 @@ impl<'a> SemanticInfo<'a> {
         self.reaching_used.contains(&(scope_id, def_id))
     }
 
-    /// True when an assignment before `range` defines `name` and is reachable at
-    /// `range`, whether or not it is read in between. This is useful for rules that diagnose a
-    /// later assignment which silently overwrites a value the author may have
-    /// expected to keep using.
-    pub fn has_assignment_before(&self, name: &str, range: TextRange) -> bool {
+    /// The name range of the last assignment before `range` that defines `name`
+    /// and is reachable at `range`, whether or not it is read in between. This is
+    /// useful for rules that diagnose a later assignment which silently
+    /// overwrites a value the author may have expected to keep using.
+    pub fn last_assignment_before(&self, name: &str, range: TextRange) -> Option<TextRange> {
         let Some((scope, current_id)) = self.index.scope_ids().find_map(|scope| {
             self.index
                 .definitions(scope)
@@ -290,28 +290,32 @@ impl<'a> SemanticInfo<'a> {
                 })
                 .map(|(id, _)| (scope, id))
         }) else {
-            return false;
+            return None;
         };
 
-        self.index.ancestor_scope_ids(scope).any(|owner| {
-            let Some(symbol_id) = self.index.symbols(owner).id(name) else {
-                return false;
-            };
-
-            self.index.definitions(owner).iter().any(|(def_id, def)| {
-                !(owner == scope && def_id == current_id)
-                    && def.symbol() == symbol_id
-                    && def.range().start() < range.start()
-                    && matches!(
-                        def.kind(),
-                        DefinitionKind::Assignment(_)
-                            | DefinitionKind::SuperAssignment(_)
-                            | DefinitionKind::Assign { .. }
-                    )
-                    && !self.is_in_nse(def.range())
-                    && self.assignment_reaches(range, def.range())
+        self.index
+            .ancestor_scope_ids(scope)
+            .filter_map(|owner| Some((owner, self.index.symbols(owner).id(name)?)))
+            .flat_map(|(owner, symbol_id)| {
+                self.index
+                    .definitions(owner)
+                    .iter()
+                    .filter(move |(def_id, def)| {
+                        !(owner == scope && *def_id == current_id)
+                            && def.symbol() == symbol_id
+                            && def.range().start() < range.start()
+                            && matches!(
+                                def.kind(),
+                                DefinitionKind::Assignment(_)
+                                    | DefinitionKind::SuperAssignment(_)
+                                    | DefinitionKind::Assign { .. }
+                            )
+                            && !self.is_in_nse(def.range())
+                            && self.assignment_reaches(range, def.range())
+                    })
+                    .map(|(_, def)| def.range())
             })
-        })
+            .max_by_key(|previous| previous.start())
     }
 
     /// Assignments in different arms of the same `if` cannot reach one
