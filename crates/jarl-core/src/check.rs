@@ -1279,6 +1279,25 @@ f <- function() NULL
     }
 
     #[test]
+    fn test_namespace_blanket_import_attaches_once() {
+        let packages = loaded_packages_for(
+            &[
+                (
+                    "DESCRIPTION",
+                    "Package: fixture\nVersion: 1.0.0\nDepends: MASS\n",
+                ),
+                ("NAMESPACE", "import(MASS)\nimport(rlang)\n"),
+                ("R/x.R", "f <- function() 1\n"),
+            ],
+            "R/x.R",
+        );
+
+        // `import(rlang)` is added, `import(MASS)` is already there via `Depends`.
+        assert!(packages.contains(&"rlang".to_string()), "{packages:?}");
+        assert_eq!(packages.iter().filter(|p| *p == "MASS").count(), 1);
+    }
+
+    #[test]
     fn test_fix_does_not_introduce_new_lints() {
         // Fixing `outer_negation` on this code would produce
         // `expect_true(!any(is.na(x)))`, which introduced new

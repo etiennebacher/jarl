@@ -249,6 +249,12 @@ export(my_fn)
     }
 
     #[test]
+    fn test_s3method_without_class_is_ignored() {
+        let ns = Namespace::parse("S3method(print)\n");
+        assert!(ns.exports.is_empty());
+    }
+
+    #[test]
     fn test_no_duplicate_blanket_imports() {
         let ns = "import(dplyr)\nimport(dplyr)\n";
         let result = Namespace::parse(ns);
