@@ -971,12 +971,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="what-it-does" class="level2">
 <h2 class="anchored" data-anchor-id="what-it-does">What it does</h2>
-<p>Checks for <code>substr()</code> and <code>substring()</code> calls that can be replaced with <code>startsWith()</code> or <code>endsWith()</code>.</p>
+<p>Checks for <code>substr()</code> and <code>substring()</code> calls that can be replaced with <code>startsWith()</code> or <code>endsWith()</code>. Only comparisons to non-empty string literals with matching substring boundaries are reported. Strings containing carriage returns, and ordinary strings containing escapes, are skipped.</p>
 </section>
 <section id="why-is-this-bad" class="level2">
 <h2 class="anchored" data-anchor-id="why-is-this-bad">Why is this bad?</h2>
 <p>Using <code>startsWith()</code> and <code>endsWith()</code> is both more readable and more efficient than extracting substrings and comparing them.</p>
-<p>This rule has a safe fix.</p>
+<p>This rule has an unsafe fix because the replacement can drop names and other attributes, no longer coerces non-character inputs, and may evaluate repeated expressions fewer times.</p>
 </section>
 <section id="example" class="level2">
 <h2 class="anchored" data-anchor-id="example">Example</h2>
