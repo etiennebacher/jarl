@@ -16,7 +16,7 @@ use crate::lints::base::duplicated_function_definition::duplicated_function_defi
 use crate::lints::base::unused_function::unused_function::{
     collect_files, compute_unused_from_shared, has_cpp_extension,
 };
-use crate::namespace::{parse_namespace_exports, parse_namespace_imports};
+use crate::namespace::Namespace;
 use crate::rule_set::Rule;
 use crate::utils::scan_symbols;
 
@@ -38,12 +38,9 @@ pub enum FileScope {
 /// One instance per package root.
 #[derive(Clone, Debug, Default)]
 pub struct PackageContext {
-    pub namespace_exports: HashSet<String>,
-    pub import_from: HashMap<String, String>,
+    /// Parsed NAMESPACE, `None` when the package has no NAMESPACE file.
+    pub namespace: Option<Namespace>,
     pub loaded_packages: Vec<String>,
-    /// Raw NAMESPACE content, retained so `compute_unused_from_shared()` can
-    /// call `parse_namespace_exports()` with the full `all_names` list.
-    pub namespace_content: Option<String>,
     /// The R version this package guarantees, from `Depends: R (>= x.y.z)`.
     /// Resolved per package rather than per run: a tree can hold several
     /// packages with different floors, and each one's files must be checked
@@ -239,9 +236,7 @@ pub fn summarize_package_info(
     let mut contexts: HashMap<PathBuf, PackageContext> = HashMap::new();
     for root in &package_roots {
         let mut packages: Vec<String> = DEFAULT_PACKAGES.iter().map(|s| s.to_string()).collect();
-        let mut import_from = HashMap::new();
-        let mut namespace_exports = HashSet::new();
-        let mut namespace_content = None;
+        let mut namespace = None;
         let mut minimum_r_version = None;
 
         // Only `Depends`. Those packages are attached to the search path when
@@ -261,24 +256,20 @@ pub fn summarize_package_info(
 
         let ns_path = root.join("NAMESPACE");
         if let Ok(ns) = std::fs::read_to_string(&ns_path) {
-            let imports = parse_namespace_imports(&ns);
-            import_from = imports.import_from;
-            for pkg in imports.blanket_imports {
-                if !packages.contains(&pkg) {
-                    packages.push(pkg);
+            let parsed = Namespace::parse(&ns);
+            for pkg in &parsed.blanket_imports {
+                if !packages.contains(pkg) {
+                    packages.push(pkg.clone());
                 }
             }
-            namespace_exports = parse_namespace_exports(&ns, &[]);
-            namespace_content = Some(ns);
+            namespace = Some(parsed);
         }
 
         contexts.insert(
             root.clone(),
             PackageContext {
-                namespace_exports,
-                import_from,
+                namespace,
                 loaded_packages: packages,
-                namespace_content,
                 minimum_r_version,
             },
         );
@@ -296,7 +287,7 @@ pub fn summarize_package_info(
 pub fn make_package_analysis(
     paths: &[PathBuf],
     config: &Config,
-    namespace_contents: &HashMap<PathBuf, String>,
+    namespaces: &HashMap<PathBuf, Namespace>,
 ) -> PackageAnalysis {
     let rules = &config.rules_to_apply;
     let check_duplicates = rules.contains(&Rule::DuplicatedFunctionDefinition);
@@ -394,7 +385,7 @@ pub fn make_package_analysis(
         compute_unused_from_shared(
             &shared_data,
             &config.rule_options.unused_function,
-            namespace_contents,
+            namespaces,
         )
     } else {
         HashMap::new()

@@ -1,5 +1,6 @@
 use crate::error::{ParseError, SyntaxError};
 use crate::location::Location;
+use crate::namespace::Namespace;
 use crate::package::{
     FilePackageInfo, FileScope, PackageAnalysis, PackageContext, PackageFileAnalysis,
     is_in_r_package, make_package_analysis, summarize_package_info,
@@ -41,15 +42,11 @@ pub fn analyze_packages(
     HashMap<PathBuf, FilePackageInfo>,
 ) {
     let (pkg_contexts, file_pkg_info) = summarize_package_info(paths);
-    let namespace_contents: HashMap<PathBuf, String> = pkg_contexts
+    let namespaces: HashMap<PathBuf, Namespace> = pkg_contexts
         .iter()
-        .filter_map(|(root, ctx)| {
-            ctx.namespace_content
-                .as_ref()
-                .map(|c| (root.clone(), c.clone()))
-        })
+        .filter_map(|(root, ctx)| ctx.namespace.as_ref().map(|ns| (root.clone(), ns.clone())))
         .collect();
-    let pkg = make_package_analysis(paths, config, &namespace_contents);
+    let pkg = make_package_analysis(paths, config, &namespaces);
     (pkg, pkg_contexts, file_pkg_info)
 }
 
@@ -597,8 +594,10 @@ fn get_package_info(
         Some(FilePackageInfo::InPackage { package_root, .. }) => {
             match pkg_contexts.get(package_root) {
                 Some(ctx) => {
-                    checker.import_from = ctx.import_from.clone();
-                    checker.namespace_exports = ctx.namespace_exports.clone();
+                    if let Some(ns) = &ctx.namespace {
+                        checker.import_from = ns.import_from.clone();
+                        checker.namespace_exports = ns.exports.clone();
+                    }
                     // Already seeded with `DEFAULT_PACKAGES`.
                     ctx.loaded_packages.clone()
                 }

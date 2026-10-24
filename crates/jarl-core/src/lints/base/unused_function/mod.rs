@@ -4,18 +4,18 @@ pub(crate) mod unused_function;
 #[cfg(test)]
 mod tests {
     use super::unused_function::*;
-    use crate::namespace::parse_namespace_exports;
+    use crate::namespace::Namespace;
     use crate::package::{scan_extra_package_paths, scan_r_package_paths};
     use std::collections::HashMap;
     use std::fs;
     use tempfile::TempDir;
 
-    // ── parse_namespace_exports ─────────────────────────────────────────
+    // ── Namespace ─────────────────────────────────────────
 
     #[test]
     fn test_parse_simple_exports() {
         let content = "export(foo)\nexport(bar)\n";
-        let exports = parse_namespace_exports(content, &[]);
+        let exports = Namespace::parse(content).exported([]);
         assert!(exports.contains("foo"));
         assert!(exports.contains("bar"));
         assert_eq!(exports.len(), 2);
@@ -24,7 +24,7 @@ mod tests {
     #[test]
     fn test_parse_multi_export() {
         let content = "export(foo, bar, baz)\n";
-        let exports = parse_namespace_exports(content, &[]);
+        let exports = Namespace::parse(content).exported([]);
         assert!(exports.contains("foo"));
         assert!(exports.contains("bar"));
         assert!(exports.contains("baz"));
@@ -34,8 +34,8 @@ mod tests {
     #[test]
     fn test_parse_export_pattern() {
         let content = "exportPattern(\"^[[:alpha:]]\")\n";
-        let all_names = vec!["foo", "bar", ".hidden"];
-        let exports = parse_namespace_exports(content, &all_names);
+        let all_names = ["foo", "bar", ".hidden"];
+        let exports = Namespace::parse(content).exported(all_names.iter().copied());
         assert!(exports.contains("foo"));
         assert!(exports.contains("bar"));
         assert!(!exports.contains(".hidden"));
@@ -44,14 +44,14 @@ mod tests {
     #[test]
     fn test_parse_s3method() {
         let content = "S3method(print, myclass)\n";
-        let exports = parse_namespace_exports(content, &[]);
+        let exports = Namespace::parse(content).exported([]);
         assert!(exports.contains("print.myclass"));
     }
 
     #[test]
     fn test_parse_comments_ignored() {
         let content = "# export(secret)\nexport(public)\n";
-        let exports = parse_namespace_exports(content, &[]);
+        let exports = Namespace::parse(content).exported([]);
         assert!(!exports.contains("secret"));
         assert!(exports.contains("public"));
     }
@@ -59,21 +59,21 @@ mod tests {
     #[test]
     fn test_parse_s3method_namespaced_generic() {
         let content = "S3method(pkg::record_print, tinytable)\n";
-        let exports = parse_namespace_exports(content, &[]);
+        let exports = Namespace::parse(content).exported([]);
         assert!(exports.contains("record_print.tinytable"));
     }
 
     #[test]
     fn test_parse_s3method_triple_colon() {
         let content = "S3method(pkg:::record_print, tinytable)\n";
-        let exports = parse_namespace_exports(content, &[]);
+        let exports = Namespace::parse(content).exported([]);
         assert!(exports.contains("record_print.tinytable"));
     }
 
     #[test]
     fn test_parse_s3method_with_explicit_method() {
         let content = "S3method(print, myclass, print_myclass_impl)\n";
-        let exports = parse_namespace_exports(content, &[]);
+        let exports = Namespace::parse(content).exported([]);
         assert!(exports.contains("print_myclass_impl"));
         assert!(!exports.contains("print.myclass"));
     }
@@ -81,7 +81,7 @@ mod tests {
     #[test]
     fn test_parse_s3method_with_if_guard() {
         let content = "if (getRversion() >= \"4.4.0\") S3method(sort_by, data.table)\n";
-        let exports = parse_namespace_exports(content, &[]);
+        let exports = Namespace::parse(content).exported([]);
         assert!(
             exports.contains("sort_by.data.table"),
             "expected sort_by.data.table, got: {:?}",
@@ -92,7 +92,7 @@ mod tests {
     #[test]
     fn test_parse_export_with_if_guard() {
         let content = "if (getRversion() >= \"4.4.0\") export(sort_by)\n";
-        let exports = parse_namespace_exports(content, &[]);
+        let exports = Namespace::parse(content).exported([]);
         assert!(exports.contains("sort_by"));
     }
 
@@ -104,9 +104,9 @@ mod tests {
 
     /// Read the NAMESPACE file from `pkg_root` into a map suitable for
     /// `compute_unused_from_shared`.
-    fn read_namespace(pkg_root: &std::path::Path) -> HashMap<std::path::PathBuf, String> {
+    fn read_namespace(pkg_root: &std::path::Path) -> HashMap<std::path::PathBuf, Namespace> {
         let content = fs::read_to_string(pkg_root.join("NAMESPACE")).unwrap();
-        HashMap::from([(pkg_root.to_path_buf(), content)])
+        HashMap::from([(pkg_root.to_path_buf(), Namespace::parse(&content))])
     }
 
     #[test]
