@@ -1,5 +1,6 @@
 use crate::error::{ParseError, SyntaxError};
 use crate::location::Location;
+use crate::namespace::Namespace;
 use crate::package::{
     FilePackageInfo, FileScope, PackageAnalysis, PackageContext, PackageFileAnalysis,
     is_in_r_package, make_package_analysis, summarize_package_info,
@@ -41,15 +42,11 @@ pub fn analyze_packages(
     HashMap<PathBuf, FilePackageInfo>,
 ) {
     let (pkg_contexts, file_pkg_info) = summarize_package_info(paths);
-    let namespace_contents: HashMap<PathBuf, String> = pkg_contexts
+    let namespaces: HashMap<PathBuf, Namespace> = pkg_contexts
         .iter()
-        .filter_map(|(root, ctx)| {
-            ctx.namespace_content
-                .as_ref()
-                .map(|c| (root.clone(), c.clone()))
-        })
+        .filter_map(|(root, ctx)| ctx.namespace.as_ref().map(|ns| (root.clone(), ns.clone())))
         .collect();
-    let pkg = make_package_analysis(paths, config, &namespace_contents);
+    let pkg = make_package_analysis(paths, config, &namespaces);
     (pkg, pkg_contexts, file_pkg_info)
 }
 
@@ -599,12 +596,14 @@ fn get_package_info(
         Some(FilePackageInfo::InPackage { package_root, .. }) => {
             match pkg_contexts.get(package_root) {
                 Some(ctx) => {
-                    checker.import_from = ctx.import_from.clone();
-                    checker.namespace_exports = pkg
-                        .namespace_exports
-                        .get(package_root)
-                        .cloned()
-                        .unwrap_or_else(|| ctx.namespace_exports.clone());
+                    if let Some(ns) = &ctx.namespace {
+                        checker.import_from = ns.import_from.clone();
+                        checker.namespace_exports = pkg
+                            .namespace_exports
+                            .get(package_root)
+                            .cloned()
+                            .unwrap_or_else(|| ns.exports.clone());
+                    }
                     // Already seeded with `DEFAULT_PACKAGES`.
                     ctx.loaded_packages.clone()
                 }
@@ -1284,6 +1283,25 @@ f <- function() NULL
             packages.iter().position(|p| p == "base") < packages.iter().position(|p| p == "dplyr"),
             "{packages:?}"
         );
+    }
+
+    #[test]
+    fn test_namespace_blanket_import_attaches_once() {
+        let packages = loaded_packages_for(
+            &[
+                (
+                    "DESCRIPTION",
+                    "Package: fixture\nVersion: 1.0.0\nDepends: MASS\n",
+                ),
+                ("NAMESPACE", "import(MASS)\nimport(rlang)\n"),
+                ("R/x.R", "f <- function() 1\n"),
+            ],
+            "R/x.R",
+        );
+
+        // `import(rlang)` is added, `import(MASS)` is already there via `Depends`.
+        assert!(packages.contains(&"rlang".to_string()), "{packages:?}");
+        assert_eq!(packages.iter().filter(|p| *p == "MASS").count(), 1);
     }
 
     #[test]

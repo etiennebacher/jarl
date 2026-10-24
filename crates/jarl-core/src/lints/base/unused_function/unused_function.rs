@@ -2,7 +2,7 @@ use biome_rowan::TextRange;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
-use crate::namespace::parse_namespace_exports;
+use crate::namespace::Namespace;
 use crate::package::{FileScope, SharedFileData};
 
 /// <!-- docs: start -->
@@ -66,12 +66,12 @@ use crate::package::{FileScope, SharedFileData};
 // reading its files again, and looks symbols up across files in O(1) through
 // the pre-computed frequency maps.
 //
-// `namespace_contents` maps package root paths to their NAMESPACE file
-// contents. Packages without a NAMESPACE entry are skipped.
+// `namespaces` maps package root paths to their parsed NAMESPACE file.
+// Packages without a NAMESPACE entry are skipped.
 pub(crate) fn compute_unused_from_shared(
     shared_data: &[SharedFileData],
     options: &crate::lints::base::unused_function::options::ResolvedUnusedFunctionOptions,
-    namespace_contents: &HashMap<PathBuf, String>,
+    namespaces: &HashMap<PathBuf, Namespace>,
 ) -> HashMap<PathBuf, Vec<(String, TextRange, String)>> {
     // Group by package root
     let mut packages: HashMap<&str, Vec<&SharedFileData>> = HashMap::new();
@@ -113,10 +113,10 @@ pub(crate) fn compute_unused_from_shared(
         let Some(first) = r_files.first() else {
             continue;
         };
-        let Some(ns_content) = namespace_contents.get(&first.package_root) else {
+        let Some(namespace) = namespaces.get(&first.package_root) else {
             continue;
         };
-        let namespace_exports = parse_namespace_exports(ns_content, &all_defined_name_refs);
+        let namespace_exports = namespace.exported(all_defined_name_refs.iter().copied());
 
         // Total occurrences of each symbol across all R/ files.
         let mut total_occurrences: HashMap<&str, usize> = HashMap::new();
