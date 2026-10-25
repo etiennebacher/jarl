@@ -42,7 +42,7 @@ dependencies = [
 [[package]]
 name = "air_r_factory"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air#79cc4d03dc5210672058f2ff1aa72d2199e1ac14"
+source = "git+https://github.com/posit-dev/air#a2b36beaacf02dd921b7d0dedb8fda1d23c00b3d"
 dependencies = [
  "air_r_syntax",
  "biome_rowan",
@@ -51,7 +51,7 @@ dependencies = [
 [[package]]
 name = "air_r_formatter"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air#79cc4d03dc5210672058f2ff1aa72d2199e1ac14"
+source = "git+https://github.com/posit-dev/air#a2b36beaacf02dd921b7d0dedb8fda1d23c00b3d"
 dependencies = [
  "air_r_syntax",
  "biome_formatter",
@@ -66,7 +66,7 @@ dependencies = [
 [[package]]
 name = "air_r_parser"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air#79cc4d03dc5210672058f2ff1aa72d2199e1ac14"
+source = "git+https://github.com/posit-dev/air#a2b36beaacf02dd921b7d0dedb8fda1d23c00b3d"
 dependencies = [
  "air_r_factory",
  "air_r_syntax",
@@ -78,7 +78,7 @@ dependencies = [
 [[package]]
 name = "air_r_syntax"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air#79cc4d03dc5210672058f2ff1aa72d2199e1ac14"
+source = "git+https://github.com/posit-dev/air#a2b36beaacf02dd921b7d0dedb8fda1d23c00b3d"
 dependencies = [
  "biome_rowan",
  "serde",
@@ -538,7 +538,7 @@ dependencies = [
 [[package]]
 name = "comments"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air#79cc4d03dc5210672058f2ff1aa72d2199e1ac14"
+source = "git+https://github.com/posit-dev/air#a2b36beaacf02dd921b7d0dedb8fda1d23c00b3d"
 
 [[package]]
 name = "compact_str"
@@ -742,7 +742,7 @@ dependencies = [
 [[package]]
 name = "fs"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air#79cc4d03dc5210672058f2ff1aa72d2199e1ac14"
+source = "git+https://github.com/posit-dev/air#a2b36beaacf02dd921b7d0dedb8fda1d23c00b3d"
 dependencies = [
  "path-absolutize",
 ]
@@ -1148,7 +1148,7 @@ checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
 [[package]]
 name = "line_ending"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air#79cc4d03dc5210672058f2ff1aa72d2199e1ac14"
+source = "git+https://github.com/posit-dev/air#a2b36beaacf02dd921b7d0dedb8fda1d23c00b3d"
 dependencies = [
  "memchr",
  "settings",
@@ -1738,7 +1738,7 @@ dependencies = [
 [[package]]
 name = "settings"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air#79cc4d03dc5210672058f2ff1aa72d2199e1ac14"
+source = "git+https://github.com/posit-dev/air#a2b36beaacf02dd921b7d0dedb8fda1d23c00b3d"
 dependencies = [
  "biome_formatter",
  "serde",
@@ -2354,7 +2354,7 @@ dependencies = [
 [[package]]
 name = "workspace"
 version = "0.1.0"
-source = "git+https://github.com/posit-dev/air#79cc4d03dc5210672058f2ff1aa72d2199e1ac14"
+source = "git+https://github.com/posit-dev/air#a2b36beaacf02dd921b7d0dedb8fda1d23c00b3d"
 dependencies = [
  "air_r_formatter",
  "air_r_parser",
