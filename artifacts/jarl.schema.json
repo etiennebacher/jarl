@@ -16,167 +16,12 @@
   },
   "additionalProperties": false,
   "$defs": {
-    "AssignmentOptions": {
-      "description": "TOML options for `[lint.assignment]`.\n\nUse `operator` to specify which assignment operator to enforce.\nValid values are `\"<-\"` (the default) and `\"=\"`.",
-      "type": "object",
-      "properties": {
-        "operator": {
-          "type": [
-            "string",
-            "null"
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "CyclomaticComplexityOptions": {
-      "description": "TOML options for `[lint.cyclomatic_complexity]`.\n\nUse `max-complexity` to set the highest score a function is allowed to\nreach before it is reported.",
-      "type": "object",
-      "properties": {
-        "max-complexity": {
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint",
-          "minimum": 0
-        }
-      },
-      "additionalProperties": false
-    },
-    "DuplicatedArgumentsOptions": {
-      "description": "TOML options for `[lint.duplicated_arguments]`.\n\nUse `skipped-functions` to fully replace the default list of functions\nthat are allowed to have duplicated arguments. Use\n`extend-skipped-functions` to add to the default list.\nSpecifying both is an error.",
-      "type": "object",
-      "properties": {
-        "extend-skipped-functions": {
-          "type": [
-            "array",
-            "null"
-          ],
-          "items": {
-            "type": "string"
-          }
-        },
-        "skipped-functions": {
-          "type": [
-            "array",
-            "null"
-          ],
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "IfNotElseOptions": {
-      "description": "TOML options for `[lint.if_not_else]`.\n\nUse `skipped-functions` to fully replace the default list of functions whose\nnegated calls are allowed as an `if`/`ifelse()` condition. Use\n`extend-skipped-functions` to add to the default list. Specifying both is an\nerror.",
-      "type": "object",
-      "properties": {
-        "extend-skipped-functions": {
-          "type": [
-            "array",
-            "null"
-          ],
-          "items": {
-            "type": "string"
-          }
-        },
-        "skipped-functions": {
-          "type": [
-            "array",
-            "null"
-          ],
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "ImplicitAssignmentOptions": {
-      "description": "TOML options for `[lint.implicit_assignment]`.\n\nUse `skipped-functions` to fully replace the default list of functions\nwhere implicit assignments are allowed. Use\n`extend-skipped-functions` to add to the default list.\nSpecifying both is an error.",
-      "type": "object",
-      "properties": {
-        "extend-skipped-functions": {
-          "type": [
-            "array",
-            "null"
-          ],
-          "items": {
-            "type": "string"
-          }
-        },
-        "skipped-functions": {
-          "type": [
-            "array",
-            "null"
-          ],
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
     "LinterTomlOptions": {
       "type": "object",
       "properties": {
-        "assignment": {
-          "title": "Options for the `assignment` rule",
-          "description": "Use `operator` to specify which assignment operator to enforce.\nValid values are `\"<-\"` (the default) and `\"=\"`.",
-          "anyOf": [
-            {
-              "$ref": "#/$defs/AssignmentOptions"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "check-roxygen": {
-          "title": "Whether to lint R code in roxygen `@examples` and `@examplesIf` sections",
-          "description": "When enabled, Jarl parses and checks R code found in roxygen2\n`@examples` and `@examplesIf` documentation sections. Only applies to\nfiles inside an R package (i.e. in the `R/` directory with a\n`DESCRIPTION` file in the parent).\n\nDefaults to `true`.",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
-        "cyclomatic_complexity": {
-          "title": "Options for the `cyclomatic_complexity` rule",
-          "description": "Use `max-complexity` to set the highest score a function is allowed to\nreach before it is reported.",
-          "anyOf": [
-            {
-              "$ref": "#/$defs/CyclomaticComplexityOptions"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "default-exclude": {
-          "title": "Whether or not to use default exclude patterns",
-          "description": "Jarl automatically excludes a default set of folders and files. If this option is\nset to `false`, these files will be formatted as well.\n\nThe default set of excluded patterns are:\n- `.git/`\n- `renv/`\n- `revdep/`\n- `cpp11.R`\n- `RcppExports.R`\n- `extendr-wrappers.R`\n- `import-standalone-*.R`",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
-        "duplicated_arguments": {
-          "title": "Options for the `duplicated_arguments` rule",
-          "description": "Use `skipped-functions` to fully replace the default list of functions\nthat are allowed to have duplicated arguments. Use\n`extend-skipped-functions` to add to the default list.\nSpecifying both is an error.",
-          "anyOf": [
-            {
-              "$ref": "#/$defs/DuplicatedArgumentsOptions"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "exclude": {
-          "title": "Patterns to exclude from checking",
-          "description": "By default, jarl will refuse to check files matched by patterns listed in\n`default-exclude`. Use this option to supply an additional list of exclude\npatterns.\n\nExclude patterns are modeled after what you can provide in a\n[.gitignore](https://git-scm.com/docs/gitignore), and are resolved relative to the\nparent directory that your `jarl.toml` is contained within. For example, if your\n`jarl.toml` was located at `root/jarl.toml`, then:\n\n- `file.R` excludes a file named `file.R` located anywhere below `root/`. This is\n  equivalent to `**/file.R`.\n\n- `folder/` excludes a directory named `folder` (and all of its children) located\n  anywhere below `root/`. You can also just use `folder`, but this would\n  technically also match a file named `folder`, so the trailing slash is preferred\n  when targeting directories. This is equivalent to `**/folder/`.\n\n- `/file.R` excludes a file named `file.R` located at `root/file.R`.\n\n- `/folder/` excludes a directory named `folder` (and all of its children) located\n  at `root/folder/`.\n\n- `file-*.R` excludes R files named like `file-this.R` and `file-that.R` located\n  anywhere below `root/`.\n\n- `folder/*.R` excludes all R files located at `root/folder/`. Note that R files\n  in directories under `folder/` are not excluded in this case (such as\n  `root/folder/subfolder/file.R`).\n\n- `folder/**/*.R` excludes all R files located anywhere below `root/folder/`.\n\n- `**/folder/*.R` excludes all R files located directly inside a `folder/`\n  directory, where the `folder/` directory itself can appear anywhere.\n\nSee the full [.gitignore](https://git-scm.com/docs/gitignore) documentation for\nall of the patterns you can provide.",
+        "select": {
+          "title": "Rules to select",
+          "description": "If this is empty, then all rules that are provided by `jarl` are used,\nwith one limitation related to the minimum R version used in the project.\nBy default, if this minimum R version is unknown, then all rules that\nhave a version restriction are deactivated. This is for example the case\nof `grepv` since the eponymous function was introduced in R 4.5.0.\n\nThere are three ways to inform `jarl` about the minimum version used in\nthe project:\n1. pass the argument `--min-r-version` in the CLI, e.g.,\n   `jarl --min-r-version 4.3`;\n2. if the project is an R package, then `jarl` looks for mentions of a\n   minimum R version in the `Depends` field sometimes present in the\n   `DESCRIPTION` file.\n3. specify `min-r-version` in `jarl.toml`.",
           "type": [
             "array",
             "null"
@@ -196,13 +41,16 @@
             "type": "string"
           }
         },
-        "fix-roxygen": {
-          "title": "Whether to apply autofixes to roxygen examples",
-          "description": "When enabled, Jarl will attempt to apply fixes to R code inside\nroxygen2 `@examples` and `@examplesIf` sections. Since Air does not\ncurrently support formatting roxygen examples, this is opt-in.\n\nDefaults to `false`.",
+        "ignore": {
+          "title": "Rules to ignore",
+          "description": "If this is empty, then no rules are excluded. This field has higher\nimportance than `select`, so if a rule name appears by mistake in both\n`select` and `ignore`, it is ignored.",
           "type": [
-            "boolean",
+            "array",
             "null"
-          ]
+          ],
+          "items": {
+            "type": "string"
+          }
         },
         "fixable": {
           "title": "Rule violations to always fix",
@@ -214,6 +62,113 @@
           "items": {
             "type": "string"
           }
+        },
+        "unfixable": {
+          "title": "Rule violations to never fix",
+          "description": "A list of rules that are never fixed. This only matters if you pass\n`--fix` in the CLI.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "include": {
+          "title": "Patterns to include in checking",
+          "description": "By default, jarl checks all files with a `.R`, `.qmd`, `.Rmd`, or `.rmd`\nextension discovered in the provided paths. Use this option to restrict\nchecking to files that match at least one of the supplied patterns. An\nempty list or a missing option means no restriction, i.e. all discovered\nfiles are checked.\n\nInclude patterns follow the same format as `exclude` patterns (gitignore\nstyle, resolved relative to the `jarl.toml` directory). For example:\n\n- `R/` only checks files inside the `R/` directory.\n\n- `test-*.R` only checks files whose name matches `test-*.R`.\n\n- `**/*.{Rmd,qmd}` only checks Rmd and qmd files.\n\nWhen both `include` and `exclude` are specified, a file is checked only\nif it matches at least one `include` pattern and does not match any\n`exclude` pattern.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "exclude": {
+          "title": "Patterns to exclude from checking",
+          "description": "By default, jarl will refuse to check files matched by patterns listed in\n`default-exclude`. Use this option to supply an additional list of exclude\npatterns.\n\nExclude patterns are modeled after what you can provide in a\n[.gitignore](https://git-scm.com/docs/gitignore), and are resolved relative to the\nparent directory that your `jarl.toml` is contained within. For example, if your\n`jarl.toml` was located at `root/jarl.toml`, then:\n\n- `file.R` excludes a file named `file.R` located anywhere below `root/`. This is\n  equivalent to `**/file.R`.\n\n- `folder/` excludes a directory named `folder` (and all of its children) located\n  anywhere below `root/`. You can also just use `folder`, but this would\n  technically also match a file named `folder`, so the trailing slash is preferred\n  when targeting directories. This is equivalent to `**/folder/`.\n\n- `/file.R` excludes a file named `file.R` located at `root/file.R`.\n\n- `/folder/` excludes a directory named `folder` (and all of its children) located\n  at `root/folder/`.\n\n- `file-*.R` excludes R files named like `file-this.R` and `file-that.R` located\n  anywhere below `root/`.\n\n- `folder/*.R` excludes all R files located at `root/folder/`. Note that R files\n  in directories under `folder/` are not excluded in this case (such as\n  `root/folder/subfolder/file.R`).\n\n- `folder/**/*.R` excludes all R files located anywhere below `root/folder/`.\n\n- `**/folder/*.R` excludes all R files located directly inside a `folder/`\n  directory, where the `folder/` directory itself can appear anywhere.\n\nSee the full [.gitignore](https://git-scm.com/docs/gitignore) documentation for\nall of the patterns you can provide.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "default-exclude": {
+          "title": "Whether or not to use default exclude patterns",
+          "description": "Jarl automatically excludes a default set of folders and files. If this option is\nset to `false`, these files will be formatted as well.\n\nThe default set of excluded patterns are:\n- `.git/`\n- `renv/`\n- `revdep/`\n- `cpp11.R`\n- `RcppExports.R`\n- `extendr-wrappers.R`\n- `import-standalone-*.R`",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "per-file-ignores": {
+          "title": "Per-file rule ignores",
+          "description": "A mapping of glob patterns to lists of rules that should be ignored in\nthe files matching each pattern. Patterns are gitignore-style and\nresolved relative to the directory containing `jarl.toml` (the same\nformat used by `include` and `exclude`). Rule names and rule groups\n(e.g. `PERF`) are both accepted.\n\nA pattern can be negated with a leading `!`, in which case its rules are\nignored in every file that does *not* match the pattern. When several\npatterns match a file, the rules from all of them are ignored.\n\nFor example:\n\n```toml\n[lint.per-file-ignores]\n\"foo.R\" = [\"true_false_symbol\"]\n# ignore everywhere but in the R folder\n\"!R/**.R\" = [\"any_is_na\"]\n```",
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "check-roxygen": {
+          "title": "Whether to lint R code in roxygen `@examples` and `@examplesIf` sections",
+          "description": "When enabled, Jarl parses and checks R code found in roxygen2\n`@examples` and `@examplesIf` documentation sections. Only applies to\nfiles inside an R package (i.e. in the `R/` directory with a\n`DESCRIPTION` file in the parent).\n\nDefaults to `true`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "fix-roxygen": {
+          "title": "Whether to apply autofixes to roxygen examples",
+          "description": "When enabled, Jarl will attempt to apply fixes to R code inside\nroxygen2 `@examples` and `@examplesIf` sections. Since Air does not\ncurrently support formatting roxygen examples, this is opt-in.\n\nDefaults to `false`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "assignment": {
+          "title": "Options for the `assignment` rule",
+          "description": "Use `operator` to specify which assignment operator to enforce.\nValid values are `\"<-\"` (the default) and `\"=\"`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AssignmentOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cyclomatic_complexity": {
+          "title": "Options for the `cyclomatic_complexity` rule",
+          "description": "Use `max-complexity` to set the highest score a function (or the\ntop-level code of a file) is allowed to reach before it is reported.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CyclomaticComplexityOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "duplicated_arguments": {
+          "title": "Options for the `duplicated_arguments` rule",
+          "description": "Use `skipped-functions` to fully replace the default list of functions\nthat are allowed to have duplicated arguments. Use\n`extend-skipped-functions` to add to the default list.\nSpecifying both is an error.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DuplicatedArgumentsOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "if_not_else": {
           "title": "Options for the `if_not_else` rule",
@@ -227,17 +182,6 @@
             }
           ]
         },
-        "ignore": {
-          "title": "Rules to ignore",
-          "description": "If this is empty, then no rules are excluded. This field has higher\nimportance than `select`, so if a rule name appears by mistake in both\n`select` and `ignore`, it is ignored.",
-          "type": [
-            "array",
-            "null"
-          ],
-          "items": {
-            "type": "string"
-          }
-        },
         "implicit_assignment": {
           "title": "Options for the `implicit_assignment` rule",
           "description": "Use `skipped-functions` to fully replace the default list of functions\nthat are allowed to contain implicit assignment. Use\n`extend-skipped-functions` to add to the default list.\nSpecifying both is an error.",
@@ -249,17 +193,6 @@
               "type": "null"
             }
           ]
-        },
-        "include": {
-          "title": "Patterns to include in checking",
-          "description": "By default, jarl checks all files with a `.R`, `.qmd`, `.Rmd`, or `.rmd`\nextension discovered in the provided paths. Use this option to restrict\nchecking to files that match at least one of the supplied patterns. An\nempty list or a missing option means no restriction, i.e. all discovered\nfiles are checked.\n\nInclude patterns follow the same format as `exclude` patterns (gitignore\nstyle, resolved relative to the `jarl.toml` directory). For example:\n\n- `R/` only checks files inside the `R/` directory.\n\n- `test-*.R` only checks files whose name matches `test-*.R`.\n\n- `**/*.{Rmd,qmd}` only checks Rmd and qmd files.\n\nWhen both `include` and `exclude` are specified, a file is checked only\nif it matches at least one `include` pattern and does not match any\n`exclude` pattern.",
-          "type": [
-            "array",
-            "null"
-          ],
-          "items": {
-            "type": "string"
-          }
         },
         "missing_argument": {
           "title": "Options for the `missing_argument` rule",
@@ -285,20 +218,6 @@
             }
           ]
         },
-        "per-file-ignores": {
-          "title": "Per-file rule ignores",
-          "description": "A mapping of glob patterns to lists of rules that should be ignored in\nthe files matching each pattern. Patterns are gitignore-style and\nresolved relative to the directory containing `jarl.toml` (the same\nformat used by `include` and `exclude`). Rule names and rule groups\n(e.g. `PERF`) are both accepted.\n\nA pattern can be negated with a leading `!`, in which case its rules are\nignored in every file that does *not* match the pattern. When several\npatterns match a file, the rules from all of them are ignored.\n\nFor example:\n\n```toml\n[lint.per-file-ignores]\n\"foo.R\" = [\"true_false_symbol\"]\n# ignore everywhere but in the R folder\n\"!R/**.R\" = [\"any_is_na\"]\n```",
-          "type": [
-            "object",
-            "null"
-          ],
-          "additionalProperties": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
         "pipe_consistency": {
           "title": "Options for the `pipe_consistency` rule",
           "description": "Use `preferred` to choose the preferred pipe operator. Valid values\nare `\"|>\"` (default) and `\"%>%\"`.",
@@ -322,17 +241,6 @@
               "type": "null"
             }
           ]
-        },
-        "select": {
-          "title": "Rules to select",
-          "description": "If this is empty, then all rules that are provided by `jarl` are used,\nwith one limitation related to the minimum R version used in the project.\nBy default, if this minimum R version is unknown, then all rules that\nhave a version restriction are deactivated. This is for example the case\nof `grepv` since the eponymous function was introduced in R 4.5.0.\n\nThere are three ways to inform `jarl` about the minimum version used in\nthe project:\n1. pass the argument `--min-r-version` in the CLI, e.g.,\n   `jarl --min-r-version 4.3`;\n2. if the project is an R package, then `jarl` looks for mentions of a\n   minimum R version in the `Depends` field sometimes present in the\n   `DESCRIPTION` file.\n3. specify `min-r-version` in `jarl.toml`.",
-          "type": [
-            "array",
-            "null"
-          ],
-          "items": {
-            "type": "string"
-          }
         },
         "true_false_symbol": {
           "title": "Options for the `true_false_symbol` rule",
@@ -360,7 +268,7 @@
         },
         "undesirable_operator": {
           "title": "Options for the `undesirable_operator` rule",
-          "description": "Use `operators` to fully replace the default list of undesirable operators.\nUse `extend-operators` to add to the default list.\nSpecifying both is an error.",
+          "description": "Use `operators` to fully replace the default list of undesirable operators.\nUse `extend-operators` to add to the default list.\nEntries in `operators` and `extend-operators` can be strings or inline\ntables mapping an operator to a custom message.\nSpecifying both is an error.",
           "anyOf": [
             {
               "$ref": "#/$defs/UndesirableOperatorOptions"
@@ -369,17 +277,6 @@
               "type": "null"
             }
           ]
-        },
-        "unfixable": {
-          "title": "Rule violations to never fix",
-          "description": "A list of rules that are never fixed. This only matters if you pass\n`--fix` in the CLI.",
-          "type": [
-            "array",
-            "null"
-          ],
-          "items": {
-            "type": "string"
-          }
         },
         "unreachable_code": {
           "title": "Options for the `unreachable_code` rule",
@@ -419,11 +316,39 @@
         }
       }
     },
-    "MissingArgumentOptions": {
-      "description": "TOML options for `[lint.missing_argument]`.\n\nUse `skipped-functions` to fully replace the default list of functions\nwhose empty arguments are allowed. Use `extend-skipped-functions` to add\nto the default list. Specifying both is an error.",
+    "AssignmentOptions": {
+      "description": "<!-- docs: start -->\nThe `lint.assignment.operator` option in `jarl.toml` must be set for this\nrule to be checked. It takes a single value (`\"<-\"` or `\"=\"`) indicating\nthe preferred assignment operator in the files to check.\nIf `operator = \"<-\"` then any use of the `\"=\"` operator to assign values\nwill be reported, and vice-versa.\n\n### Default values\n\nThis option doesn't have a default value.\n\n### TOML settings\n\n```toml\n[lint]\n...\n\n[lint.assignment]\noperator = \"<-\" # or \"=\"\n```\n<!-- docs: end -->",
       "type": "object",
       "properties": {
-        "extend-skipped-functions": {
+        "operator": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "CyclomaticComplexityOptions": {
+      "description": "<!-- docs: start -->\nUse `max-complexity` to set the highest score a function is allowed to\nreach before it is reported. It must be at least 1.\n\n### Default values\n\n```toml\nmax-complexity = 20\n```\n\n### TOML settings\n\n```toml\n[lint]\n...\n\n[lint.cyclomatic_complexity]\nmax-complexity = 25\n```\n<!-- docs: end -->",
+      "type": "object",
+      "properties": {
+        "max-complexity": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "DuplicatedArgumentsOptions": {
+      "description": "<!-- docs: start -->\nUse `skipped-functions` to fully replace the default list of functions that are\nallowed to have duplicated arguments. Use `extend-skipped-functions` to add to\nthe default list. Specifying both is an error.\n\nFunction names in `skipped-functions` or `extend-skipped-functions` also match\nnamespaced calls, e.g. `skipped-functions = [\"list2\"]` will ignore `list2()` and\n`rlang::list2()`.\n\n### Default values\n\n```toml\nskipped-functions = [\n    \"c\",\n    \"mutate\",\n    \"summarize\",\n    \"transmute\"\n]\n```\n\n### TOML settings\n\n```toml\n[lint]\n...\n\n[lint.duplicated_arguments]\n# Ignore duplicated arguments in `list()` only.\nskipped-functions = [\"list\"]\n```\n<!-- docs: end -->",
+      "type": "object",
+      "properties": {
+        "skipped-functions": {
           "type": [
             "array",
             "null"
@@ -432,7 +357,82 @@
             "type": "string"
           }
         },
+        "extend-skipped-functions": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "IfNotElseOptions": {
+      "description": "<!-- docs: start -->\nUse `skipped-functions` to fully replace the default list of functions whose\nnegated calls are allowed as an `if`/`ifelse()` condition (e.g. `!is.null(x)`).\nUse `extend-skipped-functions` to add to the default list. Specifying both is an\nerror.\n\nFunction names in `skipped-functions` or `extend-skipped-functions` also match\nnamespaced calls, e.g. `skipped-functions = [\"is.null\"]` will allow `is.null()`\nand `base::is.null()`.\n\n### Default values\n\n```toml\nskipped-functions = [\n    \"is.null\",\n    \"is.na\",\n    \"missing\"\n]\n```\n\n### TOML settings\n\n```toml\n[lint]\n...\n\n[lint.if_not_else]\n# Also allow a negated `is.data.frame()` call in the condition.\nextend-skipped-functions = [\"is.data.frame\"]\n```\n<!-- docs: end -->",
+      "type": "object",
+      "properties": {
         "skipped-functions": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "extend-skipped-functions": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ImplicitAssignmentOptions": {
+      "description": "<!-- docs: start -->\nUse `skipped-functions` to fully replace the default list of functions that are\nallowed to contain implicit assignment. Use `extend-skipped-functions` to add to\nthe default list. Specifying both is an error.\n\nFunction names in `skipped-functions` or `extend-skipped-functions` also match\nnamespaced calls, e.g. `skipped-functions = [\"list2\"]` will ignore `list2()` and\n`rlang::list2()`.\n\n### Default values\n\n```toml\nskipped-functions = [\n    \"alist\",\n    \"expect_error\",         # from {testthat}\n    \"expect_warning\",       # from {testthat}\n    \"expect_message\",       # from {testthat}\n    \"expect_silent\",        # from {testthat}\n    \"expect_defunct\",       # from {lifecycle}\n    \"expect_deprecated\",    # from {lifecycle}\n    \"expect_snapshot\",      # from {testthat}\n    \"expect_no_condition\",  # from {testthat}\n    \"expect_no_warning\",    # from {testthat}\n    \"expect_no_error\",      # from {testthat}\n    \"expect_no_message\",    # from {testthat}\n    \"quote\",\n    \"suppressMessages\",\n    \"suppressWarnings\",\n    \"try\"\n]\n```\n\n### TOML settings\n\n```toml\n[lint]\n...\n\n[lint.implicit_assignment]\n# Ignore implicit assignment in `list()` only.\nskipped-functions = [\"list\"]\n```\n<!-- docs: end -->",
+      "type": "object",
+      "properties": {
+        "skipped-functions": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "extend-skipped-functions": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "MissingArgumentOptions": {
+      "description": "<!-- docs: start -->\nUse `skipped-functions` to fully replace the default list of functions that are\nallowed to contain missing arguments. Use `extend-skipped-functions` to add to\nthe default list. Specifying both is an error.\n\nFunction names in `skipped-functions` or `extend-skipped-functions` also match\nnamespaced calls, e.g. `skipped-functions = [\"list2\"]` will ignore `list2()` and\n`rlang::list2()`.\n\n### Default values\n\n```toml\nskipped-functions = [\n    \"switch\",\n    \"tibble\",\n    \"list2\",\n    \"mutate\",\n    \"summarize\",\n    \"transmute\",\n]\n```\n\n### TOML settings\n\n```toml\n[lint]\n...\n\n[lint.missing_argument]\n# Ignore missing arguments in `my_function()` only.\nskipped-functions = [\"my_function\"]\n```\n<!-- docs: end -->",
+      "type": "object",
+      "properties": {
+        "skipped-functions": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "extend-skipped-functions": {
           "type": [
             "array",
             "null"
@@ -445,10 +445,10 @@
       "additionalProperties": false
     },
     "NestedPipeOptions": {
-      "description": "TOML options for `[lint.nested_pipe]`.\n\nUse `skipped-functions` to fully replace the default list of outer calls\nwhose nested pipes are allowed. Use `extend-skipped-functions` to add to the\ndefault list. Specifying both is an error.",
+      "description": "<!-- docs: start -->\n\nUse `skipped-functions` to fully replace the default list of outer calls\nwhose nested pipes are allowed. Use `extend-skipped-functions` to add to the\ndefault list. Specifying both is an error.\n\n### Default values\n\n```toml\nskipped-functions = [\n    \"try\",\n    \"tryCatch\",\n    \"withCallingHandlers\"\n]\n```\n\n### TOML settings\n\n```toml\n[lint]\n...\n\n[lint.nested_pipe]\n# also allow in stopifnot()\nextend-skipped-fuctions = [\"stopifnot\"]\n```\n<!-- docs: end -->",
       "type": "object",
       "properties": {
-        "extend-skipped-functions": {
+        "skipped-functions": {
           "type": [
             "array",
             "null"
@@ -457,7 +457,7 @@
             "type": "string"
           }
         },
-        "skipped-functions": {
+        "extend-skipped-functions": {
           "type": [
             "array",
             "null"
@@ -470,7 +470,7 @@
       "additionalProperties": false
     },
     "PipeConsistencyOptions": {
-      "description": "TOML options for `[lint.pipe_consistency]`.\n\nUse `pipe` to specify which pipe operator to enforce. Valid values\nare `\"|>\"` (the default) and `\"%>%\"`.",
+      "description": "<!-- docs: start -->\nThe `pipe` option takes a single value (`\"|>\"` or `\"%>%\"`) indicating the\npreferred pipe operator in the files to check. If `pipe = \"|>\"` and if the\n`\"pipe_consistency\"` rule is enabled, then any use of `%>%` will be\nreported, and vice-versa.\n\n### Default values\n\n```toml\npipe = \"|>\"\n```\n\n### TOML settings\n\n```toml\n[lint]\n...\n\n[lint.pipe_consistency]\n# Use the {magrittr} pipe instead\npipe = \"%>%\"\n```\n<!-- docs: end -->",
       "type": "object",
       "properties": {
         "pipe": {
@@ -483,7 +483,7 @@
       "additionalProperties": false
     },
     "QuotesOptions": {
-      "description": "TOML options for `[lint.quotes]`.\n\nUse `quote` to specify which quote delimiter to enforce for string\nliterals. Valid values are `\"double\"` (the default) and `\"single\"`.",
+      "description": "<!-- docs: start -->\nThe `quote`` option takes a single value (`\"single\"` or `\"double\"`)\nindicating the preferred quote style in the files to check. If\n`quote = \"double\"` and if the `\"quotes\"` rule is enabled, then any use of\nsingle quotes `'` will be reported, and vice-versa.\n\n### Default values\n\n```toml\nquote = \"double\"\n```\n\n### TOML settings\n\n```toml\n[lint]\n...\n\n[lint.quotes]\n# Prefer single quotes instead\nquote = \"single\"\n```\n<!-- docs: end -->",
       "type": "object",
       "properties": {
         "quote": {
@@ -496,7 +496,7 @@
       "additionalProperties": false
     },
     "TrueFalseSymbolOptions": {
-      "description": "TOML options for `[lint.true_false_symbol]`.\n\nUse `skipped-functions` to list functions whose arguments are allowed to\ncontain the `T` and `F` symbols. This list is empty by default.",
+      "description": "<!-- docs: start -->\nUse `skipped-functions` to list functions whose arguments are allowed to\ncontain the `T` and `F` symbols.\n\nFunction names in `skipped-functions` also match namespaced calls, e.g.\n`skipped-functions = [\"foo\"]` will ignore `foo(T)` and `pkg::foo(T)`.\n\n### Default values\n\n```toml\nskipped-functions = []\n```\n\n### TOML settings\n\n```toml\n[lint]\n...\n\n[lint.true_false_symbol]\nskipped-functions = [\"foo\"]\n```\n<!-- docs: end -->",
       "type": "object",
       "properties": {
         "skipped-functions": {
@@ -506,6 +506,31 @@
           ],
           "items": {
             "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "UndesirableFunctionOptions": {
+      "description": "<!-- docs: start -->\nUse `functions` to fully replace the default list of undesirable functions.\nUse `extend-functions` to add to the default list.\nSpecifying both is an error.\n\nEntries can be strings or inline tables mapping a function to a custom\nsuggestion.\nFunction names in inline tables must be quoted.\nNames can be qualified with a package, such as `base::setwd`, in which case\nthey only match calls with the same package prefix.\n\n### Default values\n\n```toml\nfunctions = [\"browser\"]\n```\n\n### TOML settings\n\n```toml\n[lint.undesirable_function]\n# Replace the default list entirely:\nfunctions = [\"browser\", \"debug\"]\n\n# Or add to the defaults:\nextend-functions = [\"debug\"]\n\n# Or add to the defaults, with optional suggestions:\nextend-functions = [\n  { \"setwd\" = 'Use `here::here()`.' },\n  \"sprintf\",  # No suggestion for this case\n  { \"transmute\" = 'Use `mutate(.keep = \"none\")`.' },\n]\n```\n<!-- docs: end -->",
+      "type": "object",
+      "properties": {
+        "functions": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/UndesirableFunctionEntry"
+          }
+        },
+        "extend-functions": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/UndesirableFunctionEntry"
           }
         }
       },
@@ -525,36 +550,11 @@
         }
       ]
     },
-    "UndesirableFunctionOptions": {
-      "description": "TOML options for `[lint.undesirable_function]`.\n\nUse `functions` to fully replace the default list of undesirable functions.\nUse `extend-functions` to add to the default list.\nEntries can be strings or inline tables mapping a function to a custom\nsuggestion.\nSpecifying both is an error.",
-      "type": "object",
-      "properties": {
-        "extend-functions": {
-          "type": [
-            "array",
-            "null"
-          ],
-          "items": {
-            "$ref": "#/$defs/UndesirableFunctionEntry"
-          }
-        },
-        "functions": {
-          "type": [
-            "array",
-            "null"
-          ],
-          "items": {
-            "$ref": "#/$defs/UndesirableFunctionEntry"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
     "UndesirableOperatorOptions": {
-      "description": "TOML options for `[lint.undesirable_operator]`.\n\nUse `operators` to fully replace the default list of undesirable operators.\nUse `extend-operators` to add to the default list.\nEntries can be strings or inline tables mapping an operator to a custom\nmessage.\nSpecifying both is an error.",
+      "description": "<!-- docs: start -->\nUse `operators` to fully replace the default list of undesirable operators.\nUse `extend-operators` to add to the default list.\nSpecifying both is an error.\n\nEntries can be strings or inline tables mapping an operator to a custom\nmessage. Operator names in inline tables must be quoted.\n\n### Default values\n\n```toml\noperators = [\"->>\", \":::\", \"<<-\"]\n```\n\n### TOML settings\n\n```toml\n[lint.undesirable_operator]\n# Replace the default list entirely:\noperators = [\":::\", \"%in%\"]\n\n# Or add to the defaults:\nextend-operators = [\"%in%\"]\n\n# Or add to the defaults, with optional messages:\nextend-operators = [{ \"%notin%\" = \"Use `!(x %in% y)` instead.\" }]\n```\n<!-- docs: end -->",
       "type": "object",
       "properties": {
-        "extend-operators": {
+        "operators": {
           "type": [
             "array",
             "null"
@@ -563,7 +563,7 @@
             "$ref": "#/$defs/UndesirableOperatorEntry"
           }
         },
-        "operators": {
+        "extend-operators": {
           "type": [
             "array",
             "null"
@@ -576,6 +576,7 @@
       "additionalProperties": false
     },
     "UndesirableOperatorEntry": {
+      "description": "An operator, or a map from one operator to a custom message.",
       "anyOf": [
         {
           "type": "string"
@@ -589,10 +590,10 @@
       ]
     },
     "UnreachableCodeOptions": {
-      "description": "TOML options for `[lint.unreachable_code]`.\n\nUse `stopping-functions` to fully replace the default list of functions\nthat are considered to stop execution (never return). Use\n`extend-stopping-functions` to add to the default list.\nSpecifying both is an error.",
+      "description": "<!-- docs: start -->\nUse `stopping-functions` to fully replace the default list of functions that are\nconsidered to stop execution (never return). Use `extend-stopping-functions` to\nadd to the default list. Specifying both is an error.\n\nFunction names in `stopping-functions` or `extend-stopping-functions` also match\nnamespaced calls, e.g. `stopping-functions = [\"abort\"]` will consider `abort()`\nand `rlang::abort()` as stopping functions.\n\n### Default values\n\n```toml\nstopping-functions = [\n    \"stop\",\n    \".Defunct\",\n    \"abort\",\n    \"cli_abort\",\n    \"q\",\n    \"quit\"\n]\n```\n\n### TOML settings\n\n```toml\n[lint]\n...\n\n[lint.unreachable_code]\n# Add a custom function to the list of stopping functions\nextend-stopping-functions = [\"my_custom_stop\"]\n```\n<!-- docs: end -->",
       "type": "object",
       "properties": {
-        "extend-stopping-functions": {
+        "stopping-functions": {
           "type": [
             "array",
             "null"
@@ -601,7 +602,7 @@
             "type": "string"
           }
         },
-        "stopping-functions": {
+        "extend-stopping-functions": {
           "type": [
             "array",
             "null"
@@ -614,18 +615,9 @@
       "additionalProperties": false
     },
     "UnusedFunctionOptions": {
-      "description": "TOML options for `[lint.unused_function]`.\n\nUse `threshold-ignore` to control when `unused_function`\ndiagnostics are hidden. When the number of violations exceeds this\nthreshold, they are suppressed with an informative note (likely false\npositives).\n\nUse `skipped-functions` to provide a list of regex patterns for\nfunctions that should be skipped by this rule.",
+      "description": "<!-- docs: start -->\nUse `skipped-functions` to fully replace the default list of functions that are\nallowed to be unused in the R package. Function names in `skipped-functions`\n**are parsed as regular expressions** (this differs from other rules that have a\n`skipped-functions` argument).\n\n`unused_function` might return false positives because Jarl cannot statically\ndetermine whether a function is used. By default, Jarl will hide `unused_function`\ndiagnostics if there are more than 50, as this would suggest that the package\nhas some internal mechanism to use those functions. This number can be changed\nwith the `threshold-ignore` argument.\n\n### Default values\n\n```toml\nskipped-functions = []\nthreshold-ignore = 5\n```\n\n### TOML settings\n\n```toml\n[lint]\n...\n\n[lint.unused_function]\n# Ignore all functions that start with \"pl_\" or \"cs_\", and the function\n# \"my.function\"\nskipped-functions = [\"^cs_\", \"^pl_\", \"my\\\\.function\"]\n# Set a custom threshold above which diagnostics for this rule aren't reported\n# (this is basically equivalent to never hiding unused functions).\nthreshold-ignore = 10000\n```\n<!-- docs: end -->",
       "type": "object",
       "properties": {
-        "skipped-functions": {
-          "type": [
-            "array",
-            "null"
-          ],
-          "items": {
-            "type": "string"
-          }
-        },
         "threshold-ignore": {
           "type": [
             "integer",
@@ -633,15 +625,24 @@
           ],
           "format": "uint",
           "minimum": 0
+        },
+        "skipped-functions": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
         }
       },
       "additionalProperties": false
     },
     "UnusedObjectOptions": {
-      "description": "TOML options for `[lint.unused_object]`.\n\nUse `skipped-functions` to fully replace the default list of calls whose\ndirectly-assigned arguments are allowed to be unused. Use\n`extend-skipped-functions` to add to the default list. Specifying both is an\nerror.",
+      "description": "<!-- docs: start -->\nUse `skipped-functions` to fully replace the default list of calls whose\ndirectly-assigned arguments are allowed to be unused. Use\n`extend-skipped-functions` to add to the default list. Specifying both is an\nerror.\n\nFunction names in `skipped-functions` or `extend-skipped-functions` also match\nnamespaced calls, e.g. `skipped-functions = [\"expect_error\"]` will allow\n`expect_error()` and `testthat::expect_error()`.\n\nOnly the direct argument position counts: an assignment nested in a block or in\na function defined inside the call is an ordinary local and is still reported.\n\n### Default values\n\n```toml\nskipped-functions = [\n    \"expect_error\",         # from {testthat}\n    \"expect_warning\",       # from {testthat}\n    \"expect_message\",       # from {testthat}\n    \"expect_silent\",        # from {testthat}\n    \"expect_defunct\",       # from {lifecycle}\n    \"expect_deprecated\",    # from {lifecycle}\n    \"expect_snapshot\",      # from {testthat}\n    \"expect_no_condition\",  # from {testthat}\n    \"expect_no_warning\",    # from {testthat}\n    \"expect_no_error\",      # from {testthat}\n    \"expect_no_message\"     # from {testthat}\n]\n```\n\n### TOML settings\n\n```toml\n[lint]\n...\n\n[lint.unused_object]\n# Also allow an unused assignment passed straight to `my_expect()`.\nextend-skipped-functions = [\"my_expect\"]\n```\n<!-- docs: end -->",
       "type": "object",
       "properties": {
-        "extend-skipped-functions": {
+        "skipped-functions": {
           "type": [
             "array",
             "null"
@@ -650,7 +651,7 @@
             "type": "string"
           }
         },
-        "skipped-functions": {
+        "extend-skipped-functions": {
           "type": [
             "array",
             "null"
