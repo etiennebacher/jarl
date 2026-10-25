@@ -12,7 +12,9 @@ use std::path::PathBuf;
 use crate::fs::has_r_extension;
 use crate::fs::has_rmd_extension;
 use crate::settings::Settings;
+use crate::toml::config_table;
 use crate::toml::find_jarl_toml_in_directory;
+use crate::toml::options_from_table;
 use crate::toml::parse_jarl_toml;
 use air_workspace::resolve::PathResolver;
 use etcetera::BaseStrategy;
@@ -174,35 +176,165 @@ fn discover_nested_settings(
     Ok(())
 }
 
-/// Load [Settings] from an explicitly given config file, with its relative paths
-/// anchored at `root`.
+/// One `--config` value: a configuration file, or an inline TOML snippet.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ConfigInput {
+    File(PathBuf),
+    Inline(String),
+}
+
+/// The configuration given with `--config`, in the order it was given.
 ///
-/// This is what `--config` is for: when the user names the file, it wins over any
-/// `jarl.toml` that discovery would have found above or below the checked paths. Several
-/// `DiscoveredSettings` can be built from the same file, one per directory being checked,
-/// so that `exclude`, `include` and `per-file-ignores` are anchored the same way.
-pub fn discover_settings_from_config(
-    config: &Path,
+/// Several values are allowed and later ones take precedence, so a snippet can override a
+/// single option of a file: `--config jarl.toml --config "lint.assignment.operator = '<-'"`.
+#[derive(Clone, Debug, Default)]
+pub struct ExplicitConfig {
+    pub inputs: Vec<ConfigInput>,
+}
+
+/// Name the inline snippets are reported under, since they have no path of their own.
+const INLINE_CONFIG_LABEL: &str = "--config";
+
+impl ExplicitConfig {
+    /// Classify each `--config` value by its content: a value that names an existing file is a
+    /// file — a path is allowed to contain `=` — and otherwise a value that parses as a TOML table
+    /// is an inline snippet. Anything else names a file too, so a typo stays "file not found"
+    /// instead of becoming a parser error about a stray word.
+    pub fn parse(values: &[String]) -> Self {
+        let inputs = values
+            .iter()
+            .map(|value| {
+                if Path::new(value).is_file() {
+                    return ConfigInput::File(PathBuf::from(value));
+                }
+                match value.parse::<toml::Table>() {
+                    Ok(table) if !table.is_empty() => ConfigInput::Inline(value.clone()),
+                    // A value that only looks like TOML is an inline snippet with a syntax error:
+                    // reporting that is more use than "file not found" for a path that spells one.
+                    _ if value.contains('=') => ConfigInput::Inline(value.clone()),
+                    _ => ConfigInput::File(PathBuf::from(value)),
+                }
+            })
+            .collect();
+
+        Self { inputs }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.inputs.is_empty()
+    }
+
+    /// Directory the relative paths in the configuration are anchored at when the command
+    /// line names no file of its own: the one the command runs in.
+    pub fn anchor(&self, cwd: Option<&Path>) -> PathBuf {
+        self.last_file()
+            .and_then(|config| config.parent().map(Path::to_path_buf))
+            .or_else(|| cwd.map(air_fs::normalize_path))
+            .unwrap_or_default()
+    }
+
+    /// The configuration file named last, as an absolute path: discovery reports it in a
+    /// note when it lives outside the directory being checked.
+    pub fn last_file(&self) -> Option<PathBuf> {
+        self.inputs.iter().rev().find_map(|input| match input {
+            ConfigInput::File(path) => Some(air_fs::normalize_path(path)),
+            ConfigInput::Inline(_) => None,
+        })
+    }
+
+    /// What an error about the merged configuration names: `--config` when the last value is a
+    /// snippet, since the position in the message points into the merged text rather than into the
+    /// file.
+    fn label(&self) -> PathBuf {
+        match self.inputs.last() {
+            Some(ConfigInput::Inline(_)) | None => PathBuf::from(INLINE_CONFIG_LABEL),
+            Some(ConfigInput::File(_)) => self.last_file().unwrap_or_default(),
+        }
+    }
+
+    /// Read every input and merge them left to right, so that a later value wins.
+    ///
+    /// Tables merge key by key, so `--config "lint.select = [\"ALL\"]"` on top of a file
+    /// that sets `lint.ignore` keeps the file's `ignore`.
+    fn table(&self) -> anyhow::Result<toml::Table> {
+        let mut merged = toml::Table::new();
+
+        for input in &self.inputs {
+            let (source, label) = match input {
+                ConfigInput::File(path) => {
+                    let path = air_fs::normalize_path(path);
+                    if !path.exists() {
+                        anyhow::bail!("Configuration file not found: {}", path.display());
+                    }
+                    if !path.is_file() {
+                        anyhow::bail!(
+                            "`--config` expects a file, but {} is not a file",
+                            path.display()
+                        );
+                    }
+                    (std::fs::read_to_string(&path)?, path)
+                }
+                ConfigInput::Inline(source) => (source.clone(), PathBuf::from(INLINE_CONFIG_LABEL)),
+            };
+
+            merge_tables(&mut merged, config_table(&source, &label)?);
+        }
+
+        Ok(merged)
+    }
+}
+
+/// Merge `from` into `into`, recursively for tables and by replacement for every other
+/// value, which is what makes a later `--config` override an earlier one.
+fn merge_tables(into: &mut toml::Table, from: toml::Table) {
+    for (key, value) in from {
+        match (into.get_mut(&key), value) {
+            (Some(toml::Value::Table(existing)), toml::Value::Table(new)) => {
+                merge_tables(existing, new);
+            }
+            (_, value) => {
+                into.insert(key, value);
+            }
+        }
+    }
+}
+
+/// Load [Settings] from the configuration given on the command line, with its relative
+/// paths anchored at `root`.
+///
+/// This is what `--config` is for: when the user names it, it wins over any `jarl.toml`
+/// that discovery would have found above or below the checked paths. Several
+/// `DiscoveredSettings` can be built from the same configuration, one per directory being
+/// checked, so that `exclude`, `include` and `per-file-ignores` are anchored the same way.
+pub fn discover_settings_from_configs(
+    config: &ExplicitConfig,
     root: &Path,
 ) -> anyhow::Result<DiscoveredSettings> {
-    let config = air_fs::normalize_path(config);
-
-    if !config.exists() {
-        anyhow::bail!("Configuration file not found: {}", config.display());
-    }
-    if !config.is_file() {
-        anyhow::bail!(
-            "`--config` expects a file, but {} is not a file",
-            config.display()
-        );
-    }
-
-    let settings = parse_settings(&config, root)?;
+    let settings = match config.inputs.as_slice() {
+        // One file is the common case, and parsing it straight from disk keeps the line and
+        // column of a syntax error.
+        [ConfigInput::File(path)] => {
+            let path = air_fs::normalize_path(path);
+            if !path.exists() {
+                anyhow::bail!("Configuration file not found: {}", path.display());
+            }
+            if !path.is_file() {
+                anyhow::bail!(
+                    "`--config` expects a file, but {} is not a file",
+                    path.display()
+                );
+            }
+            parse_settings(&path, root)?
+        }
+        _ => options_from_table(config.table()?, &config.label())?
+            .into_settings(root)
+            .map_err(|err| anyhow::anyhow!("Invalid configuration: {err}"))?,
+    };
 
     Ok(DiscoveredSettings {
         directory: root.to_path_buf(),
         settings,
-        config_path: Some(config),
+        config_path: config.last_file(),
     })
 }
 

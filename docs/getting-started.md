@@ -89,6 +89,13 @@ jarl check . --config /path/to/jarl.toml
 
 The file given to `--config` takes precedence over every `jarl.toml` that would have been discovered, including the user-level one. The paths inside it are relative to the directory being checked, so the same file applies whether it is checked in or generated elsewhere (in a Nix store, for example).
 
+`--config` also accepts an inline TOML snippet, and it can be repeated: the values are merged in order, so a later one wins. Merging is per key, and a list is replaced rather than extended, so a snippet that sets `lint.ignore` discards the list the file had; use `lint.extend-select` when the project's selection should be kept.
+
+```sh
+# the project configuration, with `any_is_na` ignored
+jarl check . --config jarl.toml --config "lint.ignore = ['any_is_na']"
+```
+
 
 ### Suppression comments
 

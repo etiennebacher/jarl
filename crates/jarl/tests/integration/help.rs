@@ -173,8 +173,10 @@ fn test_help_check() -> anyhow::Result<()> {
       -m, --min-r-version <MIN_R_VERSION>
               The mimimum R version to be used by the linter. Some rules only work starting from a specific version.
 
-          --config <PATH>
-              Path to the configuration file to use instead of discovering the nearest `jarl.toml`. Takes precedence over any `jarl.toml` found above or below the checked paths.
+          --config <PATH_OR_TOML>
+              Configuration file to use instead of discovering the nearest `jarl.toml`, or an inline TOML snippet such as `--config "lint.ignore = ['any_is_na']"`. Takes precedence over any `jarl.toml` found above or below the checked paths.
+              
+              Can be repeated: the values are merged in order, so a later one overrides an earlier one, and a list is replaced rather than extended. A value that names an existing file is read as one; otherwise, if it parses as TOML it is a snippet.
 
           --output-format <OUTPUT_FORMAT>
               Output serialization format for violations.
@@ -245,7 +247,7 @@ fn test_help_check() -> anyhow::Result<()> {
     Other options:
       -w, --with-timing                    Show the time taken by the function.
       -m, --min-r-version <MIN_R_VERSION>  The mimimum R version to be used by the linter. Some rules only work starting from a specific version.
-          --config <PATH>                  Path to the configuration file to use instead of discovering the nearest `jarl.toml`.
+          --config <PATH_OR_TOML>          Configuration file to use instead of discovering the nearest `jarl.toml`, or an inline TOML snippet. Can be repeated: later values take precedence.
           --output-format <OUTPUT_FORMAT>  Output serialization format for violations. [default: full] [possible values: full, concise, github, json, sarif]
           --statistics                     Show counts for every rule with at least one violation.
           --add-jarl-ignore[=<REASON>]     Automatically insert a `# jarl-ignore` comment to suppress all violations.

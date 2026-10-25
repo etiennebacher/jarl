@@ -1,7 +1,8 @@
 use air_workspace::resolve::PathResolver;
 use jarl_core::discovery::{
-    discover_r_file_paths, discover_settings, discover_settings_from_config, excluded_by_settings,
-    explicit_config_roots, should_exclude_file_based_on_settings, validate_exclude_patterns,
+    ExplicitConfig, discover_r_file_paths, discover_settings, discover_settings_from_configs,
+    excluded_by_settings, explicit_config_roots, should_exclude_file_based_on_settings,
+    validate_exclude_patterns,
 };
 use jarl_core::library_paths::is_r_available;
 use jarl_core::package_cache::{PackageCache, any_file_references_packages, find_r_project_root};
@@ -23,7 +24,7 @@ use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::env;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -67,22 +68,21 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         None => args.files.clone(),
     };
 
-    // `--config` replaces discovery: the named file is the only configuration used. It is
-    // loaded once per directory being checked, so that the paths inside it are anchored
-    // where the files it applies to live, even when the file itself lives elsewhere.
-    let discovered = match &args.config {
-        Some(config) => {
-            let config_dir = air_fs::normalize_path(config)
-                .parent()
-                .map(Path::to_path_buf)
-                .unwrap_or_default();
-            let roots = explicit_config_roots(&files, &config_dir, cwd.as_deref());
-            roots
-                .iter()
-                .map(|root| discover_settings_from_config(config, root))
-                .collect::<Result<Vec<_>>>()?
-        }
-        None => discover_settings(&files)?,
+    // `--config` replaces discovery: the configuration given on the command line is the only
+    // one used. Each value is a `jarl.toml` path or an inline TOML snippet, and several are
+    // merged in order, so a snippet can override one option of a file. It is loaded once per
+    // directory being checked, so that the paths inside it are anchored where the files it
+    // applies to live, even when it was named from elsewhere.
+    let config = ExplicitConfig::parse(&args.config);
+    let discovered = if config.is_empty() {
+        discover_settings(&files)?
+    } else {
+        let config_dir = config.anchor(cwd.as_deref());
+        let roots = explicit_config_roots(&files, &config_dir, cwd.as_deref());
+        roots
+            .iter()
+            .map(|root| discover_settings_from_configs(&config, root))
+            .collect::<Result<Vec<_>>>()?
     };
     let single_config = discovered.len() == 1;
 

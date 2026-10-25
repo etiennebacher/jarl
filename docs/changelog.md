@@ -9,8 +9,10 @@
   * `assignment_on_if_no_else` (#605, @christopherkenny)
   * `todo_comment` (#739, @Yousa-Mirage)
 
-* `jarl check` has a new `--config <PATH>` flag to use a specific configuration file instead of
-  discovering the nearest `jarl.toml` (#692).
+* `jarl check` has a new `--config <PATH_OR_TOML>` flag to use a specific configuration file instead
+  of discovering the nearest `jarl.toml`. It also accepts an inline TOML snippet such as
+  `--config "lint.ignore = ['any_is_na']"`, and it can be repeated: the values are merged in order,
+  so a later one takes precedence (#692).
 
 * Improved rules:
 

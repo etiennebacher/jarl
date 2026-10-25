@@ -43,7 +43,7 @@ fn test_must_pass_path() -> anyhow::Result<()> {
     Other options:
       -w, --with-timing                    Show the time taken by the function.
       -m, --min-r-version <MIN_R_VERSION>  The mimimum R version to be used by the linter. Some rules only work starting from a specific version.
-          --config <PATH>                  Path to the configuration file to use instead of discovering the nearest `jarl.toml`.
+          --config <PATH_OR_TOML>          Configuration file to use instead of discovering the nearest `jarl.toml`, or an inline TOML snippet. Can be repeated: later values take precedence.
           --output-format <OUTPUT_FORMAT>  Output serialization format for violations. [default: full] [possible values: full, concise, github, json, sarif]
           --statistics                     Show counts for every rule with at least one violation.
           --add-jarl-ignore[=<REASON>]     Automatically insert a `# jarl-ignore` comment to suppress all violations.

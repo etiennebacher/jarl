@@ -6,7 +6,6 @@ use clap::{Parser, Subcommand};
 use clap_complete::engine::{ArgValueCompleter, CompletionCandidate};
 use jarl_core::rule_set::{Category, Rule};
 use std::ffi::OsStr;
-use std::path::PathBuf;
 
 // Configures Clap v3-style help menu colors
 const STYLES: Styles = Styles::styled()
@@ -188,13 +187,12 @@ pub struct CheckCommand {
     pub min_r_version: Option<String>,
     #[arg(
         long,
-        value_name = "PATH",
-        value_hint = clap::ValueHint::FilePath,
+        value_name = "PATH_OR_TOML",
         help_heading = "Other options",
-        help = "Path to the configuration file to use instead of discovering the nearest `jarl.toml`.",
-        long_help = "Path to the configuration file to use instead of discovering the nearest `jarl.toml`. Takes precedence over any `jarl.toml` found above or below the checked paths."
+        help = "Configuration file to use instead of discovering the nearest `jarl.toml`, or an inline TOML snippet. Can be repeated: later values take precedence.",
+        long_help = "Configuration file to use instead of discovering the nearest `jarl.toml`, or an inline TOML snippet such as `--config \"lint.ignore = ['any_is_na']\"`. Takes precedence over any `jarl.toml` found above or below the checked paths.\n\nCan be repeated: the values are merged in order, so a later one overrides an earlier one, and a list is replaced rather than extended. A value that names an existing file is read as one; otherwise, if it parses as TOML it is a snippet."
     )]
-    pub config: Option<PathBuf>,
+    pub config: Vec<String>,
     #[arg(
         long,
         value_enum,
