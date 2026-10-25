@@ -50,7 +50,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -79,9 +79,23 @@ jobs:
         run: install.packages(c("rmarkdown", "reactable", "yaml12"))
         shell: Rscript {0}
 
+      - name: Set up just
+        uses: extractions/setup-just@v3
+
       - name: Generate rules documentation
-        run: source("docs/make_docs.R")
-        shell: Rscript {0}
+        run: just document --no-quarto
+        shell: bash
+
+      - name: Check that generated files are up to date
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::Generated documentation is out of date. Run 'just document --no-quarto' locally and commit the changes."
+            git status --porcelain
+            git diff
+            exit 1
+          fi
 
       - name: Render Quarto docs (dev)
         if: github.event_name != 'workflow_dispatch' || inputs.version == 'dev'
