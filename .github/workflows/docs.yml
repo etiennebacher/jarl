@@ -58,15 +58,6 @@ jobs:
         with:
           fetch-tags: true
 
-      - name: Inject version into navbar
-        shell: bash
-        run: |
-          # Latest non-prerelease semver tag (strip optional 'v' prefix)
-          STABLE_VERSION=$(git tag -l | grep -E '^v?[0-9]+\.' | grep -vE '-' | sed 's/^v//' | sort -V | tail -1)
-          if [ -n "$STABLE_VERSION" ]; then
-            sed -i "s/text: \"stable\"/text: \"stable ($STABLE_VERSION)\"/g" docs/_quarto-stable.yml docs/_quarto-dev.yml
-          fi
-
       - name: Set up R
         uses: r-lib/actions/setup-r@v2.14.0
         with:
@@ -95,6 +86,16 @@ jobs:
             git status --porcelain
             git diff
             exit 1
+          fi
+
+      # Must come after the generated-files check: it edits tracked files.
+      - name: Inject version into navbar
+        shell: bash
+        run: |
+          # Latest non-prerelease semver tag (strip optional 'v' prefix)
+          STABLE_VERSION=$(git tag -l | grep -E '^v?[0-9]+\.' | grep -vE '-' | sed 's/^v//' | sort -V | tail -1)
+          if [ -n "$STABLE_VERSION" ]; then
+            sed -i "s/text: \"stable\"/text: \"stable ($STABLE_VERSION)\"/g" docs/_quarto-stable.yml docs/_quarto-dev.yml
           fi
 
       - name: Render Quarto docs (dev)
