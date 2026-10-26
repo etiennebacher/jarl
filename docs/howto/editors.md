@@ -2,42 +2,42 @@
 title: Editor support
 ---
 
-::: {.callout-note}
-Version numbers of the Jarl extensions may differ from the version number of Jarl itself.
-This is made on purpose so that it is easier to make releases that are specific to each extension or to Jarl itself.
+!!! note
 
-To get the version number of Jarl itself, use `jarl --version`.
-:::
+    Version numbers of the Jarl extensions may differ from the version number of Jarl itself.
+    This is made on purpose so that it is easier to make releases that are specific to each extension or to Jarl itself.
+
+    To get the version number of Jarl itself, use `jarl --version`.
 
 ## VS Code / Positron
 
 Both VS Code and Positron have access to the Jarl extension via the [VS Marketplace](https://marketplace.visualstudio.com/items?itemName=EtienneBacher.jarl-vscode) and [Open VSX](https://open-vsx.org/extension/etiennebacher/jarl-vscode).
 
-::: {.callout-note}
-The extension comes with a bundled version of Jarl. This means you don't need to install Jarl via the command line.
+!!! note
 
-This can be changed in the editor's settings, for instance to manually install a pre-released version of Jarl and have the extension use it. To do so, look for "Jarl: Executable Strategy" in the settings and set it to "path". Then, add the path to the Jarl binary in "Jarl: Executable Path".
-:::
+    The extension comes with a bundled version of Jarl. This means you don't need to install Jarl via the command line.
+
+    This can be changed in the editor's settings, for instance to manually install a pre-released version of Jarl and have the extension use it. To do so, look for "Jarl: Executable Strategy" in the settings and set it to "path". Then, add the path to the Jarl binary in "Jarl: Executable Path".
 
 This extension provides code higlights and quick fixes:
 
 * code highlights will underline pieces of code that violate any rule in your setup:
 
-![](../img/code_highlight.PNG){fig-alt="R script with `any(is.na(x))` underlined in yellow, indicating a rule violation. A popup shows Jarl message."}
+![R script with `any(is.na(x))` underlined in yellow, indicating a rule violation. A popup shows Jarl message.](../img/code_highlight.PNG)
 
 * quick fixes lightbulb icons will appear when the cursor is next to a highlighted piece of code. Clicking this icon will give you several options: apply the fix only for this piece of code, add a comment to ignore this specific violation, or add a comment to ignore all violations present in this piece of code. The screenshots below show the procedure to apply the fix:
 
-![](../img/code_quick_fix_1.PNG){fig-alt="R script showing the code `any(is.na(x))`. A blue lightbulb shows that a quick fix is available for this piece of code."}
+![R script showing the code `any(is.na(x))`. A blue lightbulb shows that a quick fix is available for this piece of code.](../img/code_quick_fix_1.PNG)
 
-![](../img/code_quick_fix_2.PNG){fig-alt="After clicking on the lightbulb, a popup appears with a button to automatically apply the fix."}
+![After clicking on the lightbulb, a popup appears with a button to automatically apply the fix.](../img/code_quick_fix_2.PNG)
 
-![](../img/code_quick_fix_3.PNG){fig-alt="The fix has been applied, the screenshot now shows `anyNA(x)`."}
+![The fix has been applied, the screenshot now shows `anyNA(x)`.](../img/code_quick_fix_3.PNG)
 
 Use [`jarl.toml`](../reference/config-file.md) to configure Jarl (rules to select or ignore, files to skip, assignment operator to use, etc.).
 
-::: {.callout-tip}
-The [Tombi extension](https://github.com/tombi-toml/tombi) is useful to have suggestions and autocompletion when editing `jarl.toml`.
-:::
+!!! tip
+
+    The [Tombi extension](https://github.com/tombi-toml/tombi) is useful to have suggestions and autocompletion when editing `jarl.toml`.
 
 
 ## Zed

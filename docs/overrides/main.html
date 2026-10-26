@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block htmltitle %}
+  {% if page and not page.url %}
+    <title>Jarl - Just Another R Linter</title>
+  {% elif page and page.title %}
+    <title>{{ config.site_name }} - {{ page.meta.title or page.title }}</title>
+  {% else %}
+    {{ super() }}
+  {% endif %}
+{% endblock %}
+
+{% block extrahead %}
+  {% if page and not page.url %}
+    <style>
+      .md-content h1 { text-align: center; margin-bottom: 0.4em; }
+      .md-content__inner > p:has(> br:only-child) { display: none; }
+      .md-content__inner > div { margin-bottom: 0.6em; }
+    </style>
+  {% endif %}
+{% endblock %}
+
+{% block announce %}
+  {% if config.extra.channel == "dev" %}
+    You are viewing the development version of the documentation. Use the dropdown in the header to see the stable version.
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  {{ super() }}
+  {% if page and page.edit_url %}
+    <p class="edit-page-link">
+      <a href="{{ page.edit_url }}" title="Edit this page on GitHub">
+        <span class="twemoji">{% include ".icons/material/file-edit-outline.svg" %}</span>
+        Edit this page on GitHub
+      </a>
+    </p>
+  {% endif %}
+{% endblock %}

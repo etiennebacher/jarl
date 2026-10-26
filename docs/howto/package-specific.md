@@ -103,17 +103,17 @@ Now that we have collected the packages whose namespaces are available in a give
 We try to resolve the origin of a function, which can lead to several situations:
 
 - the origin is resolved, meaning that the function comes from a single package:
-  - if the package is what we want, keep going;
-  - otherwise, exit the rule.
+    - if the package is what we want, keep going;
+    - otherwise, exit the rule.
 
 - the origin is unknown, meaning that we don't know where the function comes from. This can happen when the `library()` calls is located in another script. In this case, we exit the rule.
 
 - the origin is ambiguous, meaning that the function is provided by two or more packages. In this case, whether we should exit the rule or not depends on the context. For instance, if we're adding a rule for `dplyr::filter()`, we might want to assume that a `filter()` in a chain of pipes belongs to `dplyr` but a `filter()` outside a chain doesn't.
 
 
-::: {.callout-note title="Why not using packages loading order?"}
-The order in which packages are loaded is very important because it tells us which namespace is used in case of namespace conflict.
+!!! note "Why not using packages loading order?"
 
-We might think we can use this information to resolve the origin of a function, but this is not necessarily the case because there exists ways to explicitly prefer a certain package after it is loaded, such as the [`conflicted`](https://conflicted.r-lib.org/index.html) package.
-:::
+    The order in which packages are loaded is very important because it tells us which namespace is used in case of namespace conflict.
+
+    We might think we can use this information to resolve the origin of a function, but this is not necessarily the case because there exists ways to explicitly prefer a certain package after it is loaded, such as the [`conflicted`](https://conflicted.r-lib.org/index.html) package.
 

@@ -1,8 +1,5 @@
 ---
 title: By Example
-execute:
-  eval: false
-engine: knitr
 ---
 
 A collection of short, self-contained recipes for common Jarl tasks in the terminal.
@@ -10,12 +7,12 @@ A collection of short, self-contained recipes for common Jarl tasks in the termi
 
 ## Lint a file
 
-```{.r filename="test.R"}
+```r title="test.R"
 any(is.na(x))
 1:nrow(data)
 ```
 
-```{filename="Terminal"}
+```console title="Terminal"
 $> jarl check test.R
 
 warning: any_is_na
@@ -41,7 +38,7 @@ Found 2 errors.
 
 ## Lint a directory
 
-```{filename="Terminal"}
+```console title="Terminal"
 $> jarl check .
 ```
 
@@ -50,18 +47,18 @@ This recursively checks all `.R`, `.Rmd`, `.rmd`, and `.qmd` files starting from
 
 ## Fix violations automatically
 
-```{.r filename="test.R"}
+```r title="test.R"
 any(is.na(x))
 if (all.equal(x, y)) {
   print("x and y are equal")
 }
 ```
 
-```{filename="Terminal"}
+```console title="Terminal"
 $> jarl check test.R --fix
 ```
 
-```{.r filename="test.R (after fix)"}
+```r title="test.R (after fix)"
 anyNA(x)
 if (all.equal(x, y)) {
   print("x and y are equal")
@@ -70,11 +67,11 @@ if (all.equal(x, y)) {
 
 Only safe fixes are applied by default. To also apply unsafe fixes:
 
-```{filename="Terminal"}
+```console title="Terminal"
 $> jarl check test.R --fix --unsafe-fixes
 ```
 
-```{.r filename="test.R (after unsafe fixes)"}
+```r title="test.R (after unsafe fixes)"
 anyNA(x)
 if (isTRUE(all.equal(x, y))) {
   print("x and y are equal")
@@ -83,13 +80,13 @@ if (isTRUE(all.equal(x, y))) {
 
 ## Select or ignore specific rules
 
-```{.r filename="test.R"}
+```r title="test.R"
 any(is.na(x))
 1:nrow(data)
 any(duplicated(x))
 ```
 
-```{filename="Terminal"}
+```console title="Terminal"
 # Note that there must be no space between commas!
 $> jarl check test.R --select any_is_na,any_duplicated
 
@@ -114,27 +111,27 @@ Only the `any_is_na` and `any_duplicated` rules are applied, `seq` is not report
 
 You can also select by family:
 
-```{filename="Terminal"}
+```console title="Terminal"
 $> jarl check test.R --select PERF
 ```
 
 Or ignore specific rules:
 
-```{filename="Terminal"}
+```console title="Terminal"
 $> jarl check test.R --ignore seq
 ```
 
-See [Rules](rules.qmd) for all rule families.
+See [Rules](rules.md) for all rule families.
 
 ## Configure rules in `jarl.toml`
 
-```{.toml filename="jarl.toml"}
+```toml title="jarl.toml"
 [lint]
 select = ["PERF", "length_test"]
 ignore = ["any_duplicated"]
 ```
 
-```{filename="Terminal"}
+```console title="Terminal"
 $> jarl check .
 ```
 
@@ -143,12 +140,12 @@ CLI arguments always override the config file. See [Configuration file](referenc
 
 ## Show diagnostics in a more concise way
 
-```{.r filename="test.R"}
+```r title="test.R"
 any(is.na(x))
 1:nrow(data)
 ```
 
-```{filename="Terminal"}
+```console title="Terminal"
 $> jarl check test.R --output-format concise
 
 test.R [1:1] any_is_na `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
@@ -162,12 +159,12 @@ See [CLI reference](reference/cli.md) for all possible values of `--output-forma
 
 ## Suppress a diagnostic with a comment
 
-```{.r filename="test.R"}
+```r title="test.R"
 # jarl-ignore any_is_na: false positive in this context
 any(is.na(x))
 ```
 
-```{filename="Terminal"}
+```console title="Terminal"
 $> jarl check test.R
 
 No violations found.
@@ -178,15 +175,15 @@ For details on range, file, and chunk comments, see [Suppression comments](howto
 
 ## Auto-insert suppression comments
 
-```{.r filename="test.R"}
+```r title="test.R"
 any(is.na(x))
 ```
 
-```{filename="Terminal"}
+```console title="Terminal"
 $> jarl check test.R --add-jarl-ignore="remove this when bug xyz is fixed"
 ```
 
-```{.r filename="test.R (after)"}
+```r title="test.R (after)"
 # jarl-ignore any_is_na: remove this when bug xyz is fixed
 any(is.na(x))
 ```
@@ -196,13 +193,13 @@ You can also use `--add-jarl-ignore` without a value to insert a default `<reaso
 
 ## Show violation statistics
 
-```{.r filename="test.R"}
+```r title="test.R"
 any(is.na(x))
 1:nrow(data)
 NA %in% y
 ```
 
-```{filename="Terminal"}
+```console title="Terminal"
 $> jarl check test.R --statistics
 
     2 [*] any_is_na
@@ -214,13 +211,13 @@ Rules with `[*]` have an automatic fix.
 
 ## Lint only R Markdown / Quarto files
 
-```{filename="Terminal"}
+```console title="Terminal"
 $> jarl check **/*.{Rmd,rmd,qmd}
 ```
 
 Or in `jarl.toml`:
 
-```{.toml filename="jarl.toml"}
+```toml title="jarl.toml"
 [lint]
 include = ["**/*.{Rmd,rmd,qmd}"]
 ```
@@ -236,11 +233,11 @@ Therefore, Jarl knows that it can apply rules that were implemented before `x.y`
 
 For example, the `grepv` rule is only valid for R >= 4.5.0.
 
-```{.r filename="test.R"}
+```r title="test.R"
 grep("on", c("hi there", "bonjour"), value = TRUE)
 ```
 
-```{filename="Terminal"}
+```console title="Terminal"
 # Doesn't show anything because the user might be using R < 4.5.0
 $> jarl check test.R --min-r-version 4.3
 

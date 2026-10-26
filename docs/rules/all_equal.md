@@ -1,7 +1,7 @@
 # all_equal
 
-::: {.callout-note title="Added in 0.0.19" .low-opacity}
-:::
+!!! note low-opacity "Added in 0.0.19"
+
 
 ## What it does
 

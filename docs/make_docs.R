@@ -25,29 +25,15 @@ for (i in seq_along(rules)) {
 
 create_config_md(lints_dir)
 
-### Automatically add new rules in _quarto.yml
+### Create the home page from the README
+
+create_index_md()
+
+### Automatically add new rules in zensical.toml
 
 rule_docs <- list.files(
   "docs/rules",
   pattern = "\\.md$"
 )
 
-quarto_yml <- yaml12::read_yaml("docs/_quarto.yml")
-
-quarto_yml$website$sidebar <- list(list(
-  title = "Rules",
-  style = "floating",
-  contents = list(
-    "rules.qmd",
-    list(
-      section = "List of rules",
-      contents = paste0("rules/", sort(rule_docs))
-    )
-  )
-))
-
-# use format_yaml until https://github.com/posit-dev/r-yaml12/issues/40 is fixed
-writeLines(
-  yaml12::format_yaml(quarto_yml),
-  "docs/_quarto.yml"
-)
+update_rules_nav(paste0("rules/", sort(rule_docs)))

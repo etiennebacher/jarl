@@ -1,7 +1,7 @@
 # sample_int
 
-::: {.callout-note title="Added in 0.0.16" .low-opacity}
-:::
+!!! note low-opacity "Added in 0.0.16"
+
 
 ## What it does
 

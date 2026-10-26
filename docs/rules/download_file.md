@@ -1,7 +1,7 @@
 # download_file
 
-::: {.callout-note title="Added in 0.0.24" .low-opacity}
-:::
+!!! note low-opacity "Added in 0.0.24"
+
 
 ## What it does
 
