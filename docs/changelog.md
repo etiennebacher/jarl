@@ -4,6 +4,11 @@
 
 ### New features
 
+* New rules:
+
+  * `assignment_on_if_no_else` (#605, @christopherkenny)
+  * `todo_comment` (#739, @Yousa-Mirage)
+
 * Improved rules:
 
   * The `seq2` rule now also reports `seq_len(length(...))` and suggests `seq_along(...)`
@@ -12,6 +17,14 @@
 * Jarl handles parsing errors better, which may lead to more code being analysed
   in files with parsing errors (#762). Thanks to Davis Vaughan for his work
   upstream in Air and Aether.
+
+* `undesirable_operator` now accepts inline tables in `operators` and
+  `extend-operators` to attach custom messages to undesirable operators (#742).
+
+### Bug fixes
+
+* Prevent `unused_object` from reporting objects exported by `exportPattern()`
+  (#711, @Yousa-Mirage).
 
 ## 0.7.1
 
@@ -92,6 +105,12 @@ Therefore, I release 0.7.1 so that all releases with 0.7.1 match, no matter wher
   (#748).
 
 ### Bug fixes
+
+* Fix `string_boundary` false positives for mismatched substring widths and
+  reordered named arguments, and mark its fixes as unsafe (#698, @Yousa-Mirage).
+
+* Prevent `unused_function` and `unused_object` from falsely reporting non-ASCII
+  names (#706, @Yousa-Mirage).
 
 * Recognize parenthesized `TRUE` conditions in `repeat` and preserve loop body
   comments when applying fixes (#754, @Yousa-Mirage).

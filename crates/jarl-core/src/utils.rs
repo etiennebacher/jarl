@@ -104,6 +104,11 @@ pub fn compute_lints_location(
             let start: usize = diagnostic.range.start().into();
             let loc = find_row_col(start, loc_new_lines);
             diagnostic.location = Some(Location::new(loc.0, loc.1));
+            for label in &mut diagnostic.labels {
+                let start: usize = label.range.start().into();
+                let loc = find_row_col(start, loc_new_lines);
+                label.location = Some(Location::new(loc.0, loc.1));
+            }
             diagnostic
         })
         .collect()

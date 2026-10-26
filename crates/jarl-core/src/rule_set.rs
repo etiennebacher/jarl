@@ -272,6 +272,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    AssignmentOnIfNoElse => {
+        name: "assignment_on_if_no_else",
+        categories: [Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     ClassEquals => {
         name: "class_equals",
         categories: [Susp],
@@ -634,7 +641,7 @@ declare_rules! {
         name: "string_boundary",
         categories: [Perf, Read],
         default: Enabled,
-        fix: Safe,
+        fix: Unsafe,
         min_r_version: None,
     },
     StringsAsFactors => {
@@ -649,6 +656,13 @@ declare_rules! {
         categories: [Read],
         default: Enabled,
         fix: Safe,
+        min_r_version: None,
+    },
+    TodoComment => {
+        name: "todo_comment",
+        categories: [Read],
+        default: Disabled,
+        fix: None,
         min_r_version: None,
     },
     TrueFalseSymbol => {

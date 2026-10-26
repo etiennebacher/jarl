@@ -50,22 +50,13 @@ concurrency:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-tags: true
-
-      - name: Inject version into navbar
-        shell: bash
-        run: |
-          # Latest non-prerelease semver tag (strip optional 'v' prefix)
-          STABLE_VERSION=$(git tag -l | grep -E '^v?[0-9]+\.' | grep -vE '-' | sed 's/^v//' | sort -V | tail -1)
-          if [ -n "$STABLE_VERSION" ]; then
-            sed -i "s/text: \"stable\"/text: \"stable ($STABLE_VERSION)\"/g" docs/_quarto-stable.yml docs/_quarto-dev.yml
-          fi
 
       - name: Set up R
         uses: r-lib/actions/setup-r@v2.14.0
@@ -79,9 +70,33 @@ jobs:
         run: install.packages(c("rmarkdown", "reactable", "yaml12"))
         shell: Rscript {0}
 
+      - name: Set up just
+        uses: extractions/setup-just@v3
+
       - name: Generate rules documentation
-        run: source("docs/make_docs.R")
-        shell: Rscript {0}
+        run: just document --no-quarto
+        shell: bash
+
+      - name: Check that generated files are up to date
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::Generated documentation is out of date. Run 'just document --no-quarto' locally and commit the changes."
+            git status --porcelain
+            git diff
+            exit 1
+          fi
+
+      # Must come after the generated-files check: it edits tracked files.
+      - name: Inject version into navbar
+        shell: bash
+        run: |
+          # Latest non-prerelease semver tag (strip optional 'v' prefix)
+          STABLE_VERSION=$(git tag -l | grep -E '^v?[0-9]+\.' | grep -vE '-' | sed 's/^v//' | sort -V | tail -1)
+          if [ -n "$STABLE_VERSION" ]; then
+            sed -i "s/text: \"stable\"/text: \"stable ($STABLE_VERSION)\"/g" docs/_quarto-stable.yml docs/_quarto-dev.yml
+          fi
 
       - name: Render Quarto docs (dev)
         if: github.event_name != 'workflow_dispatch' || inputs.version == 'dev'

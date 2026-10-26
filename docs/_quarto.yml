@@ -86,6 +86,7 @@ website:
             - rules/all_equal.md
             - rules/any_duplicated.md
             - rules/any_is_na.md
+            - rules/assignment_on_if_no_else.md
             - rules/assignment.md
             - rules/blanket_suppression.md
             - rules/class_equals.md
@@ -159,6 +160,7 @@ website:
             - rules/string_boundary.md
             - rules/strings_as_factors.md
             - rules/system_file.md
+            - rules/todo_comment.md
             - rules/true_false_symbol.md
             - rules/undesirable_function.md
             - rules/undesirable_operator.md
