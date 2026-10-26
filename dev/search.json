@@ -60,21 +60,28 @@
     "href": "howto/precommit.html#pre-commit",
     "title": "Pre-commit tools",
     "section": "pre-commit",
-    "text": "pre-commit\nUse this in .pre-commit-config.yaml:\nrepos:\n-   repo: https://github.com/etiennebacher/jarl-pre-commit\n    rev: 0.4.0\n    hooks:\n      - id: jarl-check"
+    "text": "pre-commit\nUse this in .pre-commit-config.yaml:\nrepos:\n-   repo: https://github.com/etiennebacher/jarl-pre-commit\n    rev: 1.0.0\n    hooks:\n      - id: jarl-check"
   },
   {
     "objectID": "howto/precommit.html#prek",
     "href": "howto/precommit.html#prek",
     "title": "Pre-commit tools",
     "section": "prek",
-    "text": "prek\nprek can read .pre-commit-config.yaml but also has its own format, prek.toml.\nUse this in prek.toml:\n[[repos]]\nrepo = \"https://github.com/etiennebacher/jarl-pre-commit\"\nrev = \"0.4.0\"\nhooks = [\n  { id = \"jarl-check\" },\n]"
+    "text": "prek\nprek can read .pre-commit-config.yaml but also has its own format, prek.toml.\nUse this in prek.toml:\n[[repos]]\nrepo = \"https://github.com/etiennebacher/jarl-pre-commit\"\nrev = \"1.0.0\"\nhooks = [\n  { id = \"jarl-check\" },\n]"
   },
   {
     "objectID": "howto/precommit.html#choosing-the-version-of-jarl-to-use",
     "href": "howto/precommit.html#choosing-the-version-of-jarl-to-use",
     "title": "Pre-commit tools",
     "section": "Choosing the version of Jarl to use",
-    "text": "Choosing the version of Jarl to use\nThe rev parameter determines the version of Jarl to use. Starting from 0.4.0, all releases of Jarl have a matching release in jarl-pre-commit (see jarl-pre-commit tags).\nWhen you set up pre-commit or prek, it fetches the corresponding Jarl binary and caches it in ~/.cache/pre-commit (for instance ~/.cache/pre-commit/jarl-0.4.0). This implies two things:\n\nyou may have projects with pre-commit config files that use different versions of Jarl;\nthe version of Jarl on the $PATH is not affected, meaning that projects that don’t use pre-commit are not affected by the version of Jarl used in a project with pre-commit."
+    "text": "Choosing the version of Jarl to use\nEach release of jarl-pre-commit installs the latest version of Jarl available at the time of the release. Run pre-commit autoupdate or prek autoupdate to get newer versions of Jarl. Before 1.0.0, tags of jarl-pre-commit matched Jarl’s versions; since 1.0.0, they are independent (see jarl-pre-commit tags).\nTo pin a specific version of Jarl, use additional_dependencies with jarl-linter (available on PyPI from 0.5.0):\nrepos:\n-   repo: https://github.com/etiennebacher/jarl-pre-commit\n    rev: 1.0.0\n    hooks:\n      - id: jarl-check\n        additional_dependencies: [\"jarl-linter==0.6.0\"]\nautoupdate doesn’t modify additional_dependencies, so this pin must be updated manually."
+  },
+  {
+    "objectID": "howto/precommit.html#how-jarl-is-installed",
+    "href": "howto/precommit.html#how-jarl-is-installed",
+    "title": "Pre-commit tools",
+    "section": "How Jarl is installed",
+    "text": "How Jarl is installed\nThe hook uses language: python and installs the jarl-linter package from PyPI, which contains the Jarl binary for your platform. The binary is downloaded once during environment setup and cached, so no network access is needed when the hook runs. This also works on pre-commit.ci and similar services that only allow network access during setup.\nEach rev gets its own cached environment. This implies two things:\n\nyou may have projects with pre-commit config files that use different versions of Jarl;\nthe version of Jarl on the $PATH is not affected, meaning that projects that don’t use pre-commit are not affected by the version of Jarl used in a project with pre-commit."
   },
   {
     "objectID": "howto/shell-completions.html",

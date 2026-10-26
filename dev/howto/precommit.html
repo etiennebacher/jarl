@@ -314,6 +314,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#pre-commit" id="toc-pre-commit" class="nav-link active" data-scroll-target="#pre-commit"><code>pre-commit</code></a></li>
   <li><a href="#prek" id="toc-prek" class="nav-link" data-scroll-target="#prek"><code>prek</code></a></li>
   <li><a href="#choosing-the-version-of-jarl-to-use" id="toc-choosing-the-version-of-jarl-to-use" class="nav-link" data-scroll-target="#choosing-the-version-of-jarl-to-use">Choosing the version of Jarl to use</a></li>
+  <li><a href="#how-jarl-is-installed" id="toc-how-jarl-is-installed" class="nav-link" data-scroll-target="#how-jarl-is-installed">How Jarl is installed</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/howto/precommit.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -345,7 +346,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Use this in <code>.pre-commit-config.yaml</code>:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">repos</span><span class="kw">:</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at">   </span><span class="fu">repo</span><span class="kw">:</span><span class="at"> https://github.com/etiennebacher/jarl-pre-commit</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">rev</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.4.0</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">rev</span><span class="kw">:</span><span class="at"> </span><span class="fl">1.0.0</span></span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">hooks</span><span class="kw">:</span></span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">id</span><span class="kw">:</span><span class="at"> jarl-check</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
@@ -355,15 +356,27 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Use this in <code>prek.toml</code>:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[[repos]]</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="dt">repo</span> <span class="op">=</span> <span class="st">"https://github.com/etiennebacher/jarl-pre-commit"</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="dt">rev</span> <span class="op">=</span> <span class="st">"0.4.0"</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="dt">rev</span> <span class="op">=</span> <span class="st">"1.0.0"</span></span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="dt">hooks</span> <span class="op">=</span> <span class="op">[</span></span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">{ </span><span class="dt">id</span><span class="op"> =</span> <span class="st">"jarl-check"</span><span class="op"> },</span></span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="choosing-the-version-of-jarl-to-use" class="level2">
 <h2 class="anchored" data-anchor-id="choosing-the-version-of-jarl-to-use">Choosing the version of Jarl to use</h2>
-<p>The <code>rev</code> parameter determines the version of Jarl to use. Starting from 0.4.0, all releases of Jarl have a matching release in <code>jarl-pre-commit</code> (see <a href="https://github.com/etiennebacher/jarl-pre-commit/tags" target="_blank"><code>jarl-pre-commit</code> tags</a>).</p>
-<p>When you set up <code>pre-commit</code> or <code>prek</code>, it fetches the corresponding Jarl binary and caches it in <code>~/.cache/pre-commit</code> (for instance <code>~/.cache/pre-commit/jarl-0.4.0</code>). This implies two things:</p>
+<p>Each release of <code>jarl-pre-commit</code> installs the latest version of Jarl available at the time of the release. Run <code>pre-commit autoupdate</code> or <code>prek autoupdate</code> to get newer versions of Jarl. Before <code>1.0.0</code>, tags of <code>jarl-pre-commit</code> matched Jarl’s versions; since <code>1.0.0</code>, they are independent (see <a href="https://github.com/etiennebacher/jarl-pre-commit/tags" target="_blank"><code>jarl-pre-commit</code> tags</a>).</p>
+<p>To pin a specific version of Jarl, use <code>additional_dependencies</code> with <code>jarl-linter</code> (available on PyPI from 0.5.0):</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">repos</span><span class="kw">:</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at">   </span><span class="fu">repo</span><span class="kw">:</span><span class="at"> https://github.com/etiennebacher/jarl-pre-commit</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">rev</span><span class="kw">:</span><span class="at"> </span><span class="fl">1.0.0</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">hooks</span><span class="kw">:</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">id</span><span class="kw">:</span><span class="at"> jarl-check</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">additional_dependencies</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">"jarl-linter==0.6.0"</span><span class="kw">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>autoupdate</code> doesn’t modify <code>additional_dependencies</code>, so this pin must be updated manually.</p>
+</section>
+<section id="how-jarl-is-installed" class="level2">
+<h2 class="anchored" data-anchor-id="how-jarl-is-installed">How Jarl is installed</h2>
+<p>The hook uses <code>language: python</code> and installs the <code>jarl-linter</code> package from PyPI, which contains the Jarl binary for your platform. The binary is downloaded once during environment setup and cached, so no network access is needed when the hook runs. This also works on pre-commit.ci and similar services that only allow network access during setup.</p>
+<p>Each <code>rev</code> gets its own cached environment. This implies two things:</p>
 <ul>
 <li>you may have projects with <code>pre-commit</code> config files that use different versions of Jarl;</li>
 <li>the version of Jarl on the <code>$PATH</code> is not affected, meaning that projects that don’t use <code>pre-commit</code> are not affected by the version of Jarl used in a project with <code>pre-commit</code>.</li>
