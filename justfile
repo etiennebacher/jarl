@@ -1,12 +1,12 @@
 _default:
     just --list
 
-# Update the list of rules and the website
-[arg("no_quarto", long="no-quarto", value="true")]
-document no_quarto="false":
-    Rscript docs/check_pkgs.R
+# Update the rules pages and build the website in `docs/_site/` (`--preview` to serve it locally instead, `--no-render` to skip the website)
+[arg("preview", long="preview", value="true")]
+[arg("no_render", long="no-render", value="true")]
+document preview="false" no_render="false":
     Rscript docs/make_docs.R
-    @if [ "{{ no_quarto }}" != "true" ]; then (cd docs && quarto render); fi
+    @if [ "{{ no_render }}" = "true" ]; then :; elif [ "{{ preview }}" = "true" ]; then uvx zensical serve --open --config-file docs/zensical.toml; else uvx zensical build --clean --config-file docs/zensical.toml; fi
 
 # Run cargo clippy and cargo fmt
 lint:
