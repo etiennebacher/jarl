@@ -8,6 +8,9 @@ use jarl_core::rule_set::{DefaultStatus, FixStatus, Rule};
 use crate::args::RuleCommand;
 use crate::status::ExitStatus;
 
+/// Maximum number of "did you mean" rule names printed for an unknown rule.
+const MAX_SUGGESTIONS: usize = 5;
+
 pub fn rule(args: RuleCommand) -> Result<ExitStatus> {
     let Some(rule) = Rule::from_name(&args.name) else {
         eprintln!("{}: unknown rule `{}`.", "error".red().bold(), args.name);
@@ -15,10 +18,16 @@ pub fn rule(args: RuleCommand) -> Result<ExitStatus> {
         if !suggestions.is_empty() {
             let quoted = suggestions
                 .iter()
+                .take(MAX_SUGGESTIONS)
                 .map(|s| format!("`{s}`"))
                 .collect::<Vec<_>>()
                 .join(", ");
-            eprintln!("  Did you mean: {quoted}?");
+            let remaining = suggestions.len().saturating_sub(MAX_SUGGESTIONS);
+            if remaining > 0 {
+                eprintln!("  Did you mean: {quoted} (and {remaining} more)?");
+            } else {
+                eprintln!("  Did you mean: {quoted}?");
+            }
         }
         eprintln!("Run `jarl check --help` for how to select rules.");
         return Ok(ExitStatus::Error);
