@@ -42,7 +42,7 @@ dependencies = [
 [[package]]
 name = "air_r_factory"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air#a2b36beaacf02dd921b7d0dedb8fda1d23c00b3d"
+source = "git+https://github.com/posit-dev/air#16b5a35826e84d4fc162b61a0ceb4a4aa078fe22"
 dependencies = [
  "air_r_syntax",
  "biome_rowan",
@@ -51,7 +51,7 @@ dependencies = [
 [[package]]
 name = "air_r_formatter"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air#a2b36beaacf02dd921b7d0dedb8fda1d23c00b3d"
+source = "git+https://github.com/posit-dev/air#16b5a35826e84d4fc162b61a0ceb4a4aa078fe22"
 dependencies = [
  "air_r_syntax",
  "biome_formatter",
@@ -66,7 +66,7 @@ dependencies = [
 [[package]]
 name = "air_r_parser"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air#a2b36beaacf02dd921b7d0dedb8fda1d23c00b3d"
+source = "git+https://github.com/posit-dev/air#16b5a35826e84d4fc162b61a0ceb4a4aa078fe22"
 dependencies = [
  "air_r_factory",
  "air_r_syntax",
@@ -78,7 +78,7 @@ dependencies = [
 [[package]]
 name = "air_r_syntax"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air#a2b36beaacf02dd921b7d0dedb8fda1d23c00b3d"
+source = "git+https://github.com/posit-dev/air#16b5a35826e84d4fc162b61a0ceb4a4aa078fe22"
 dependencies = [
  "biome_rowan",
  "serde",
@@ -205,8 +205,6 @@ dependencies = [
  "biome_json_syntax",
  "biome_rowan",
  "enumflags2",
- "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -277,7 +275,6 @@ dependencies = [
  "drop_bomb",
  "indexmap",
  "rustc-hash",
- "serde",
  "tracing",
  "unicode-width 0.1.14",
 ]
@@ -538,7 +535,7 @@ dependencies = [
 [[package]]
 name = "comments"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air#a2b36beaacf02dd921b7d0dedb8fda1d23c00b3d"
+source = "git+https://github.com/posit-dev/air#16b5a35826e84d4fc162b61a0ceb4a4aa078fe22"
 
 [[package]]
 name = "compact_str"
@@ -742,7 +739,7 @@ dependencies = [
 [[package]]
 name = "fs"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air#a2b36beaacf02dd921b7d0dedb8fda1d23c00b3d"
+source = "git+https://github.com/posit-dev/air#16b5a35826e84d4fc162b61a0ceb4a4aa078fe22"
 dependencies = [
  "path-absolutize",
 ]
@@ -1148,7 +1145,7 @@ checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
 [[package]]
 name = "line_ending"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air#a2b36beaacf02dd921b7d0dedb8fda1d23c00b3d"
+source = "git+https://github.com/posit-dev/air#16b5a35826e84d4fc162b61a0ceb4a4aa078fe22"
 dependencies = [
  "memchr",
  "settings",
@@ -1738,7 +1735,7 @@ dependencies = [
 [[package]]
 name = "settings"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air#a2b36beaacf02dd921b7d0dedb8fda1d23c00b3d"
+source = "git+https://github.com/posit-dev/air#16b5a35826e84d4fc162b61a0ceb4a4aa078fe22"
 dependencies = [
  "biome_formatter",
  "serde",
@@ -1914,26 +1911,6 @@ name = "thin-vec"
 version = "0.2.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "79def32ffcd477db1ff26f76dab9e3a91f0bd42a85ca96577089b24623056f9d"
-
-[[package]]
-name = "thiserror"
-version = "2.0.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec86235f5fcc2a73650310756d2ac5b138a5780bbbdfae3eeccec992c435ba4f"
-dependencies = [
- "thiserror-impl",
-]
-
-[[package]]
-name = "thiserror-impl"
-version = "2.0.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc04cd3e1236dd4a98afca4569f2deb3f120e5422a4023be2cb683f8486292af"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 3.0.4",
-]
 
 [[package]]
 name = "thread_local"
@@ -2354,13 +2331,10 @@ dependencies = [
 [[package]]
 name = "workspace"
 version = "0.1.0"
-source = "git+https://github.com/posit-dev/air#a2b36beaacf02dd921b7d0dedb8fda1d23c00b3d"
+source = "git+https://github.com/posit-dev/air#16b5a35826e84d4fc162b61a0ceb4a4aa078fe22"
 dependencies = [
  "air_r_formatter",
- "air_r_parser",
  "anyhow",
- "biome_formatter",
- "biome_parser",
  "etcetera",
  "fs",
  "ignore",
@@ -2368,7 +2342,6 @@ dependencies = [
  "rustc-hash",
  "serde",
  "settings",
- "thiserror",
  "toml",
  "tracing",
 ]

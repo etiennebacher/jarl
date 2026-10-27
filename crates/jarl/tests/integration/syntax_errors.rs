@@ -75,7 +75,7 @@ fn test_expected_double_bracket() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected `]]` but instead found `]`
+    error: Expected `]]` but instead found `]`.
      --> test.R:1:5
       |
     1 | x[[1] ]
@@ -94,7 +94,7 @@ fn test_expected_a_comma_between_arguments() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected `,` but instead found `b`
+    error: Expected `,` but instead found `b`.
      --> test.R:1:5
       |
     1 | f(a b)
@@ -180,7 +180,7 @@ fn test_expected_in() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected `in` but instead found `y`
+    error: Expected `in` but instead found `y`.
      --> test.R:1:8
       |
     1 | for (x y) 1
@@ -199,7 +199,7 @@ fn test_expected_closing_paren_at_eof() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected `)` but instead the file ends
+    error: Expected `)` but instead found the end of the file.
      --> test.R:1:5
       |
     1 | any(
@@ -218,13 +218,13 @@ fn test_expected_closing_paren_found_other_token() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected `,` but instead found `{`
+    error: Expected `,` but instead found `{`.
      --> test.R:1:17
       |
     1 | f <- function(x { }
       |                 ^
       |
-    error: expected `)` but instead found `}`
+    error: Expected `)` but instead found `}`.
      --> test.R:1:19
       |
     1 | f <- function(x { }
@@ -243,7 +243,7 @@ fn test_expected_opening_paren_at_eof() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected `(` but instead the file ends
+    error: Expected `(` but instead found the end of the file.
      --> test.R:1:6
       |
     1 | while
@@ -262,13 +262,13 @@ fn test_expected_opening_paren_found_other_token() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected `(` but instead found `x`
+    error: Expected `(` but instead found `x`.
      --> test.R:1:4
       |
     1 | if x
       |    ^
       |
-    error: expected `)` but instead the file ends
+    error: Expected `)` but instead found the end of the file.
      --> test.R:1:5
       |
     1 | if x
@@ -287,7 +287,7 @@ fn test_expected_closing_brace_at_eof() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected `}` but instead the file ends
+    error: Expected `}` but instead found the end of the file.
      --> test.R:1:4
       |
     1 | { x
@@ -411,7 +411,7 @@ fn test_unexpected_semicolon() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected `,` but instead found `;`
+    error: Expected `,` but instead found `;`.
      --> test.R:1:4
       |
     1 | f(a;)
@@ -432,19 +432,19 @@ fn test_several_syntax_errors_in_one_file() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected `,` but instead found `b`
+    error: Expected `,` but instead found `b`.
      --> test.R:1:5
       |
     1 | f(a b)
       |     ^
       |
-    error: expected `in` but instead found `y`
+    error: Expected `in` but instead found `y`.
      --> test.R:2:8
       |
     2 | for (x y) 1
       |        ^
       |
-    error: expected `]]` but instead found `]`
+    error: Expected `]]` but instead found `]`.
      --> test.R:3:5
       |
     3 | z[[1] ]
@@ -466,7 +466,7 @@ fn test_syntax_error_at_end_of_file_with_trailing_newline() -> anyhow::Result<()
     ----- stdout -----
 
     ----- stderr -----
-    error: expected `)` but instead the file ends
+    error: Expected `)` but instead found the end of the file.
      --> test.R:1:5
       |
     1 | any(
@@ -494,9 +494,9 @@ fn test_several_syntax_errors_concise() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    Error: test.R:1:5 expected `,` but instead found `b`
-    Error: test.R:2:8 expected `in` but instead found `y`
-    Error: test.R:3:5 expected `]]` but instead found `]`
+    Error: test.R:1:5 Expected `,` but instead found `b`.
+    Error: test.R:2:8 Expected `in` but instead found `y`.
+    Error: test.R:3:5 Expected `]]` but instead found `]`.
     "
     );
     Ok(())
