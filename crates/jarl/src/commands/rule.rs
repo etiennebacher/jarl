@@ -11,8 +11,14 @@ use crate::status::ExitStatus;
 pub fn rule(args: RuleCommand) -> Result<ExitStatus> {
     let Some(rule) = Rule::from_name(&args.name) else {
         eprintln!("{}: unknown rule `{}`.", "error".red().bold(), args.name);
-        for suggestion in suggest_rules(&args.name) {
-            eprintln!("  Did you mean `{suggestion}`?");
+        let suggestions = suggest_rules(&args.name);
+        if !suggestions.is_empty() {
+            let quoted = suggestions
+                .iter()
+                .map(|s| format!("`{s}`"))
+                .collect::<Vec<_>>()
+                .join(", ");
+            eprintln!("  Did you mean: {quoted}?");
         }
         eprintln!("Run `jarl check --help` for how to select rules.");
         return Ok(ExitStatus::Error);

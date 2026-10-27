@@ -357,7 +357,33 @@ fn test_unknown_rule_errors_with_suggestion() -> anyhow::Result<()> {
 
     ----- stderr -----
     error: unknown rule `all_equl`.
-      Did you mean `all_equal`?
+      Did you mean: `all_equal`?
+    Run `jarl check --help` for how to select rules.
+    "
+    );
+
+    Ok(())
+}
+
+/// An unknown rule also suggests every rule whose name contains the input.
+#[test]
+fn test_unknown_rule_suggests_rules_containing_input() -> anyhow::Result<()> {
+    let case = CliTest::new()?;
+    insta::assert_snapshot!(
+        case.command()
+            .arg("rule")
+            .arg("null")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    error: unknown rule `null`.
+      Did you mean: `equals_null`, `expect_null`?
     Run `jarl check --help` for how to select rules.
     "
     );

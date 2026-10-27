@@ -461,14 +461,8 @@ fn unknown_rules_error(message: String, help: Vec<String>) -> anyhow::Error {
     anyhow::Error::new(UnknownRulesError { message, help })
 }
 
-/// Find valid rule names closest to `input` for a "did you mean" suggestion.
-///
-/// Returns up to 3 candidates that all share the minimum edit distance, and
-/// only when that distance is within an acceptance threshold (so unrelated
-/// input like "foo" yields no suggestion). Uses Damerau-Levenshtein distance,
-/// which also accounts for adjacent transpositions (e.g. "treu" -> "true").
-/// Suggest known rule names close to `input`, for "did you mean" hints when a
-/// user passes an unknown rule (e.g. to `jarl rule <name>`).
+/// Suggest known rule names for "did you mean" hints when a user passes an
+/// unknown rule (e.g. to `jarl rule <name>`).
 pub fn suggest_rules(input: &str) -> Vec<String> {
     let candidates: Vec<&str> = crate::rule_set::ALL_RULES
         .iter()
@@ -477,6 +471,14 @@ pub fn suggest_rules(input: &str) -> Vec<String> {
     suggest_rule_names(input, &candidates)
 }
 
+/// Find valid rule names for a "did you mean" suggestion.
+///
+/// Starts with up to 3 candidates that all share the minimum edit distance,
+/// and only when that distance is within an acceptance threshold (so unrelated
+/// input like "foo" yields no typo suggestion). Uses Damerau-Levenshtein
+/// distance, which also accounts for adjacent transpositions (e.g. "treu" ->
+/// "true"). Then appends every other name containing `input` as a substring
+/// (e.g. "null" -> all rules with "null" in their name).
 fn suggest_rule_names(input: &str, candidates: &[&str]) -> Vec<String> {
     // Allow roughly one edit per three characters, with a floor of 1 so short
     // typos are still caught.
@@ -488,17 +490,25 @@ fn suggest_rule_names(input: &str, candidates: &[&str]) -> Vec<String> {
         .filter(|(distance, _)| *distance <= threshold)
         .collect();
 
-    let Some(&(best_distance, _)) = scored.iter().min_by_key(|(distance, _)| *distance) else {
-        return Vec::new();
-    };
+    let mut suggestions: Vec<String> = Vec::new();
+    if let Some(&(best_distance, _)) = scored.iter().min_by_key(|(distance, _)| *distance) {
+        scored.retain(|(distance, _)| *distance == best_distance);
+        scored.sort_by(|a, b| a.1.cmp(b.1));
+        suggestions.extend(scored.into_iter().take(3).map(|(_, name)| name.to_string()));
+    }
 
-    scored.retain(|(distance, _)| *distance == best_distance);
-    scored.sort_by(|a, b| a.1.cmp(b.1));
-    scored
-        .into_iter()
-        .take(3)
-        .map(|(_, name)| name.to_string())
-        .collect()
+    // Very short inputs would match nearly every rule.
+    if input.chars().count() >= 3 {
+        let mut containing: Vec<&str> = candidates
+            .iter()
+            .copied()
+            .filter(|name| name.contains(input) && !suggestions.iter().any(|s| s == name))
+            .collect();
+        containing.sort();
+        suggestions.extend(containing.into_iter().map(str::to_string));
+    }
+
+    suggestions
 }
 
 /// Reconcile rules from CLI and TOML configuration.
