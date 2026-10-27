@@ -21,6 +21,8 @@
 * `undesirable_operator` now accepts inline tables in `operators` and
   `extend-operators` to attach custom messages to undesirable operators (#742).
 
+* Jarl suggests more potential names when a rule name is unknown (#777).
+
 ### Bug fixes
 
 * Prevent `unused_object` from reporting objects exported by `exportPattern()`
