@@ -139,6 +139,7 @@ pub(crate) fn check_expression(
             }
         }
         AnyRExpression::RSubset2(children) => {
+            analyze::subset::subset2(children, checker)?;
             check_expression(&children.function()?, checker)?;
             for arg in children.arguments()?.items() {
                 if let Some(expr) = arg?.value() {

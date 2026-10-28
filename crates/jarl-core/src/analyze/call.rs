@@ -9,6 +9,7 @@ use crate::lints::base::any_is_na::any_is_na::any_is_na;
 use crate::lints::base::class_equals::class_equals::class_identical;
 use crate::lints::base::condition_call::condition_call::condition_call;
 use crate::lints::base::condition_message::condition_message::condition_message;
+use crate::lints::base::dots_access::dots_access::{dots_length, dots_names};
 use crate::lints::base::download_file::download_file::download_file;
 use crate::lints::base::duplicated_arguments::duplicated_arguments::duplicated_arguments;
 use crate::lints::base::fixed_regex::fixed_regex::fixed_regex;
@@ -76,6 +77,10 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     }
     if checker.is_rule_enabled(Rule::ConditionMessage) {
         checker.report_diagnostic(condition_message(r_expr, fn_name)?);
+    }
+    if checker.is_rule_enabled(Rule::DotsAccess) {
+        checker.report_diagnostic(dots_names(r_expr, fn_name, ns_prefix)?);
+        checker.report_diagnostic(dots_length(r_expr, fn_name, ns_prefix)?);
     }
     if checker.is_rule_enabled(Rule::DownloadFile) {
         checker.report_diagnostic(download_file(r_expr, fn_name)?);

@@ -1,0 +1,174 @@
+---
+source: crates/jarl-core/src/lints/base/dots_access/mod.rs
+expression: "get_fixed_text(vec![\"f <- function(...) {\\n  names(list(...))\\n  length(list(...))\\n  list(...)[[1]]\\n  list(...)[[i]]\\n}\",\n\"base::names(x = (base::list(...)))\", \"base::length(\\\"x\\\" = list(...))\",\n\"length(`x` = list(...))\", \"(base::list(...))[[((2L))]]\", \"list(...)[[1.0]]\",\n\"list(...)[[1e1]]\", \"list(...)[[1.5]]\", \"list(...)[[index + 1]]\",\n\"list(...)[[get_index()]]\", \"x[[length(list(...))]] <- value\",\n\"value -> x[names(list(...))]\", \"x[[list(...)[[i]]]] <<- value\",\n\"value ->> x[[list(...)[[2L]]]]\", \"names(list(...)) %>% print()\",\n\"x %>% f(length(list(...)))\", \"names(\\n  list(...)\\n)\",\n\"# leading comment\\nnames(list(...)) # trailing comment\",\n\"names(\\n  # keep this comment\\n  list(...)\\n)\",\n\"length(list( # keep this too\\n  ...))\",\n\"list(...)[[ # index comment\\n  1]]\",], \"dots_access\", Some(\"4.1\"))"
+---
+OLD:
+====
+f <- function(...) {
+  names(list(...))
+  length(list(...))
+  list(...)[[1]]
+  list(...)[[i]]
+}
+NEW:
+====
+f <- function(...) {
+  ...names()
+  ...length()
+  ..1
+  ...elt(i)
+}
+
+OLD:
+====
+base::names(x = (base::list(...)))
+NEW:
+====
+...names()
+
+OLD:
+====
+base::length("x" = list(...))
+NEW:
+====
+...length()
+
+OLD:
+====
+length(`x` = list(...))
+NEW:
+====
+...length()
+
+OLD:
+====
+(base::list(...))[[((2L))]]
+NEW:
+====
+..2
+
+OLD:
+====
+list(...)[[1.0]]
+NEW:
+====
+..1
+
+OLD:
+====
+list(...)[[1e1]]
+NEW:
+====
+..10
+
+OLD:
+====
+list(...)[[1.5]]
+NEW:
+====
+...elt(1.5)
+
+OLD:
+====
+list(...)[[index + 1]]
+NEW:
+====
+...elt(index + 1)
+
+OLD:
+====
+list(...)[[get_index()]]
+NEW:
+====
+...elt(get_index())
+
+OLD:
+====
+x[[length(list(...))]] <- value
+NEW:
+====
+x[[...length()]] <- value
+
+OLD:
+====
+value -> x[names(list(...))]
+NEW:
+====
+value -> x[...names()]
+
+OLD:
+====
+x[[list(...)[[i]]]] <<- value
+NEW:
+====
+x[[...elt(i)]] <<- value
+
+OLD:
+====
+value ->> x[[list(...)[[2L]]]]
+NEW:
+====
+value ->> x[[..2]]
+
+OLD:
+====
+names(list(...)) %>% print()
+NEW:
+====
+...names() %>% print()
+
+OLD:
+====
+x %>% f(length(list(...)))
+NEW:
+====
+x %>% f(...length())
+
+OLD:
+====
+names(
+  list(...)
+)
+NEW:
+====
+...names()
+
+OLD:
+====
+# leading comment
+names(list(...)) # trailing comment
+NEW:
+====
+# leading comment
+...names() # trailing comment
+
+OLD:
+====
+names(
+  # keep this comment
+  list(...)
+)
+NEW:
+====
+names(
+  # keep this comment
+  list(...)
+)
+
+OLD:
+====
+length(list( # keep this too
+  ...))
+NEW:
+====
+length(list( # keep this too
+  ...))
+
+OLD:
+====
+list(...)[[ # index comment
+  1]]
+NEW:
+====
+list(...)[[ # index comment
+  1]]

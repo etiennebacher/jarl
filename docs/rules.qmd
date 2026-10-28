@@ -70,6 +70,7 @@ dat <- as.data.frame(
     c("cyclomatic_complexity", "readability", "❌", "Disabled by default"),
     c("dplyr_filter_out", "dplyr", "✅", "Disabled by default"),
     c("dplyr_group_by_ungroup", "dplyr", "✅", "Disabled by default"),
+    c("dots_access", "performance, readability", "✅", "R >= 4.1"),
     c("download_file", "suspicious", "❌", ""),
     c("duplicated_arguments", "suspicious", "❌", ""),
     c("duplicated_function_definition", "correctness", "❌", ""),

@@ -328,6 +328,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    DotsAccess => {
+        name: "dots_access",
+        categories: [Perf, Read],
+        default: Enabled,
+        fix: Safe,
+        min_r_version: Some((4, 1, 0)),
+    },
     DownloadFile => {
         name: "download_file",
         categories: [Susp],

@@ -10,6 +10,7 @@ pub(crate) mod condition_call;
 pub(crate) mod condition_message;
 pub(crate) mod consecutive_signs;
 pub(crate) mod cyclomatic_complexity;
+pub(crate) mod dots_access;
 pub(crate) mod download_file;
 pub(crate) mod duplicated_arguments;
 pub(crate) mod duplicated_function_definition;

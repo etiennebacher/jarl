@@ -96,6 +96,7 @@ website:
             - rules/condition_message.md
             - rules/consecutive_signs.md
             - rules/cyclomatic_complexity.md
+            - rules/dots_access.md
             - rules/download_file.md
             - rules/dplyr_filter_out.md
             - rules/dplyr_group_by_ungroup.md
