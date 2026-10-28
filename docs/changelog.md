@@ -37,6 +37,9 @@
   including function definitions and variable subscripts, while ignoring
   argument labels and fixed field names (#752, @Yousa-Mirage).
 
+* `system_file` now restricts diagnostics and safe fixes to cases where
+  expanding an unnamed `file.path()` call preserves the original arguments.
+
 * Prevent `unused_object` from reporting objects exported by `exportPattern()`
   (#711, @Yousa-Mirage).
 

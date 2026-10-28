@@ -1,8 +1,8 @@
 use crate::diagnostic::*;
 use crate::rule_set::Rule;
-use crate::utils::{get_named_args, get_unnamed_args, node_contains_comments};
+use crate::utils::node_contains_comments;
 use air_r_syntax::*;
-use biome_rowan::{AstNode, AstSeparatedList};
+use biome_rowan::AstNode;
 pub struct SystemFile;
 
 /// <!-- docs: start -->
@@ -42,7 +42,7 @@ impl Violation for SystemFile {
         "`system.file(file.path(...))` is redundant.".to_string()
     }
     fn suggestion(&self) -> Option<String> {
-        Some("Use `system.file(...)` instead.".to_string())
+        Some("Use `system.file(...)` directly.".to_string())
     }
 }
 
@@ -51,67 +51,82 @@ pub fn system_file(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnost
         return Ok(None);
     }
 
-    let arguments = ast.arguments()?;
-
-    let args = arguments.items();
-    let values = get_unnamed_args(&args);
-
-    let file_path: Vec<&RArgument> = values
-        .iter()
-        .filter(|x| {
-            if let Some(val) = x.value()
-                && let Some(val) = RCall::cast(val.into())
-            {
-                let fun = val.function();
-                if let Ok(fun) = fun {
-                    fun.to_trimmed_text() == "file.path"
-                } else {
-                    false
-                }
-            } else {
-                false
-            }
-        })
-        .collect::<Vec<&RArgument>>();
-
-    if file_path.len() != 1 {
+    let function = ast.function()?;
+    if let Some(namespace) = function.as_r_namespace_expression()
+        && namespace.left()?.to_trimmed_text() != "base"
+    {
         return Ok(None);
     }
 
-    // Safety: at this point we know file_path has length 1.
-    let file_path_value = unwrap_or_return_none!(file_path.first().unwrap().value());
-    let file_path_call = unwrap_or_return_none!(file_path_value.as_r_call());
+    let args = ast.arguments()?.items();
+    let mut replacement_args = Vec::new();
+    let mut has_file_path = false;
+    for arg in args {
+        let Ok(arg) = arg else {
+            return Ok(None);
+        };
 
-    let file_path_inner_content = file_path_call.arguments()?.items().iter().filter(|x| {
-        if let Ok(x) = x {
-            x.value().is_some()
-        } else {
-            false
+        // A missing value can be produced by the parser's recovery tree. It
+        // must not be silently dropped by an automatic fix.
+        let Some(value) = arg.value() else {
+            return Ok(None);
+        };
+
+        if arg.name_clause().is_some() {
+            replacement_args.push(arg.to_trimmed_string());
+            continue;
         }
-    });
 
-    let _ = unwrap_or_return_none!(file_path_inner_content.clone().next());
+        let Some(file_path_call) = value.as_r_call() else {
+            replacement_args.push(arg.to_trimmed_string());
+            continue;
+        };
+        let inner_function = file_path_call.function()?;
+        let inner_function_text = inner_function.to_trimmed_text();
+        if inner_function_text != "file.path" && inner_function_text != "base::file.path" {
+            replacement_args.push(arg.to_trimmed_string());
+            continue;
+        }
 
-    let file_path_inner_content = file_path_inner_content
-        .map(|x| x.unwrap().to_trimmed_string())
-        .collect::<Vec<String>>()
-        .join(", ");
+        let mut inner_args = Vec::new();
+        for inner_arg in file_path_call.arguments()?.items() {
+            let Ok(inner_arg) = inner_arg else {
+                return Ok(None);
+            };
 
-    let other_args = get_named_args(&args)
-        .iter()
-        .map(|x| x.to_trimmed_string())
-        .collect::<Vec<String>>()
-        .join(", ");
+            // Named arguments such as `fsep = "-"` belong to `file.path()`
+            // and cannot be moved to `system.file()` without changing the
+            // result.
+            if inner_arg.name_clause().is_some() {
+                return Ok(None);
+            }
+
+            let Some(_) = inner_arg.value() else {
+                return Ok(None);
+            };
+            inner_args.push(inner_arg.to_trimmed_string());
+        }
+
+        if inner_args.is_empty() {
+            return Ok(None);
+        }
+
+        has_file_path = true;
+        replacement_args.extend(inner_args);
+    }
+
+    if !has_file_path {
+        return Ok(None);
+    }
+
+    let function_text = function.to_trimmed_string();
+    let replacement = format!("{}({})", function_text, replacement_args.join(", "));
 
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         SystemFile,
         range,
-        Fix::new(
-            range,
-            format!("system.file({}, {})", file_path_inner_content, other_args),
-            node_contains_comments(ast.syntax()),
-        ),
+        Fix::new(range, replacement, node_contains_comments(ast.syntax())),
     );
     Ok(Some(diagnostic))
 }
