@@ -414,6 +414,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="bug-fixes" class="level3">
 <h3 class="anchored" data-anchor-id="bug-fixes">Bug fixes</h3>
 <ul>
+<li><p><code>for_loop_index</code> now detects reused variables in nested expressions, including function definitions and variable subscripts, while ignoring argument labels and fixed field names (<a href="https://github.com/etiennebacher/jarl/issues/752" target="_blank">#752</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
 <li><p>Prevent <code>unused_object</code> from reporting objects exported by <code>exportPattern()</code> (<a href="https://github.com/etiennebacher/jarl/issues/711" target="_blank">#711</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
 <li><p>Fix detection of backtick-quoted indices in <code>for_loop_dup_index</code> (<a href="https://github.com/etiennebacher/jarl/issues/753" target="_blank">#753</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
 </ul>
