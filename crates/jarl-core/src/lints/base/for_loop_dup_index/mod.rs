@@ -20,27 +20,13 @@ for (i in 1:4) {}",
         for (k in 1:5) {}
     }
 }",
-            // A function's index does not overwrite the enclosing loop's index.
-            "for (i in 1:3) {
-    f <- function() {
-        for (i in 1:4) {}
-    }
+            // Define the function outside the loop to avoid nested index reuse.
+            "f <- function() {
+    for (i in 1:4) {}
+}
+for (i in 1:3) {
     f()
 }",
-            "for (i in 1:3) {
-    (\\() {
-        for (i in 1:4) {}
-    })()
-}",
-            // The outer loop has not started iterating while its sequence is built.
-            "for (i in {
-    for (i in 1:3) {}
-    1:2
-}) {}",
-            "for (i in list({
-    for (i in 1:3) {}
-    1:2
-})) {}",
             "for (`i` in 1:3) {
     for (`j` in 1:4) {}
 }",
@@ -164,6 +150,40 @@ for (i in 1:4) {}",
         "
         );
 
+        // Reusing an index in a sequence is suspicious even before iteration starts.
+        assert_snapshot!(
+            snapshot_lint("for (i in {
+    for (i in 1:3) {}
+    1:2
+}) {}"),
+            @"
+        warning: for_loop_dup_index
+         --> <test>:2:10
+          |
+        2 |     for (i in 1:3) {}
+          |          -------- This index variable is already used in a parent `for` loop.
+          |
+          = help: Rename this index variable to avoid unexpected results.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("for (i in list({
+    for (i in 1:3) {}
+    1:2
+})) {}"),
+            @"
+        warning: for_loop_dup_index
+         --> <test>:2:10
+          |
+        2 |     for (i in 1:3) {}
+          |          -------- This index variable is already used in a parent `for` loop.
+          |
+          = help: Rename this index variable to avoid unexpected results.
+        Found 1 error.
+        "
+        );
+
         // A loop in a sequence can still overwrite a further enclosing index.
         assert_snapshot!(
             snapshot_lint("for (i in 1:3) {
@@ -184,7 +204,43 @@ for (i in 1:4) {}",
         "
         );
 
-        // Stop at the function boundary, but check nested loops within it.
+        // Function definitions do not exempt nested loops from this check.
+        // You should define the function outside the loop.
+        assert_snapshot!(
+            snapshot_lint("for (i in 1:3) {
+    f <- function() {
+        for (i in 1:4) {}
+    }
+    f()
+}"),
+            @"
+        warning: for_loop_dup_index
+         --> <test>:3:14
+          |
+        3 |         for (i in 1:4) {}
+          |              -------- This index variable is already used in a parent `for` loop.
+          |
+          = help: Rename this index variable to avoid unexpected results.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("for (i in 1:3) {
+    (\\() {
+        for (i in 1:4) {}
+    })()
+}"),
+            @"
+        warning: for_loop_dup_index
+         --> <test>:3:14
+          |
+        3 |         for (i in 1:4) {}
+          |              -------- This index variable is already used in a parent `for` loop.
+          |
+          = help: Rename this index variable to avoid unexpected results.
+        Found 1 error.
+        "
+        );
         assert_snapshot!(
             snapshot_lint("for (i in 1:3) {
     f <- function() {
@@ -195,13 +251,20 @@ for (i in 1:4) {}",
 }"),
             @"
         warning: for_loop_dup_index
+         --> <test>:3:14
+          |
+        3 |         for (i in 1:4) {
+          |              -------- This index variable is already used in a parent `for` loop.
+          |
+          = help: Rename this index variable to avoid unexpected results.
+        warning: for_loop_dup_index
          --> <test>:4:18
           |
         4 |             for (i in 1:5) {}
           |                  -------- This index variable is already used in a parent `for` loop.
           |
           = help: Rename this index variable to avoid unexpected results.
-        Found 1 error.
+        Found 2 errors.
         "
         );
     }

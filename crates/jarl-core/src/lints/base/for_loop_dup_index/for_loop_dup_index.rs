@@ -55,19 +55,14 @@ impl Violation for ForLoopDupIndex {
 pub fn for_loop_dup_index(ast: &RForStatement) -> anyhow::Result<Option<Diagnostic>> {
     let variable = ast.variable()?;
     let name = variable.name_text();
-    let loop_range = ast.syntax().text_trimmed_range();
 
-    // Skip self and stop at functions, whose loop variables have their own scope.
-    for ancestor in ast.syntax().ancestors().skip(1) {
-        if RFunctionDefinition::can_cast(ancestor.kind()) {
-            break;
-        }
-
-        if let Some(outer) = RForStatement::cast(ancestor)
-            && outer.variable()?.name_text() == name
-            // Loops in the sequence run before this outer loop starts iterating.
-            && outer.body()?.range().contains_range(loop_range)
-        {
+    for outer in ast
+        .syntax()
+        .ancestors()
+        .skip(1)
+        .filter_map(RForStatement::cast)
+    {
+        if outer.variable()?.name_text() == name {
             let range = TextRange::new(variable.range().start(), ast.sequence()?.range().end());
             return Ok(Some(Diagnostic::new(ForLoopDupIndex, range, Fix::empty())));
         }
