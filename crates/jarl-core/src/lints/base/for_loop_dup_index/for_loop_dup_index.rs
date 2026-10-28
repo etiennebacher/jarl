@@ -54,7 +54,10 @@ impl Violation for ForLoopDupIndex {
 
 pub fn for_loop_dup_index(ast: &RForStatement) -> anyhow::Result<Option<Diagnostic>> {
     let variable = ast.variable()?;
-    let name = variable.name_text();
+    let name = match &variable {
+        AnyRForVariable::RIdentifier(identifier) => identifier.name_text(),
+        _ => variable.to_trimmed_string(),
+    };
 
     for outer in ast
         .syntax()
@@ -62,7 +65,11 @@ pub fn for_loop_dup_index(ast: &RForStatement) -> anyhow::Result<Option<Diagnost
         .skip(1)
         .filter_map(RForStatement::cast)
     {
-        if outer.variable()?.name_text() == name {
+        let outer_name = match outer.variable()? {
+            AnyRForVariable::RIdentifier(identifier) => identifier.name_text(),
+            variable => variable.to_trimmed_string(),
+        };
+        if outer_name == name {
             let range = TextRange::new(variable.range().start(), ast.sequence()?.range().end());
             return Ok(Some(Diagnostic::new(ForLoopDupIndex, range, Fix::empty())));
         }
