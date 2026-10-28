@@ -8,6 +8,7 @@
 
   * `assignment_on_if_no_else` (#605, @christopherkenny)
   * `todo_comment` (#739, @Yousa-Mirage)
+  * `loop_invariant` (disabled by default)
 
 * Improved rules:
 

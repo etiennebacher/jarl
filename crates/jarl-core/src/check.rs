@@ -791,6 +791,23 @@ fn get_checks_roxygen(
                     }
                 }
             }
+            if checker.is_rule_enabled(crate::rule_set::Rule::LoopInvariant) {
+                for expression in &owned {
+                    for node in expression.descendants() {
+                        if let Some(for_statement) = node.cast::<air_r_syntax::RForStatement>() {
+                            for diagnostic in
+                                crate::lints::base::loop_invariant::loop_invariant::loop_invariant(
+                                    &for_statement,
+                                    semantic,
+                                    &info,
+                                )?
+                            {
+                                checker.report_diagnostic(Some(diagnostic));
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         // Only run document-level checks if the examples code has inline

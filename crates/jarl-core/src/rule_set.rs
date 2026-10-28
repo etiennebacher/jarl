@@ -497,6 +497,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    LoopInvariant => {
+        name: "loop_invariant",
+        categories: [Perf],
+        default: Disabled,
+        fix: None,
+        min_r_version: None,
+    },
     MatrixApply => {
         name: "matrix_apply",
         categories: [Perf],
