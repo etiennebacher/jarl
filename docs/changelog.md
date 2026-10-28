@@ -25,6 +25,10 @@
 
 ### Bug fixes
 
+* `for_loop_index` now detects reused variables in nested expressions,
+  including function definitions and variable subscripts, while ignoring
+  argument labels and fixed field names (#752, @Yousa-Mirage).
+
 * Prevent `unused_object` from reporting objects exported by `exportPattern()`
   (#711, @Yousa-Mirage).
 
@@ -107,10 +111,6 @@ Therefore, I release 0.7.1 so that all releases with 0.7.1 match, no matter wher
   (#748).
 
 ### Bug fixes
-
-* `for_loop_index` no longer mistakes argument names for sequence variables,
-  and now detects reused variables in parentheses, operators, and extracted or
-  subsetted objects (#752, @Yousa-Mirage).
 
 * Fix `string_boundary` false positives for mismatched substring widths and
   reordered named arguments, and mark its fixes as unsafe (#698, @Yousa-Mirage).
