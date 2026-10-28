@@ -272,12 +272,11 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
-    #[deprecated(version = "0.5.0", replacement = "undesirable_function")]
-    Browser => {
-        name: "browser",
-        categories: [Corr],
+    AssignmentOnIfNoElse => {
+        name: "assignment_on_if_no_else",
+        categories: [Susp],
         default: Enabled,
-        fix: Safe,
+        fix: None,
         min_r_version: None,
     },
     ClassEquals => {
@@ -319,6 +318,13 @@ declare_rules! {
         name: "consecutive_signs",
         categories: [Read, Susp],
         default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    CyclomaticComplexity => {
+        name: "cyclomatic_complexity",
+        categories: [Read],
+        default: Disabled,
         fix: None,
         min_r_version: None,
     },
@@ -438,7 +444,7 @@ declare_rules! {
     InternalFunction => {
         name: "internal_function",
         categories: [Susp],
-        default: Enabled,
+        default: Disabled,
         fix: None,
         min_r_version: None,
     },
@@ -605,7 +611,7 @@ declare_rules! {
     },
     Seq2 => {
         name: "seq2",
-        categories: [Susp],
+        categories: [Read, Susp],
         default: Enabled,
         fix: Safe,
         min_r_version: None,
@@ -635,7 +641,7 @@ declare_rules! {
         name: "string_boundary",
         categories: [Perf, Read],
         default: Enabled,
-        fix: Safe,
+        fix: Unsafe,
         min_r_version: None,
     },
     StringsAsFactors => {
@@ -650,6 +656,13 @@ declare_rules! {
         categories: [Read],
         default: Enabled,
         fix: Safe,
+        min_r_version: None,
+    },
+    TodoComment => {
+        name: "todo_comment",
+        categories: [Read],
+        default: Disabled,
+        fix: None,
         min_r_version: None,
     },
     TrueFalseSymbol => {

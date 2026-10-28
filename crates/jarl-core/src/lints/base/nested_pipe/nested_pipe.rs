@@ -78,7 +78,7 @@ pub fn nested_pipe(
     // "nested in a call" (e.g. a function body or `local({ ... })`).
     let mut enclosing_arg = None;
     for ancestor in ast.syntax().ancestors() {
-        if RBracedExpressions::can_cast(ancestor.kind()) {
+        if RBracedStatements::can_cast(ancestor.kind()) {
             return Ok(None);
         }
         if let Some(arg) = RArgument::cast(ancestor) {

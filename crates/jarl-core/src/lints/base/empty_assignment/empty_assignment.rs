@@ -56,14 +56,14 @@ pub fn empty_assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagno
     };
 
     let value_is_empty = match operator.kind() {
-        RSyntaxKind::EQUAL | RSyntaxKind::ASSIGN => match RBracedExpressions::cast(right.into()) {
-            Some(right) => right.expressions().into_syntax().text_trimmed() == "",
+        RSyntaxKind::EQUAL | RSyntaxKind::ASSIGN => match RBracedStatements::cast(right.into()) {
+            Some(right) => right.statements().into_syntax().text_trimmed() == "",
             _ => {
                 return Ok(None);
             }
         },
-        RSyntaxKind::ASSIGN_RIGHT => match RBracedExpressions::cast(left.into()) {
-            Some(left) => left.expressions().into_syntax().text_trimmed() == "",
+        RSyntaxKind::ASSIGN_RIGHT => match RBracedStatements::cast(left.into()) {
+            Some(left) => left.statements().into_syntax().text_trimmed() == "",
             _ => {
                 return Ok(None);
             }

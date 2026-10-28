@@ -133,15 +133,7 @@ Output serialization format for violations. Possible values:
 * `concise`: Print diagnostics in a concise format, one per line
 * `github`: Print diagnostics as GitHub format
 * `json`: Print diagnostics as JSON
-* `sarif`: Print diagnostics in the [SARIF](https://sarifweb.azurewebsites.net/) format.
-
----
-
-**`--assignment <ASSIGNMENT>`**
-
-[DEPRECATED: use `[lint.assignment]` in `jarl.toml`]
-
-Assignment operator to use, can be either `<-` or `=`.
+* `sarif`: Print diagnostics in the [SARIF](https://github.com/microsoft/sarif-tutorials) format.
 
 ---
 

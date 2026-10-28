@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-core/src/lints/base/seq2/mod.rs
-expression: "get_fixed_text(vec![\"seq(length(x))\", \"seq(nrow(x))\", \"seq(ncol(x))\",\n\"seq(NROW(x))\", \"seq(NCOL(x))\", \"seq(length(foo(x)))\"], \"seq2\", None)"
+expression: "get_fixed_text(vec![\"seq(length(x))\", \"seq(nrow(x))\", \"seq(ncol(x))\",\n\"seq(NROW(x))\", \"seq(NCOL(x))\", \"seq(length(foo(x)))\", \"seq_len(length(x))\",\n\"base::seq_len(base::length(foo(x)))\"], \"seq2\", None)"
 ---
 OLD:
 ====
@@ -40,6 +40,20 @@ seq_len(NCOL(x))
 OLD:
 ====
 seq(length(foo(x)))
+NEW:
+====
+seq_along(foo(x))
+
+OLD:
+====
+seq_len(length(x))
+NEW:
+====
+seq_along(x)
+
+OLD:
+====
+base::seq_len(base::length(foo(x)))
 NEW:
 ====
 seq_along(foo(x))

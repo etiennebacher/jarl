@@ -2,12 +2,13 @@ use crate::diagnostic::Diagnostic;
 use crate::location::Location;
 use air_r_syntax::{
     AnyRArgumentName, AnyRExpression, RArgument, RArgumentList, RBinaryExpression,
-    RBinaryExpressionFields, RCall, RExtractExpressionFields, RSyntaxKind, RSyntaxNode,
+    RBinaryExpressionFields, RBracedStatements, RCall, RExtractExpressionFields, RRoot,
+    RStatementList, RSyntaxKind, RSyntaxNode,
 };
 use anyhow::{Result, anyhow};
-use biome_rowan::{AstNode, AstSeparatedList, Direction};
+use biome_rowan::{AstNode, AstNodeList, AstSeparatedList, Direction};
 use oak_core::syntax_ext::{RIdentifierExt, RStringValueExt};
-use oak_semantic::effects::CallContext;
+use oak_semantic::effects::BoundArguments;
 pub use oak_semantic::effects::Formals;
 use std::collections::HashMap;
 
@@ -103,6 +104,11 @@ pub fn compute_lints_location(
             let start: usize = diagnostic.range.start().into();
             let loc = find_row_col(start, loc_new_lines);
             diagnostic.location = Some(Location::new(loc.0, loc.1));
+            for label in &mut diagnostic.labels {
+                let start: usize = label.range.start().into();
+                let loc = find_row_col(start, loc_new_lines);
+                label.location = Some(Location::new(loc.0, loc.1));
+            }
             diagnostic
         })
         .collect()
@@ -161,7 +167,7 @@ fn argument_name(arg: &RArgument) -> Option<String> {
 /// Stop the list at `...`: R matches anything past the dots by name only, so
 /// those take [`get_arg_by_name`] instead.
 pub fn get_arg(call: &RCall, formals: Formals, name: &str) -> Option<RArgument> {
-    let bound = CallContext::default().bind_arguments(call, formals);
+    let bound = BoundArguments::new(call, formals)?;
     // `bind_arguments` yields one entry per argument in call order, the same
     // order the list iterates in, so zipping recovers the argument node oak's
     // matching picked.
@@ -454,6 +460,32 @@ pub fn next_line_start(source: &str, offset: usize) -> usize {
     source[offset..]
         .find('\n')
         .map_or(source.len(), |i| offset + i + 1)
+}
+
+/// The expressions of a statement container, skipping empty statements (stray
+/// `;`).
+pub trait StatementsExt {
+    fn expressions(&self) -> Vec<AnyRExpression>;
+}
+
+impl StatementsExt for RStatementList {
+    fn expressions(&self) -> Vec<AnyRExpression> {
+        self.iter()
+            .filter_map(|stmt| stmt.as_r_expression_statement()?.expression().ok())
+            .collect()
+    }
+}
+
+impl StatementsExt for RBracedStatements {
+    fn expressions(&self) -> Vec<AnyRExpression> {
+        self.statements().expressions()
+    }
+}
+
+impl StatementsExt for RRoot {
+    fn expressions(&self) -> Vec<AnyRExpression> {
+        self.statements().expressions()
+    }
 }
 
 #[cfg(test)]

@@ -173,14 +173,14 @@ fn can_normalize_to_equal(node: &RBinaryExpression) -> bool {
 
     let Some(parent) = node.parent() else {
         // Should not happen, should always be at least contained in an RRoot's
-        // RExpressionList. We return the conservative `false` if we somehow get here.
+        // RExpressionStatement. We return the conservative `false` if we somehow get here.
         return false;
     };
     let parent_kind = parent.kind();
 
     // i.e. top level `x <- 1` to `x = 1`
     // i.e. `{ x <- 1 }` to `{ x = 1 }`
-    if RExpressionList::can_cast(parent_kind) {
+    if RExpressionStatement::can_cast(parent_kind) {
         return true;
     }
 

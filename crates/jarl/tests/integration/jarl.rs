@@ -44,7 +44,6 @@ fn test_must_pass_path() -> anyhow::Result<()> {
       -w, --with-timing                    Show the time taken by the function.
       -m, --min-r-version <MIN_R_VERSION>  The mimimum R version to be used by the linter. Some rules only work starting from a specific version.
           --output-format <OUTPUT_FORMAT>  Output serialization format for violations. [default: full] [possible values: full, concise, github, json, sarif]
-          --assignment <ASSIGNMENT>        [DEPRECATED: use `[lint.assignment]` in jarl.toml] Assignment operator to use, can be either `<-` or `=`.
           --statistics                     Show counts for every rule with at least one violation.
           --add-jarl-ignore[=<REASON>]     Automatically insert a `# jarl-ignore` comment to suppress all violations.
                                            The default reason can be customized with `--add-jarl-ignore="my_reason"`.
@@ -99,7 +98,7 @@ fn test_parsing_error() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected an expression
+    error: Expected an expression but instead found the end of the file.
      --> test.R:1:5
       |
     1 | f <-
@@ -141,7 +140,7 @@ fn test_parsing_error_for_some_files() -> anyhow::Result<()> {
     1 fixable with the `--fix` option.
 
     ----- stderr -----
-    error: expected an expression
+    error: Expected an expression but instead found the end of the file.
      --> test.R:1:5
       |
     1 | f <-
@@ -182,7 +181,7 @@ fn test_parsing_error_with_valid_code_in_same_file() -> anyhow::Result<()> {
     Found 1 error.
 
     ----- stderr -----
-    error: expected an expression
+    error: Expected an expression but instead found the end of the file.
      --> test.R:2:5
       |
     2 | f <-

@@ -1,11 +1,13 @@
-use air_r_syntax::{RExpressionList, RSyntaxNode};
-use biome_rowan::{AstNode, AstNodeList};
+use air_r_syntax::{AnyRExpression, RBinaryExpression, RSyntaxNode};
+use biome_rowan::{AstNode, SyntaxNodeCast};
 use oak_semantic::semantic_index::SemanticIndex;
 
 use crate::checker::Checker;
 use crate::diagnostic::*;
+use crate::lints::base::assignment_on_if_no_else::assignment_on_if_no_else::assignment_on_if_no_else;
 use crate::lints::base::empty_file::empty_file::empty_file;
 use crate::lints::base::library_call::library_call::library_call;
+use crate::lints::base::todo_comment::todo_comment::todo_comment;
 use crate::lints::base::unreachable_code::unreachable_code::unreachable_code_top_level;
 use crate::lints::base::unused_object::unused_object::unused_object;
 use crate::lints::comments::blanket_suppression::blanket_suppression::blanket_suppression;
@@ -20,9 +22,10 @@ use crate::lints::comments::unmatched_range_suppression::unmatched_range_suppres
 };
 use crate::package::PackageFileAnalysis;
 use crate::rule_set::Rule;
+use jarl_semantic::SemanticInfo;
 
 pub(crate) fn check_document(
-    expressions: &RExpressionList,
+    expressions: &[AnyRExpression],
     syntax: &RSyntaxNode,
     contents: &str,
     checker: &mut Checker,
@@ -40,14 +43,40 @@ pub(crate) fn check_document(
         }
     }
 
-    // Check for unused local objects via the semantic index.
-    if checker.is_rule_enabled(Rule::UnusedObject)
-        && let Some(semantic) = semantic
+    // Semantic lints. `SemanticInfo` walks the whole tree and indexes every
+    // `source()` target, so it is built once and shared.
+    if let Some(semantic) = semantic
+        && checker.requires_semantic_analysis()
     {
-        unused_object(&expressions, semantic, &package.cross_file_used, checker)?;
+        let info = SemanticInfo::build(
+            syntax,
+            &expressions,
+            semantic,
+            &checker.source_index_cache,
+            &checker.packages_in_reach(),
+            &checker.unevaluated_ranges(),
+        );
+        if checker.is_rule_enabled(Rule::UnusedObject) {
+            unused_object(&info, semantic, &package.cross_file_used, checker)?;
+        }
+        if checker.is_rule_enabled(Rule::AssignmentOnIfNoElse) {
+            for expression in &expressions {
+                for node in expression.descendants() {
+                    if let Some(binary) = node.cast::<RBinaryExpression>() {
+                        checker.report_diagnostic(assignment_on_if_no_else(&binary, &info)?);
+                    }
+                }
+            }
+        }
     }
 
     // --- Comment/suppression checks ---
+
+    if checker.is_rule_enabled(Rule::TodoComment) {
+        for diagnostic in todo_comment(syntax) {
+            checker.report_diagnostic(Some(diagnostic));
+        }
+    }
 
     // Report blanket suppression comments (file-level, done once)
     if checker.is_rule_enabled(Rule::BlanketSuppression) {

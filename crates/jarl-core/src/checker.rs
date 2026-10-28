@@ -149,6 +149,11 @@ impl Checker {
         self.rule_set.contains(&rule)
     }
 
+    /// Whether any enabled rule needs the semantic index of the file.
+    pub(crate) fn requires_semantic_analysis(&mut self) -> bool {
+        self.is_rule_enabled(Rule::UnusedObject) || self.is_rule_enabled(Rule::AssignmentOnIfNoElse)
+    }
+
     /// Every package the file's code can name, whether or not it is attached:
     /// the search path plus the packages a NAMESPACE `importFrom()` binds into
     /// the package namespace.

@@ -1,7 +1,7 @@
 //! Shared NAMESPACE file parsing utilities.
 //!
-//! Parses R package NAMESPACE files to extract exported function names.
-//! Used by both the `unused_function` rule (for the user's own package)
+//! Parses R package NAMESPACE files into a [`Namespace`].
+//! Used by the `unused_function` and `unused_object` rules (for the user's own package)
 //! and the `PackageCache` (for installed external packages).
 
 use regex::Regex;
@@ -80,155 +80,126 @@ fn join_continuation_lines(content: &str) -> Vec<String> {
     statements
 }
 
-/// Parse a NAMESPACE file and return the set of exported function names.
+/// A parsed NAMESPACE file.
 ///
-/// Handles `export(name)`, `exportPattern(regex)`, `S3method(generic, class)`,
-/// `exportMethods()`, and `exportClasses()` directives.
-///
-/// For `exportPattern`, the regex is compiled and matched against `all_names`
-/// to expand it into concrete names. Pass an empty slice to skip pattern
-/// expansion (suitable for external packages where we don't have the full
-/// object list).
-pub fn parse_namespace_exports(content: &str, all_names: &[&str]) -> HashSet<String> {
-    let mut exports = HashSet::new();
-
-    // Join multi-line directives: a line starting a directive (e.g. `export(`)
-    // without a closing `)` continues on subsequent lines.
-    let statements = join_continuation_lines(content);
-
-    for statement in &statements {
-        let trimmed = statement.trim();
-
-        if trimmed.is_empty() || trimmed.starts_with('#') {
-            continue;
-        }
-
-        for directive in [
-            "export",
-            "exportPattern",
-            "S3method",
-            "exportMethods",
-            "exportClasses",
-        ] {
-            if let Some(inner) = extract_directive(trimmed, directive) {
-                match directive {
-                    "export" => {
-                        for name in inner.split(',') {
-                            let name = name.trim().trim_matches('"').trim_matches('\'');
-                            if !name.is_empty() {
-                                exports.insert(name.to_string());
-                            }
-                        }
-                    }
-                    "exportPattern" => {
-                        let pattern = inner.trim().trim_matches('"').trim_matches('\'');
-                        if let Ok(re) = Regex::new(pattern) {
-                            for &name in all_names {
-                                if re.is_match(name) {
-                                    exports.insert(name.to_string());
-                                }
-                            }
-                        }
-                    }
-                    "S3method" => {
-                        let parts: Vec<&str> = inner.splitn(4, ',').collect();
-                        if parts.len() >= 2 {
-                            let raw_generic = parts[0].trim().trim_matches('"').trim_matches('\'');
-                            let class = parts[1].trim().trim_matches('"').trim_matches('\'');
-
-                            let generic = raw_generic
-                                .rsplit_once("::")
-                                .map(|(_, g)| g)
-                                .unwrap_or(raw_generic);
-
-                            // Add the generic name so that packages providing
-                            // S3 methods for a generic (e.g. tidypolars
-                            // providing filter.polars_data_frame) are
-                            // considered as candidates when resolving bare
-                            // calls to that generic. This avoids false
-                            // positives: without type information we can't
-                            // know which method will dispatch at runtime.
-                            exports.insert(generic.to_string());
-
-                            if parts.len() >= 3 {
-                                let method_fn =
-                                    parts[2].trim().trim_matches('"').trim_matches('\'');
-                                if !method_fn.is_empty() {
-                                    exports.insert(method_fn.to_string());
-                                }
-                            } else {
-                                exports.insert(format!("{generic}.{class}"));
-                            }
-                        }
-                    }
-                    "exportMethods" | "exportClasses" => {
-                        for name in inner.split(',') {
-                            let name = name.trim().trim_matches('"').trim_matches('\'');
-                            if !name.is_empty() {
-                                exports.insert(name.to_string());
-                            }
-                        }
-                    }
-                    _ => {}
-                }
-                break;
-            }
-        }
-    }
-
-    exports
-}
-
-/// Result of parsing `import()` and `importFrom()` directives from a
-/// package's own NAMESPACE file.
-#[derive(Debug, Default)]
-pub struct NamespaceImports {
+/// Parsed once per package; callers then resolve it against whichever set of
+/// defined names they care about (top-level functions, all top-level objects,
+/// ...) with [`Namespace::exported`].
+#[derive(Clone, Debug, Default)]
+pub struct Namespace {
+    /// Names listed literally: `export()`, `exportMethods()`,
+    /// `exportClasses()` and the generic/method names of `S3method()`.
+    pub exports: HashSet<String>,
+    /// Compiled `exportPattern()` regexes, not yet matched against any names.
+    export_patterns: Vec<Regex>,
     /// Direct function→package mappings from `importFrom(pkg, fn1, fn2, ...)`.
     pub import_from: HashMap<String, String>,
     /// Packages imported wholesale via `import(pkg)`.
     pub blanket_imports: Vec<String>,
 }
 
-/// Parse a NAMESPACE file for `importFrom()` and `import()` directives.
-///
-/// - `importFrom(dplyr, filter, select)` → maps `filter` and `select` to `"dplyr"`
-/// - `import(rlang)` → adds `"rlang"` to `blanket_imports`
-pub fn parse_namespace_imports(content: &str) -> NamespaceImports {
-    let mut result = NamespaceImports::default();
-    let statements = join_continuation_lines(content);
+fn unquote(s: &str) -> &str {
+    s.trim().trim_matches('"').trim_matches('\'')
+}
 
-    for statement in &statements {
-        let trimmed = statement.trim();
-        if trimmed.is_empty() || trimmed.starts_with('#') {
-            continue;
-        }
+impl Namespace {
+    /// Parse the content of a NAMESPACE file.
+    ///
+    /// Handles `export`, `exportPattern`, `S3method`, `exportMethods`,
+    /// `exportClasses`, `import` and `importFrom` directives.
+    pub fn parse(content: &str) -> Self {
+        let mut ns = Namespace::default();
 
-        if let Some(inner) = extract_directive(trimmed, "importFrom") {
-            let parts: Vec<&str> = inner
-                .split(',')
-                .map(|s| s.trim().trim_matches('"').trim_matches('\''))
-                .collect();
-            if parts.len() >= 2 {
-                let pkg = parts[0];
-                for &fn_name in &parts[1..] {
-                    if !fn_name.is_empty() {
-                        result
-                            .import_from
-                            .insert(fn_name.to_string(), pkg.to_string());
+        for statement in join_continuation_lines(content) {
+            let trimmed = statement.trim();
+            if trimmed.is_empty() || trimmed.starts_with('#') {
+                continue;
+            }
+
+            // `importFrom` must be tried before `import`, and `exportPattern`
+            // etc. are disjoint from both.
+            if let Some(inner) = extract_directive(trimmed, "importFrom") {
+                let parts: Vec<&str> = inner.split(',').map(unquote).collect();
+                if parts.len() >= 2 {
+                    for &fn_name in &parts[1..] {
+                        if !fn_name.is_empty() {
+                            ns.import_from
+                                .insert(fn_name.to_string(), parts[0].to_string());
+                        }
+                    }
+                }
+            } else if let Some(inner) = extract_directive(trimmed, "import") {
+                for pkg in inner.split(',').map(unquote) {
+                    if !pkg.is_empty() && !ns.blanket_imports.iter().any(|p| p == pkg) {
+                        ns.blanket_imports.push(pkg.to_string());
+                    }
+                }
+            } else if let Some(inner) = extract_directive(trimmed, "exportPattern") {
+                if let Ok(re) = Regex::new(unquote(inner)) {
+                    ns.export_patterns.push(re);
+                }
+            } else if let Some(inner) = extract_directive(trimmed, "S3method") {
+                ns.add_s3_method(inner);
+            } else if let Some(inner) = extract_directive(trimmed, "export")
+                .or_else(|| extract_directive(trimmed, "exportMethods"))
+                .or_else(|| extract_directive(trimmed, "exportClasses"))
+            {
+                for name in inner.split(',').map(unquote) {
+                    if !name.is_empty() {
+                        ns.exports.insert(name.to_string());
                     }
                 }
             }
-        } else if let Some(inner) = extract_directive(trimmed, "import") {
-            for pkg in inner.split(',') {
-                let pkg = pkg.trim().trim_matches('"').trim_matches('\'');
-                if !pkg.is_empty() && !result.blanket_imports.contains(&pkg.to_string()) {
-                    result.blanket_imports.push(pkg.to_string());
-                }
+        }
+
+        ns
+    }
+
+    fn add_s3_method(&mut self, inner: &str) {
+        let parts: Vec<&str> = inner.splitn(4, ',').collect();
+        if parts.len() < 2 {
+            return;
+        }
+        let raw_generic = unquote(parts[0]);
+        let class = unquote(parts[1]);
+
+        let generic = raw_generic
+            .rsplit_once("::")
+            .map(|(_, g)| g)
+            .unwrap_or(raw_generic);
+
+        // Add the generic name so that packages providing S3 methods for a
+        // generic (e.g. tidypolars providing filter.polars_data_frame) are
+        // considered as candidates when resolving bare calls to that generic.
+        // This avoids false positives: without type information we can't know
+        // which method will dispatch at runtime.
+        self.exports.insert(generic.to_string());
+
+        if parts.len() >= 3 {
+            let method_fn = unquote(parts[2]);
+            if !method_fn.is_empty() {
+                self.exports.insert(method_fn.to_string());
             }
+        } else {
+            self.exports.insert(format!("{generic}.{class}"));
         }
     }
 
-    result
+    /// The literal exports plus every name in `defined` matched by an
+    /// `exportPattern()`. Pass an empty iterator to skip pattern expansion
+    /// (suitable for external packages where we don't have the full object
+    /// list).
+    pub fn exported<'a>(&self, defined: impl IntoIterator<Item = &'a str>) -> HashSet<String> {
+        let mut exports = self.exports.clone();
+        if !self.export_patterns.is_empty() {
+            for name in defined {
+                if self.export_patterns.iter().any(|re| re.is_match(name)) {
+                    exports.insert(name.to_string());
+                }
+            }
+        }
+        exports
+    }
 }
 
 #[cfg(test)]
@@ -241,7 +212,7 @@ mod tests {
 importFrom(dplyr, filter, select, mutate)
 importFrom(rlang, "!!")
 "#;
-        let result = parse_namespace_imports(ns);
+        let result = Namespace::parse(ns);
         assert_eq!(result.import_from.get("filter").unwrap(), "dplyr");
         assert_eq!(result.import_from.get("select").unwrap(), "dplyr");
         assert_eq!(result.import_from.get("mutate").unwrap(), "dplyr");
@@ -252,7 +223,7 @@ importFrom(rlang, "!!")
     #[test]
     fn test_parse_blanket_import() {
         let ns = "import(rlang)\nimport(dplyr, tidyr)\n";
-        let result = parse_namespace_imports(ns);
+        let result = Namespace::parse(ns);
         assert!(result.import_from.is_empty());
         assert_eq!(result.blanket_imports, vec!["rlang", "dplyr", "tidyr"]);
     }
@@ -264,7 +235,7 @@ import(rlang)
 importFrom(dplyr, filter)
 export(my_fn)
 "#;
-        let result = parse_namespace_imports(ns);
+        let result = Namespace::parse(ns);
         assert_eq!(result.import_from.get("filter").unwrap(), "dplyr");
         assert_eq!(result.blanket_imports, vec!["rlang"]);
     }
@@ -272,15 +243,21 @@ export(my_fn)
     #[test]
     fn test_parse_multiline_import_from() {
         let ns = "importFrom(dplyr,\n  filter,\n  select)\n";
-        let result = parse_namespace_imports(ns);
+        let result = Namespace::parse(ns);
         assert_eq!(result.import_from.get("filter").unwrap(), "dplyr");
         assert_eq!(result.import_from.get("select").unwrap(), "dplyr");
     }
 
     #[test]
+    fn test_s3method_without_class_is_ignored() {
+        let ns = Namespace::parse("S3method(print)\n");
+        assert!(ns.exports.is_empty());
+    }
+
+    #[test]
     fn test_no_duplicate_blanket_imports() {
         let ns = "import(dplyr)\nimport(dplyr)\n";
-        let result = parse_namespace_imports(ns);
+        let result = Namespace::parse(ns);
         assert_eq!(result.blanket_imports, vec!["dplyr"]);
     }
 }

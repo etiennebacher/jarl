@@ -1,8 +1,9 @@
 use std::collections::HashSet;
 
 use super::graph::{BlockId, ControlFlowGraph, Terminator};
+use crate::utils::StatementsExt;
 use air_r_syntax::{
-    RBinaryExpression, RBracedExpressions, RForStatement, RFunctionDefinition, RIfStatement,
+    RBinaryExpression, RBracedStatements, RForStatement, RFunctionDefinition, RIfStatement,
     RParenthesizedExpression, RRepeatStatement, RSyntaxKind, RSyntaxNode, RWhileStatement,
 };
 use biome_rowan::AstNode;
@@ -160,7 +161,7 @@ impl<'a> CfgBuilder<'a> {
     /// Build CFG for any expression (handles AnyRExpression from loops)
     fn build_expression(&mut self, expr: &RSyntaxNode, current: BlockId, exit: BlockId) -> BlockId {
         // Check if it's a braced expression
-        if let Some(braced) = RBracedExpressions::cast_ref(expr) {
+        if let Some(braced) = RBracedStatements::cast_ref(expr) {
             self.build_braced_expressions(&braced, current, exit)
         } else {
             // For non-braced expressions, treat as a single statement
@@ -171,12 +172,12 @@ impl<'a> CfgBuilder<'a> {
     /// Build CFG for a braced expression block
     fn build_braced_expressions(
         &mut self,
-        braced: &RBracedExpressions,
+        braced: &RBracedStatements,
         current: BlockId,
         exit: BlockId,
     ) -> BlockId {
         let fields = braced.as_fields();
-        let expressions = fields.expressions;
+        let expressions = fields.statements.expressions();
         let items: Vec<_> = expressions
             .into_iter()
             .map(|e| e.syntax().clone())
@@ -231,9 +232,9 @@ impl<'a> CfgBuilder<'a> {
         }
 
         match stmt.kind() {
-            RSyntaxKind::R_BRACED_EXPRESSIONS => {
+            RSyntaxKind::R_BRACED_STATEMENTS => {
                 let braced =
-                    RBracedExpressions::cast_ref(stmt).expect("kind is R_BRACED_EXPRESSIONS");
+                    RBracedStatements::cast_ref(stmt).expect("kind is R_BRACED_STATEMENTS");
                 self.build_braced_expressions(&braced, current, exit)
             }
             RSyntaxKind::R_BREAK_EXPRESSION => {
