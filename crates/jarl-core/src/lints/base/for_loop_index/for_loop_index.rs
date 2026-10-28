@@ -12,7 +12,6 @@ pub struct ForLoopIndex;
 ///
 /// Checks whether the index variable in a `for` loop also occurs in its
 /// sequence expression.
-/// Argument labels, field names, and namespace names are ignored.
 ///
 /// ## Why is this bad?
 ///

@@ -14,6 +14,7 @@ mod tests {
         for code in [
             "for (xi in x) {}",
             "for (col in DF$col) {}",
+            r#"for (col in DF[["col"]]) {}"#,
             "for (col in S4@col) {}",
             "for (x in y[foo(x = 1, value = obj$x)]) {}",
             "for (x in foo(x = 1)) {}",
@@ -95,13 +96,13 @@ mod tests {
         "
         );
         assert_snapshot!(
-            snapshot_lint("for (x in x$col) {}"),
+            snapshot_lint("for (col in col$data) {}"),
             @"
         warning: for_loop_index
          --> <test>:1:6
           |
-        1 | for (x in x$col) {}
-          |      ---------- Don't re-use any sequence symbols as the index symbol in a for loop.
+        1 | for (col in col$data) {}
+          |      --------------- Don't re-use any sequence symbols as the index symbol in a for loop.
           |
         Found 1 error.
         "
@@ -155,13 +156,13 @@ mod tests {
         "
         );
         assert_snapshot!(
-            snapshot_lint("for (x in y[[x]]) {}"),
+            snapshot_lint("for (col in DF[[col]]) {}"),
             @"
         warning: for_loop_index
          --> <test>:1:6
           |
-        1 | for (x in y[[x]]) {}
-          |      ----------- Don't re-use any sequence symbols as the index symbol in a for loop.
+        1 | for (col in DF[[col]]) {}
+          |      ---------------- Don't re-use any sequence symbols as the index symbol in a for loop.
           |
         Found 1 error.
         "
