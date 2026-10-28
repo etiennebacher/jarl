@@ -14,7 +14,7 @@ Jarl is a command-line tool and therefore must run in the terminal (not in an R 
 It takes a path as its first argument, such as `jarl check .` to check all files starting from the current directory.
 This command will return a list of diagnostics, one per rule violation.
 
-Jarl comes with a [list of rules](rules.qmd) but not all of them are enabled by default.
+Jarl comes with a [list of rules](rules.md) but not all of them are enabled by default.
 You can select or ignore rules via the CLI, for example:
 
 ```bash
@@ -25,7 +25,7 @@ jarl check . --select ALL
 jarl check my_file.R --ignore assignment
 ```
 
-The full list of rules and families is available on the [Rules](rules.qmd) page. See the [CLI reference](reference/cli.md) for all available arguments.
+The full list of rules and families is available on the [Rules](rules.md) page. See the [CLI reference](reference/cli.md) for all available arguments.
 
 
 ### Fixing
@@ -49,15 +49,13 @@ Not all rules have an automatic fix.
 For example, the rule `unreachable_code` detects code that would never run, for example because it is after a `return()` in a function.
 This requires user intervention to determine if the code needs to be removed, or if there is a bug to fix.
 
-::: {.callout-note}
-### Automatic fixes and version control
+!!! note "Automatic fixes and version control"
 
-Using `--fix` may modify several files at once depending on the path you specified.
-It can be hard to inspect the changes or to revert a large number of changes, so Jarl provides two safeguards:
+    Using `--fix` may modify several files at once depending on the path you specified.
+    It can be hard to inspect the changes or to revert a large number of changes, so Jarl provides two safeguards:
 
-1. if the file isn't tracked by a Version Control System (VCS, such as Git), then fixes are not applied and you need to specify `--allow-no-vcs` to apply them;
-2. if the file is tracked by a VCS but the status isn't clean (meaning that some files aren't committed), then fixes are not applied and you need to specify `--allow-dirty` to apply them. This is to prevent cases where fixes would be mixed together with other unrelated changes and therefore hard to inspect.
-:::
+    1. if the file isn't tracked by a Version Control System (VCS, such as Git), then fixes are not applied and you need to specify `--allow-no-vcs` to apply them;
+    2. if the file is tracked by a VCS but the status isn't clean (meaning that some files aren't committed), then fixes are not applied and you need to specify `--allow-dirty` to apply them. This is to prevent cases where fixes would be mixed together with other unrelated changes and therefore hard to inspect.
 
 Note that Jarl is not a code formatter, so automatic fixes may not match your expected code style.
 To automatically format code, use [Air](https://posit-dev.github.io/air/) or [`styler`](https://styler.r-lib.org/).

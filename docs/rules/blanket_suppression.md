@@ -1,7 +1,7 @@
 # blanket_suppression
 
-::: {.callout-note title="Added in 0.4.0" .low-opacity}
-:::
+!!! note low-opacity "Added in 0.4.0"
+
 
 ## What it does
 

@@ -4,9 +4,9 @@
 # - /       (stable) — deployed on release via the Release workflow
 # - /dev/   (dev)    — deployed on every push to main
 #
-# The build step renders the documentation (i.e. creates the _site folder) and
-# saves it with the name "docs-site". It uses the dev profile by default, except
-# if we're in a release workflow.
+# The build step builds the documentation with Zensical (i.e. creates the
+# docs/_site folder) and saves it with the name "docs-site". It builds the dev website by
+# default, except if we're in a release workflow.
 #
 # The deploy step deletes the appropriate directory and replaces it with
 # "docs-site":
@@ -63,18 +63,11 @@ jobs:
         with:
           use-public-rspm: true
 
-      - name: Set up Quarto
-        uses: quarto-dev/quarto-actions/setup@v2
-
-      - name: Install R dependencies
-        run: install.packages(c("rmarkdown", "reactable", "yaml12"))
-        shell: Rscript {0}
-
-      - name: Set up just
-        uses: extractions/setup-just@v3
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
 
       - name: Generate rules documentation
-        run: just document --no-quarto
+        run: Rscript docs/make_docs.R
         shell: bash
 
       - name: Check that generated files are up to date
@@ -82,31 +75,35 @@ jobs:
         shell: bash
         run: |
           if [ -n "$(git status --porcelain)" ]; then
-            echo "::error::Generated documentation is out of date. Run 'just document --no-quarto' locally and commit the changes."
+            echo "::error::Generated documentation is out of date. Run 'just document' locally and commit the changes."
             git status --porcelain
             git diff
             exit 1
           fi
 
       # Must come after the generated-files check: it edits tracked files.
-      - name: Inject version into navbar
+      - name: Inject version into the version switcher
         shell: bash
         run: |
           # Latest non-prerelease semver tag (strip optional 'v' prefix)
           STABLE_VERSION=$(git tag -l | grep -E '^v?[0-9]+\.' | grep -vE '-' | sed 's/^v//' | sort -V | tail -1)
           if [ -n "$STABLE_VERSION" ]; then
-            sed -i "s/text: \"stable\"/text: \"stable ($STABLE_VERSION)\"/g" docs/_quarto-stable.yml docs/_quarto-dev.yml
+            sed -i "s/\"title\": \"stable\"/\"title\": \"stable ($STABLE_VERSION)\"/" docs/versions.json
           fi
 
-      - name: Render Quarto docs (dev)
-        if: github.event_name != 'workflow_dispatch' || inputs.version == 'dev'
-        shell: bash
-        run: quarto render docs --profile dev
-
-      - name: Render Quarto docs (stable)
+      # The stable website is the dev one, served from "/" instead of "/dev/".
+      - name: Configure the stable website
         if: github.event_name == 'workflow_dispatch' && inputs.version == 'stable'
         shell: bash
-        run: quarto render docs --profile stable
+        run: |
+          sed -i \
+            -e 's|^site_url = .*|site_url = "https://jarl.etiennebacher.com/"|' \
+            -e 's|^channel = .*|channel = "stable"|' \
+            docs/zensical.toml
+
+      - name: Build the website
+        shell: bash
+        run: uvx zensical build --clean --config-file docs/zensical.toml
 
       - name: Upload rendered docs
         if: github.event_name != 'pull_request'

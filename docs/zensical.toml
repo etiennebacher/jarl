@@ -1,0 +1,222 @@
+# Configuration of the documentation website, built with Zensical
+# (`zensical build` or `zensical serve`).
+#
+# This file describes the "dev" website. The CI derives the "stable" website
+# from it by changing `site_url` and `extra.channel` (see .github/workflows/docs.yml).
+
+[project]
+site_name = "Jarl"
+site_url = "https://jarl.etiennebacher.com/dev/"
+site_description = "Just Another R Linter"
+site_dir = "_site"
+docs_dir = "."
+repo_url = "https://github.com/etiennebacher/jarl"
+repo_name = "etiennebacher/jarl"
+edit_uri = "edit/main/docs/"
+
+# Files in `docs/` that are not pages.
+exclude_docs = """
+*.R
+*.toml
+_site/
+overrides/
+"""
+
+extra_css = ["assets/styles.css"]
+extra_javascript = ["assets/rules-filter.js"]
+
+# `nav` is edited by `just document`: the list of rules between the markers
+# below is regenerated from the rules that exist in the codebase.
+nav = [
+  { "Getting started" = "getting-started.md" },
+  { "By Example" = "by-example.md" },
+  { "How-to" = [
+    "howto/suppression-comments.md",
+    "howto/rmarkdown-quarto.md",
+    "howto/r-versions.md",
+    "howto/package-specific.md",
+    "howto/editors.md",
+    "howto/ci.md",
+    "howto/precommit.md",
+    "howto/shell-completions.md",
+  ] },
+  { "Reference" = [
+    { "Rules" = "rules.md" },
+    { "List of rules" = [
+      # <rules-nav:start>
+      { "all_equal" = "rules/all_equal.md" },
+      { "any_duplicated" = "rules/any_duplicated.md" },
+      { "any_is_na" = "rules/any_is_na.md" },
+      { "assignment_on_if_no_else" = "rules/assignment_on_if_no_else.md" },
+      { "assignment" = "rules/assignment.md" },
+      { "blanket_suppression" = "rules/blanket_suppression.md" },
+      { "class_equals" = "rules/class_equals.md" },
+      { "coalesce" = "rules/coalesce.md" },
+      { "comparison_negation" = "rules/comparison_negation.md" },
+      { "condition_call" = "rules/condition_call.md" },
+      { "condition_message" = "rules/condition_message.md" },
+      { "consecutive_signs" = "rules/consecutive_signs.md" },
+      { "cyclomatic_complexity" = "rules/cyclomatic_complexity.md" },
+      { "download_file" = "rules/download_file.md" },
+      { "dplyr_filter_out" = "rules/dplyr_filter_out.md" },
+      { "dplyr_group_by_ungroup" = "rules/dplyr_group_by_ungroup.md" },
+      { "duplicated_arguments" = "rules/duplicated_arguments.md" },
+      { "duplicated_function_definition" = "rules/duplicated_function_definition.md" },
+      { "empty_assignment" = "rules/empty_assignment.md" },
+      { "empty_file" = "rules/empty_file.md" },
+      { "equals_na" = "rules/equals_na.md" },
+      { "equals_nan" = "rules/equals_nan.md" },
+      { "equals_null" = "rules/equals_null.md" },
+      { "expect_length" = "rules/expect_length.md" },
+      { "expect_match" = "rules/expect_match.md" },
+      { "expect_named" = "rules/expect_named.md" },
+      { "expect_no_match" = "rules/expect_no_match.md" },
+      { "expect_not" = "rules/expect_not.md" },
+      { "expect_null" = "rules/expect_null.md" },
+      { "expect_s3_class" = "rules/expect_s3_class.md" },
+      { "expect_s4_class" = "rules/expect_s4_class.md" },
+      { "expect_true_false" = "rules/expect_true_false.md" },
+      { "expect_type" = "rules/expect_type.md" },
+      { "fixed_regex" = "rules/fixed_regex.md" },
+      { "for_loop_dup_index" = "rules/for_loop_dup_index.md" },
+      { "for_loop_index" = "rules/for_loop_index.md" },
+      { "glue" = "rules/glue.md" },
+      { "grepv" = "rules/grepv.md" },
+      { "if_always_true" = "rules/if_always_true.md" },
+      { "if_not_else" = "rules/if_not_else.md" },
+      { "implicit_assignment" = "rules/implicit_assignment.md" },
+      { "internal_function" = "rules/internal_function.md" },
+      { "invalid_chunk_suppression" = "rules/invalid_chunk_suppression.md" },
+      { "is_numeric" = "rules/is_numeric.md" },
+      { "length_levels" = "rules/length_levels.md" },
+      { "length_test" = "rules/length_test.md" },
+      { "lengths" = "rules/lengths.md" },
+      { "library_call" = "rules/library_call.md" },
+      { "list2df" = "rules/list2df.md" },
+      { "literal_coercion" = "rules/literal_coercion.md" },
+      { "matrix_apply" = "rules/matrix_apply.md" },
+      { "misnamed_suppression" = "rules/misnamed_suppression.md" },
+      { "misplaced_file_suppression" = "rules/misplaced_file_suppression.md" },
+      { "misplaced_suppression" = "rules/misplaced_suppression.md" },
+      { "missing_argument" = "rules/missing_argument.md" },
+      { "nested_pipe" = "rules/nested_pipe.md" },
+      { "notin" = "rules/notin.md" },
+      { "numeric_leading_zero" = "rules/numeric_leading_zero.md" },
+      { "nzchar" = "rules/nzchar.md" },
+      { "outdated_suppression" = "rules/outdated_suppression.md" },
+      { "outer_negation" = "rules/outer_negation.md" },
+      { "pipe_consistency" = "rules/pipe_consistency.md" },
+      { "pipe_return" = "rules/pipe_return.md" },
+      { "quotes" = "rules/quotes.md" },
+      { "redundant_equals" = "rules/redundant_equals.md" },
+      { "redundant_ifelse" = "rules/redundant_ifelse.md" },
+      { "rep_times_ignored" = "rules/rep_times_ignored.md" },
+      { "repeat" = "rules/repeat.md" },
+      { "sample_int" = "rules/sample_int.md" },
+      { "seq" = "rules/seq.md" },
+      { "seq2" = "rules/seq2.md" },
+      { "sort" = "rules/sort.md" },
+      { "sprintf" = "rules/sprintf.md" },
+      { "stopifnot_all" = "rules/stopifnot_all.md" },
+      { "string_boundary" = "rules/string_boundary.md" },
+      { "strings_as_factors" = "rules/strings_as_factors.md" },
+      { "system_file" = "rules/system_file.md" },
+      { "todo_comment" = "rules/todo_comment.md" },
+      { "true_false_symbol" = "rules/true_false_symbol.md" },
+      { "undesirable_function" = "rules/undesirable_function.md" },
+      { "undesirable_operator" = "rules/undesirable_operator.md" },
+      { "unexplained_suppression" = "rules/unexplained_suppression.md" },
+      { "unmatched_range_suppression" = "rules/unmatched_range_suppression.md" },
+      { "unnecessary_nesting" = "rules/unnecessary_nesting.md" },
+      { "unnecessary_parentheses" = "rules/unnecessary_parentheses.md" },
+      { "unreachable_code" = "rules/unreachable_code.md" },
+      { "unused_function" = "rules/unused_function.md" },
+      { "unused_object" = "rules/unused_object.md" },
+      { "vector_logic" = "rules/vector_logic.md" },
+      { "which_grepl" = "rules/which_grepl.md" },
+      { "yoda_condition" = "rules/yoda_condition.md" },
+      # <rules-nav:end>
+    ] },
+    "reference/cli.md",
+    "reference/config-file.md",
+    "reference/envvars.md",
+  ] },
+  { "Contributing" = [
+    { "General information" = "contributing.md" },
+    { "Tutorial: add a new rule" = "contributing-rule-example.md" },
+  ] },
+  { "Changelog" = "changelog.md" },
+]
+
+[project.extra]
+# "dev" or "stable". The dev website shows a banner and the version switcher
+# highlights the right entry.
+channel = "dev"
+
+[project.extra.version]
+provider = "mike"
+
+[project.theme]
+variant = "classic"
+language = "en"
+custom_dir = "overrides"
+features = [
+  "announce.dismiss",
+  "content.code.copy",
+  "content.footnote.tooltips",
+  "navigation.footer",
+  "navigation.indexes",
+  "navigation.instant",
+  "navigation.tabs",
+  "navigation.top",
+  "navigation.tracking",
+  "search.highlight",
+  "toc.follow",
+]
+
+[project.theme.font]
+text = "Nunito Sans"
+code = "Roboto Mono"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+primary = "custom"
+accent = "custom"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+primary = "custom"
+accent = "custom"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to light mode"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/etiennebacher/jarl"
+name = "Jarl on GitHub"
+
+[project.markdown_extensions]
+admonition = {}
+attr_list = {}
+def_list = {}
+footnotes = {}
+md_in_html = {}
+tables = {}
+toc.permalink = true
+toc.toc_depth = "2-4"
+pymdownx.details = {}
+pymdownx.highlight.anchor_linenums = true
+pymdownx.highlight.pygments_lang_class = true
+pymdownx.inlinehilite = {}
+pymdownx.superfences = {}
+pymdownx.tasklist.custom_checkbox = true
+# Turns `#123` and `@user` in the changelog into links.
+pymdownx.magiclink.repo_url_shorthand = true
+pymdownx.magiclink.provider = "github"
+pymdownx.magiclink.user = "etiennebacher"
+pymdownx.magiclink.repo = "jarl"
+pymdownx.magiclink.hide_protocol = false

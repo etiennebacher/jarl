@@ -8,8 +8,8 @@ In short, Jarl provides four types of suppression comments:
 
 - standard comments: `# jarl-ignore <rule-name>: <reason>`
 - range comments:
-  - `# jarl-ignore-start <rule-name>: <reason>`
-  - `# jarl-ignore-end <rule-name>`
+    - `# jarl-ignore-start <rule-name>: <reason>`
+    - `# jarl-ignore-end <rule-name>`
 - file comments: `# jarl-ignore-file <rule-name>: <reason>`
 - chunk comments:
   ```
@@ -234,45 +234,45 @@ jarl check . --add-jarl-ignore="remove this when bug xyz is fixed"
 Note that automatically inserting comments should be used with parsimony and not to hide all diagnostics from the start.
 Use a custom configuration to entirely ignore rules you don't want to use, and use `--fix` to automatically fix a certain number of diagnostics.
 
-::: {.callout-note collapse="false"}
-### About formatting
+!!! note "About formatting"
 
-Automatically inserting comments can degrade the formatting of your code.
-For example, the following code:
+    Automatically inserting comments can degrade the formatting of your code.
+    For example, the following code:
 
-```r
-if (x) {
-  1
-} else if (any(is.na(y))) {
-  2
-}
-```
-would become
-```r
-if (x) {
-  1
-} else if (
-           # jarl-ignore any_is_na: <reason>
-           any(is.na(y))) {
-  2
-}
-```
+    ```r
+    if (x) {
+      1
+    } else if (any(is.na(y))) {
+      2
+    }
+    ```
 
-This can be fixed by a proper code formatter (which Jarl isn't).
-It's worth noting that Jarl plays particularly well with [Air](https://posit-dev.github.io/air/) because it uses the same infrastructure.
-Using Air on the code above would give:
+    would become
 
-```r
-if (x) {
-  1
-} else if (
-  # jarl-ignore any_is_na: <reason>
-  any(is.na(y))
-) {
-  2
-}
-```
-:::
+    ```r
+    if (x) {
+      1
+    } else if (
+               # jarl-ignore any_is_na: <reason>
+               any(is.na(y))) {
+      2
+    }
+    ```
+
+    This can be fixed by a proper code formatter (which Jarl isn't).
+    It's worth noting that Jarl plays particularly well with [Air](https://posit-dev.github.io/air/) because it uses the same infrastructure.
+    Using Air on the code above would give:
+
+    ```r
+    if (x) {
+      1
+    } else if (
+      # jarl-ignore any_is_na: <reason>
+      any(is.na(y))
+    ) {
+      2
+    }
+    ```
 
 
 ## Compatibility with `lintr`

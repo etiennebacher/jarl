@@ -4,11 +4,11 @@ title: Adding a new rule to Jarl
 
 This page will explain how to implement a new rule in Jarl.
 
-::: {.callout-important}
-This page is usually up-to-date with the latest changes in Jarl's internals, but you should ensure that you are reading the "dev" version: [jarl.etiennebacher.com/dev/contributing-rule-example](https://jarl.etiennebacher.com/dev/contributing-rule-example)
+!!! warning
 
-If you see outdated content, please [open an issue](https://github.com/etiennebacher/jarl/issues).
-:::
+    This page is usually up-to-date with the latest changes in Jarl's internals, but you should ensure that you are reading the "dev" version: [jarl.etiennebacher.com/dev/contributing-rule-example](https://jarl.etiennebacher.com/dev/contributing-rule-example)
+
+    If you see outdated content, please [open an issue](https://github.com/etiennebacher/jarl/issues).
 
 It is recommended to read the [General information page](contributing.md) first to install the required tools.
 Jarl is written in Rust, but this page will *not* explain how to set up or use Rust, this is an entirely different topic.
@@ -92,21 +92,19 @@ Here's a basic idea of the workflow to add a new rule:
 
 From now on, all file paths refer to the subfolder `crates/jarl-core/src`.
 
-::: {.callout-note}
-## Trying your new rule locally
+!!! note "Trying your new rule locally"
 
-As we progress in the implementation of a new rule, it can be very helpful to have a small R file on which we can run the new rule.
-This allows us to see whether the behavior is correct, before implementing proper tests.
+    As we progress in the implementation of a new rule, it can be very helpful to have a small R file on which we can run the new rule.
+    This allows us to see whether the behavior is correct, before implementing proper tests.
 
-This file should contain one or two examples of code that should be reported and code that shouldn't, so that we can quickly detect false positives and false negatives.
-We can create `test.R` at the root of the project (this file is already listed in `.gitignore`) and call:
+    This file should contain one or two examples of code that should be reported and code that shouldn't, so that we can quickly detect false positives and false negatives.
+    We can create `test.R` at the root of the project (this file is already listed in `.gitignore`) and call:
 
-```
-cargo run --bin jarl -- check test.R --select <my_rule_name>
-```
+    ```
+    cargo run --bin jarl -- check test.R --select <my_rule_name>
+    ```
 
-to run the current implementation on this file.
-:::
+    to run the current implementation on this file.
 
 
 ### Add the new rule to the list of rules
@@ -211,15 +209,13 @@ Let's analyze this by blocks:
 * the `impl` block is where we link the violation to its `Rule` variant (the one declared in `rule_set.rs`) and define the main message (`body`) that will be used in the output of Jarl. Note that there is also a `suggestion()` function which is not always necessary.
 * finally, we define the function where we parse the AST.
 
-::: {.callout-note collapse="true"}
-## About `impl Violation`
+??? note "About `impl Violation`"
 
-If you explore other rules implementation, you might notice that the `impl Violation` block is sometimes missing.
-This is because in some cases, the message and/or the suggestion depend on the AST itself.
-For example, for the `assignment` rule, the message will recommend the use of `<-` or `=` depending on the user settings.
+    If you explore other rules implementation, you might notice that the `impl Violation` block is sometimes missing.
+    This is because in some cases, the message and/or the suggestion depend on the AST itself.
+    For example, for the `assignment` rule, the message will recommend the use of `<-` or `=` depending on the user settings.
 
-In this scenario, the rule, body, and suggestion are defined at the very end, when we build the `Diagnostic`.
-:::
+    In this scenario, the rule, body, and suggestion are defined at the very end, when we build the `Diagnostic`.
 
 
 Writing this function is the hard part, so let's focus on this.
@@ -350,72 +346,70 @@ skipped-functions = ["list"]
 
 Not all rules need TOML options.
 
-::: {.callout-note title = "Click to see how to add TOML options for a rule" collapse = true}
+??? note "Click to see how to add TOML options for a rule"
 
-Adding options for a rule takes three steps. The example below uses the rule `duplicated_arguments` since `list2df` doesn't have TOML options.
+    Adding options for a rule takes three steps. The example below uses the rule `duplicated_arguments` since `list2df` doesn't have TOML options.
 
-1. Create `lints/<group>/<rule_name>/options.rs` and declare `pub(crate) mod options;` in the rule's `mod.rs`. This file contains two types: the TOML options (deserialized as-is from `[lint.<rule_name>]`) and the resolved options (what the rule reads while linting). The resolved type must expose `resolve()`, which takes the TOML options and fills in the defaults:
+    1. Create `lints/<group>/<rule_name>/options.rs` and declare `pub(crate) mod options;` in the rule's `mod.rs`. This file contains two types: the TOML options (deserialized as-is from `[lint.<rule_name>]`) and the resolved options (what the rule reads while linting). The resolved type must expose `resolve()`, which takes the TOML options and fills in the defaults:
 
-    ```rust
-    /// Default functions that are allowed to have duplicated arguments.
-    const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &["c", "mutate", "summarize", "transmute"];
+        ```rust
+        /// Default functions that are allowed to have duplicated arguments.
+        const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &["c", "mutate", "summarize", "transmute"];
 
-    #[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
-    #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-    #[serde(deny_unknown_fields, rename_all = "kebab-case")]
-    pub struct DuplicatedArgumentsOptions {
-        pub skipped_functions: Option<Vec<String>>,
-        pub extend_skipped_functions: Option<Vec<String>>,
-    }
+        #[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
+        #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+        #[serde(deny_unknown_fields, rename_all = "kebab-case")]
+        pub struct DuplicatedArgumentsOptions {
+            pub skipped_functions: Option<Vec<String>>,
+            pub extend_skipped_functions: Option<Vec<String>>,
+        }
 
-    #[derive(Clone, Debug)]
-    pub struct ResolvedDuplicatedArgumentsOptions {
-        pub skipped_functions: HashSet<String>,
-    }
+        #[derive(Clone, Debug)]
+        pub struct ResolvedDuplicatedArgumentsOptions {
+            pub skipped_functions: HashSet<String>,
+        }
 
-    impl ResolvedDuplicatedArgumentsOptions {
-        pub fn resolve(options: Option<&DuplicatedArgumentsOptions>) -> anyhow::Result<Self> {
+        impl ResolvedDuplicatedArgumentsOptions {
+            pub fn resolve(options: Option<&DuplicatedArgumentsOptions>) -> anyhow::Result<Self> {
+                [...]
+            }
+        }
+        ```
+
+        If the option is a list of functions that can be either replaced or extended by the user (the `<field>` / `extend-<field>` pattern), use the helper `resolve_with_extend()` from `rule_options.rs` instead of writing that logic again.
+
+    1. Add the TOML field to `LinterTomlOptions` in `toml.rs`. The field must be named after the rule, and its documentation ends up in `artifacts/jarl.schema.json`, which editors use to describe the option:
+
+        ```rust
+        /// # Options for the `duplicated_arguments` rule
+        ///
+        /// Use `skipped-functions` to fully replace the default list of functions
+        /// that are allowed to have duplicated arguments. Use
+        /// `extend-skipped-functions` to add to the default list.
+        /// Specifying both is an error.
+        #[serde(rename = "duplicated_arguments")]
+        pub duplicated_arguments: Option<DuplicatedArgumentsOptions>,
+        ```
+
+    1. Add one line to `declare_rule_options!` in `rule_options.rs`, naming the rule's folder and its resolved type:
+
+        ```rust
+        declare_rule_options! {
+            [...]
+            base::duplicated_arguments => ResolvedDuplicatedArgumentsOptions,
             [...]
         }
-    }
-    ```
+        ```
 
-    If the option is a list of functions that can be either replaced or extended by the user (the `<field>` / `extend-<field>` pattern), use the helper `resolve_with_extend()` from `rule_options.rs` instead of writing that logic again.
+        This generates the field on `ResolvedRuleOptions`, its resolution from the TOML file, and the default value. Forgetting step 2 is a compile error.
 
-1. Add the TOML field to `LinterTomlOptions` in `toml.rs`. The field must be named after the rule, and its documentation ends up in `artifacts/jarl.schema.json`, which editors use to describe the option:
+    The rule can then read its options from the checker, e.g. `checker.rule_options.duplicated_arguments.skipped_functions`.
 
-    ```rust
-    /// # Options for the `duplicated_arguments` rule
-    ///
-    /// Use `skipped-functions` to fully replace the default list of functions
-    /// that are allowed to have duplicated arguments. Use
-    /// `extend-skipped-functions` to add to the default list.
-    /// Specifying both is an error.
-    #[serde(rename = "duplicated_arguments")]
-    pub duplicated_arguments: Option<DuplicatedArgumentsOptions>,
-    ```
+    Finally:
 
-1. Add one line to `declare_rule_options!` in `rule_options.rs`, naming the rule's folder and its resolved type:
-
-    ```rust
-    declare_rule_options! {
-        [...]
-        base::duplicated_arguments => ResolvedDuplicatedArgumentsOptions,
-        [...]
-    }
-    ```
-
-    This generates the field on `ResolvedRuleOptions`, its resolution from the TOML file, and the default value. Forgetting step 2 is a compile error.
-
-The rule can then read its options from the checker, e.g. `checker.rule_options.duplicated_arguments.skipped_functions`.
-
-Finally:
-
-* run `just gen-schema` to update `artifacts/jarl.schema.json`;
-* document the option for users (see the section below on adding documentation);
-* add integration tests in `crates/jarl/tests/integration/toml_rule_args.rs`, covering invalid values, unknown fields in the rule table, and the option actually changing what is reported.
-
-:::
+    * run `just gen-schema` to update `artifacts/jarl.schema.json`;
+    * document the option for users (see the section below on adding documentation);
+    * add integration tests in `crates/jarl/tests/integration/toml_rule_args.rs`, covering invalid values, unknown fields in the rule table, and the option actually changing what is reported.
 
 ### Add tests
 
@@ -550,8 +544,7 @@ The rule is implemented, all tests pass, perfect!
 We now need to document this change:
 
 * update `docs/changelog.md`
-* run `just document --no-quarto` to add or update the rule page in `docs/rules/<rule_name>.md` (you need to have `just` installed as [explained in the general guide](contributing.md#tools))
-* run `just document` if you want to render the full website
+* run `just document` to add or update the rule page in `docs/rules/<rule_name>.md` and render the website (you need to have `just` installed as [explained in the general guide](contributing.md#tools)). Use `just document --preview` to serve the website locally.
 
 Finally, run `just lint` to ensure that `clippy` (the Rust linter) doesn't report any issue and that the code is properly formatted.
 You can also run `just lint-fix` to apply `clippy`'s automatic fixes if there are any.

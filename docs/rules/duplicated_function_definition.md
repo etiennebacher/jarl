@@ -1,7 +1,7 @@
 # duplicated_function_definition
 
-::: {.callout-note title="Added in 0.5.0" .low-opacity}
-:::
+!!! note low-opacity "Added in 0.5.0"
+
 
 ## What it does
 

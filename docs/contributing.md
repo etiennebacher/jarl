@@ -11,9 +11,9 @@ Jarl relies on Insta to run snapshot tests. You can install it with:
 cargo install cargo-insta
 ```
 
-Jarl uses [just](https://github.com/casey/just) to quickly run several useful commands, such as `just document` or `just lint` (see the list of commands with `just -l`). When updating a rule, use `just document --no-quarto` to regenerate its Markdown page without rendering the full website. Run `just document` when you also need to render the website.
+Jarl uses [just](https://github.com/casey/just) to quickly run several useful commands, such as `just document` or `just lint` (see the list of commands with `just -l`). When updating a rule, use `just document` to regenerate its Markdown page and build the website in `docs/_site/`. Use `just document --preview` to preview the website locally instead, or `just document --no-render` to only regenerate the Markdown pages without rendering the website (this doesn't require [Zensical](https://zensical.org/) or `uv`).
 
-For full website rendering, you will need [Quarto](https://quarto.org/) and the R packages `reactable`, `rmarkdown`, and `yaml12` installed.
+Building the website requires [uv](https://docs.astral.sh/uv/), which runs [Zensical](https://zensical.org/) without a separate installation.
 
 ## AI policy
 
@@ -74,7 +74,7 @@ The documentation block is positioned after any imports and declarations but bef
 The documentation block must be commented out using three slashes (`///`), it must start with the marker `<!-- docs: start -->` and end with the marker `<!-- docs: end -->`.
 Commented content outside of these markers will be ignored.
 The content of the documentation block uses standard markdown notation.
-Although the documentation website is built using Quarto, do not include any executable code as the documentation is extracted into plain markdown files.
+The documentation website is built using Zensical, so admonitions use the `!!! note "Title"` syntax. Do not include any executable code as the documentation is extracted into plain markdown files.
 
 ```rust
 /// <!-- docs: start -->

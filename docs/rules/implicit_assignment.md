@@ -1,7 +1,7 @@
 # implicit_assignment
 
-::: {.callout-note title="Added in 0.0.17" .low-opacity}
-:::
+!!! note low-opacity "Added in 0.0.17"
+
 
 ## What it does
 

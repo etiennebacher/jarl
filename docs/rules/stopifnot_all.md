@@ -1,7 +1,7 @@
 # stopifnot_all
 
-::: {.callout-note title="Added in 0.6.0" .low-opacity}
-:::
+!!! note low-opacity "Added in 0.6.0"
+
 
 ## What it does
 
