@@ -15,8 +15,7 @@ mod tests {
             "for (xi in x) {}",
             "for (col in DF$col) {}",
             "for (col in S4@col) {}",
-            "for (col in DT[, col]) {}",
-            "for (x in y[[x]]) {}",
+            "for (x in y[foo(x = 1, value = obj$x)]) {}",
             "for (x in foo(x = 1)) {}",
             "for (x in foo(bar(y, baz(2, x = z)))) {}",
             "for (x in foo(`x` = 1, \"x\" = 2)) {}",
@@ -24,8 +23,7 @@ mod tests {
             "for (x in pkg::x()) {}",
             "for (x in x::values) {}",
             "for (x in foo(\"x\")) {}",
-            "for (x in foo(function(x) x)) {}",
-            "for (x in foo(\\(x) x)) {}",
+            "for (x in foo(function(y) bar(x = 1, value = y$x))) {}",
             "for (x in y) { print(x) }",
             "{ for (i in 1:10) { 42L }; i <- 7L }",
             "for (x in foo(, y, z =)) {}",
@@ -145,6 +143,30 @@ mod tests {
         "
         );
         assert_snapshot!(
+            snapshot_lint("for (col in DT[, col]) {}"),
+            @"
+        warning: for_loop_index
+         --> <test>:1:6
+          |
+        1 | for (col in DT[, col]) {}
+          |      ---------------- Don't re-use any sequence symbols as the index symbol in a for loop.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("for (x in y[[x]]) {}"),
+            @"
+        warning: for_loop_index
+         --> <test>:1:6
+          |
+        1 | for (x in y[[x]]) {}
+          |      ----------- Don't re-use any sequence symbols as the index symbol in a for loop.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
             snapshot_lint("for (x in foo(y = x)) {}"),
             @"
         warning: for_loop_index
@@ -193,13 +215,37 @@ mod tests {
         "
         );
         assert_snapshot!(
-            snapshot_lint("for (x in foo(function(x) x, x)) {}"),
+            snapshot_lint("for (x in foo(function(x) x)) {}"),
             @"
         warning: for_loop_index
          --> <test>:1:6
           |
-        1 | for (x in foo(function(x) x, x)) {}
-          |      -------------------------- Don't re-use any sequence symbols as the index symbol in a for loop.
+        1 | for (x in foo(function(x) x)) {}
+          |      ----------------------- Don't re-use any sequence symbols as the index symbol in a for loop.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("for (x in foo(\\(x) x)) {}"),
+            @r"
+        warning: for_loop_index
+         --> <test>:1:6
+          |
+        1 | for (x in foo(\(x) x)) {}
+          |      ---------------- Don't re-use any sequence symbols as the index symbol in a for loop.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("for (x in foo(function(y) x)) {}"),
+            @"
+        warning: for_loop_index
+         --> <test>:1:6
+          |
+        1 | for (x in foo(function(y) x)) {}
+          |      ----------------------- Don't re-use any sequence symbols as the index symbol in a for loop.
           |
         Found 1 error.
         "

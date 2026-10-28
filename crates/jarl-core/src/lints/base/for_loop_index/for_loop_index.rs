@@ -11,9 +11,8 @@ pub struct ForLoopIndex;
 /// ## What it does
 ///
 /// Checks whether the index variable in a `for` loop also occurs in its
-/// sequence expression, including inside calls, parentheses, and arithmetic.
-/// Argument labels, field and namespace names, subscript expressions, and
-/// function definitions are ignored.
+/// sequence expression.
+/// Argument labels, field names, and namespace names are ignored.
 ///
 /// ## Why is this bad?
 ///
@@ -58,15 +57,10 @@ pub fn for_loop_index(ast: &RForStatement) -> anyhow::Result<Option<Diagnostic>>
         let WalkEvent::Enter(node) = event else {
             continue;
         };
-        // Labels and qualified names are not sequence variables. Subscripts
-        // may refer to columns (e.g. DT[, col]); functions have their own scope.
+        // Labels and qualified names are not sequence variables.
         if matches!(
             node.kind(),
-            RSyntaxKind::R_ARGUMENT_NAME_CLAUSE
-                | RSyntaxKind::R_NAMESPACE_EXPRESSION
-                | RSyntaxKind::R_SUBSET_ARGUMENTS
-                | RSyntaxKind::R_SUBSET2_ARGUMENTS
-                | RSyntaxKind::R_FUNCTION_DEFINITION
+            RSyntaxKind::R_ARGUMENT_NAME_CLAUSE | RSyntaxKind::R_NAMESPACE_EXPRESSION
         ) {
             walk.skip_subtree();
             continue;

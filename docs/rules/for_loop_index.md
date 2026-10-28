@@ -6,9 +6,8 @@
 ## What it does
 
 Checks whether the index variable in a `for` loop also occurs in its
-sequence expression, including inside calls, parentheses, and arithmetic.
-Argument labels, field and namespace names, subscript expressions, and
-function definitions are ignored.
+sequence expression, including inside function definitions and subscripts.
+Argument labels, field names, and namespace names are ignored.
 
 ## Why is this bad?
 
