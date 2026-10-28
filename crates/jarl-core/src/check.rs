@@ -1,17 +1,19 @@
 use crate::error::{ParseError, SyntaxError};
 use crate::location::Location;
+use crate::namespace::Namespace;
 use crate::package::{
     FilePackageInfo, FileScope, PackageAnalysis, PackageContext, PackageFileAnalysis,
     is_in_r_package, make_package_analysis, summarize_package_info,
 };
 use crate::roxygen::{extract_roxygen_examples, remap_roxygen_fix, remap_roxygen_range};
 use crate::suppression::SuppressionManager;
+use crate::utils::StatementsExt;
 use crate::vcs::check_version_control;
 use air_fs::relativize_path;
 use air_r_parser::RParserOptions;
-use air_r_syntax::RSyntaxNode;
+use air_r_syntax::{RBinaryExpression, RSyntaxNode};
 use anyhow::{Context, Result};
-use biome_rowan::{AstNode, AstNodeList, TextRange, TextSize};
+use biome_rowan::{AstNode, SyntaxNodeCast, TextRange, TextSize};
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::fs;
@@ -27,6 +29,7 @@ use crate::diagnostic::*;
 use crate::fix::*;
 use crate::rule_set::RuleSet;
 use crate::utils::*;
+use air_r_syntax::AnyRExpression;
 
 /// The package-level analysis shared by every file of `paths`: what each file
 /// is within its package, the packages' own context, and the cross-file pre-pass.
@@ -39,15 +42,11 @@ pub fn analyze_packages(
     HashMap<PathBuf, FilePackageInfo>,
 ) {
     let (pkg_contexts, file_pkg_info) = summarize_package_info(paths);
-    let namespace_contents: HashMap<PathBuf, String> = pkg_contexts
+    let namespaces: HashMap<PathBuf, Namespace> = pkg_contexts
         .iter()
-        .filter_map(|(root, ctx)| {
-            ctx.namespace_content
-                .as_ref()
-                .map(|c| (root.clone(), c.clone()))
-        })
+        .filter_map(|(root, ctx)| ctx.namespace.as_ref().map(|ns| (root.clone(), ns.clone())))
         .collect();
-    let pkg = make_package_analysis(paths, config, &namespace_contents);
+    let pkg = make_package_analysis(paths, config, &namespaces);
     (pkg, pkg_contexts, file_pkg_info)
 }
 
@@ -339,7 +338,7 @@ pub fn get_checks(
     // in a bogus node and the rest of the file is parsed normally, so we can
     // still lint the valid code. Autofixes are disabled for the whole file
     // because edits computed around broken code are not reliable.
-    let has_parse_errors = parsed.has_error();
+    let has_parse_errors = parsed.has_errors();
 
     let syntax = &parsed.syntax();
     let expressions = &parsed.tree().expressions();
@@ -399,6 +398,7 @@ pub fn get_checks(
         file,
         semantic,
         config,
+        pkg,
         pkg_contexts,
         file_pkg_info,
     );
@@ -409,9 +409,7 @@ pub fn get_checks(
     // We run checks at expression-level. This gathers all violations, no matter
     // whether they are suppressed or not. They are filtered out in the next
     // step (this is also Ruff's approach).
-    for expr in expressions {
-        check_expression(&expr, &mut checker)?;
-    }
+    check_expressions(expressions, &mut checker, has_parse_errors)?;
 
     // Lint R code inside roxygen @examples / @examplesIf sections.
     // Collected before check_document so that suppression filtering (which
@@ -498,13 +496,33 @@ pub fn get_checks(
     Ok(diagnostics)
 }
 
+/// Run the expression-level rules over the top-level expressions.
+///
+/// The parser recovers inside a statement, so a broken expression can have
+/// required children missing and traversing it fails. When the file has parse
+/// errors, that expression is skipped so that the rest of the file is still
+/// linted.
+fn check_expressions(
+    expressions: &[AnyRExpression],
+    checker: &mut Checker,
+    has_parse_errors: bool,
+) -> Result<()> {
+    for expr in expressions {
+        match check_expression(expr, checker) {
+            Err(_) if has_parse_errors => {}
+            result => result?,
+        }
+    }
+    Ok(())
+}
+
 /// Convert the parser's diagnostics (message + span) into the `SyntaxError`s
 /// carried by [`ParseError`], resolving each span to a (row, column) location.
 ///
 /// Locations are computed against `contents` (not the parsed tree) because
 /// `find_new_lines` reads the serialized tree, which can be truncated once the
 /// parser has recovered from an error, throwing later offsets off.
-fn collect_syntax_errors(parsed: &air_r_parser::Parse, contents: &str) -> Vec<SyntaxError> {
+fn collect_syntax_errors(parsed: &air_r_parser::RParse, contents: &str) -> Vec<SyntaxError> {
     // `Diagnostic::location` (the trait method) is the only public accessor for
     // a `ParseDiagnostic`'s span.
     use biome_diagnostics::Diagnostic as _;
@@ -570,6 +588,7 @@ fn get_package_info(
     file: &Path,
     semantic: &oak_semantic::semantic_index::SemanticIndex,
     config: &Config,
+    pkg: &PackageAnalysis,
     pkg_contexts: &HashMap<PathBuf, PackageContext>,
     file_pkg_info: &HashMap<PathBuf, FilePackageInfo>,
 ) {
@@ -577,8 +596,14 @@ fn get_package_info(
         Some(FilePackageInfo::InPackage { package_root, .. }) => {
             match pkg_contexts.get(package_root) {
                 Some(ctx) => {
-                    checker.import_from = ctx.import_from.clone();
-                    checker.namespace_exports = ctx.namespace_exports.clone();
+                    if let Some(ns) = &ctx.namespace {
+                        checker.import_from = ns.import_from.clone();
+                        checker.namespace_exports = pkg
+                            .namespace_exports
+                            .get(package_root)
+                            .cloned()
+                            .unwrap_or_else(|| ns.exports.clone());
+                    }
                     // Already seeded with `DEFAULT_PACKAGES`.
                     ctx.loaded_packages.clone()
                 }
@@ -687,7 +712,7 @@ fn get_checks_roxygen(
 
     for chunk in &chunks {
         let parsed = air_r_parser::parse(&chunk.code, RParserOptions::default());
-        if parsed.has_error() {
+        if parsed.has_errors() {
             // Examples may contain pseudo-code, \dontrun{} wrappers, etc.
             continue;
         }
@@ -697,14 +722,35 @@ fn get_checks_roxygen(
         let suppression = SuppressionManager::from_node(&syntax, &chunk.code);
         let has_suppressions = suppression.has_any_suppressions;
         let mut checker = Checker::new(suppression, config.rule_options.clone());
-        checker.rule_set = effective_rules_for_file(config, file, minimum_r_version);
+        // Check TODO markers only in the original roxygen comments.
+        checker.rule_set = effective_rules_for_file(config, file, minimum_r_version)
+            .filter(|rule| *rule != crate::rule_set::Rule::TodoComment);
         checker.minimum_r_version = minimum_r_version;
         checker.file_path = file.to_path_buf();
         checker.source_index_cache = context.source_cache.clone();
         checker.import_from = context.import_from.clone();
 
         for expr in expressions {
-            check_expression(&expr, &mut checker)?;
+            check_expression(expr, &mut checker)?;
+        }
+
+        let semantic = checker.requires_semantic_analysis().then(|| {
+            oak_semantic::build_index(
+                &parsed.tree(),
+                jarl_semantic::JarlImportsResolver::with_cache(
+                    file,
+                    checker.source_index_cache.clone(),
+                ),
+            )
+        });
+
+        if let Some(semantic) = semantic.as_ref() {
+            // What the example inherits from the package, plus whatever it
+            // attaches itself (`library(glue)` on the first line is common).
+            checker.loaded_packages = context.loaded_packages.to_vec();
+            checker
+                .loaded_packages
+                .extend(top_level_attached_packages(semantic));
         }
 
         // Objects created by an example live in the throwaway environment that
@@ -714,28 +760,37 @@ fn get_checks_roxygen(
         //
         // Run before `check_document` so that suppression filtering there
         // covers these diagnostics too.
-        if checker.is_rule_enabled(crate::rule_set::Rule::UnusedObject) {
-            let semantic = oak_semantic::build_index(
-                &parsed.tree(),
-                jarl_semantic::JarlImportsResolver::with_cache(
-                    file,
-                    checker.source_index_cache.clone(),
-                ),
-            );
-            // What the example inherits from the package, plus whatever it
-            // attaches itself (`library(glue)` on the first line is common).
-            checker.loaded_packages = context.loaded_packages.to_vec();
-            checker
-                .loaded_packages
-                .extend(top_level_attached_packages(&semantic));
-
+        if let Some(semantic) = semantic.as_ref() {
             let owned: Vec<RSyntaxNode> = expressions.iter().map(|e| e.syntax().clone()).collect();
-            crate::lints::base::unused_object::unused_object::unused_object(
+            let info = jarl_semantic::SemanticInfo::build(
+                &syntax,
                 &owned,
-                &semantic,
-                &std::collections::HashSet::new(),
-                &mut checker,
-            )?;
+                semantic,
+                &checker.source_index_cache,
+                &checker.packages_in_reach(),
+                &checker.unevaluated_ranges(),
+            );
+            if checker.is_rule_enabled(crate::rule_set::Rule::UnusedObject) {
+                crate::lints::base::unused_object::unused_object::unused_object(
+                    &info,
+                    semantic,
+                    &std::collections::HashSet::new(),
+                    &mut checker,
+                )?;
+            }
+            if checker.is_rule_enabled(crate::rule_set::Rule::AssignmentOnIfNoElse) {
+                for expression in &owned {
+                    for node in expression.descendants() {
+                        if let Some(binary) = node.cast::<RBinaryExpression>() {
+                            checker.report_diagnostic(
+                                crate::lints::base::assignment_on_if_no_else::assignment_on_if_no_else::assignment_on_if_no_else(
+                                    &binary, &info,
+                                )?,
+                            );
+                        }
+                    }
+                }
+            }
         }
 
         // Only run document-level checks if the examples code has inline
@@ -749,12 +804,15 @@ fn get_checks_roxygen(
                 &chunk.code,
                 &mut checker,
                 &PackageFileAnalysis::default(),
-                None,
+                semantic.as_ref(),
             )?;
         }
 
         for mut d in checker.diagnostics {
             d.range = remap_roxygen_range(d.range, chunk);
+            for label in &mut d.labels {
+                label.range = remap_roxygen_range(label.range, chunk);
+            }
             if config.fix_roxygen {
                 d.fix = remap_roxygen_fix(&d.fix, chunk, contents);
             } else {
@@ -823,7 +881,7 @@ fn all_symbols(code: &str) -> impl Iterator<Item = String> {
 /// read is the more damaging error.
 fn read_symbols(code: &str) -> Vec<String> {
     let parsed = air_r_parser::parse(code, RParserOptions::default());
-    if parsed.has_error() {
+    if parsed.has_errors() {
         return all_symbols(code).collect();
     }
 
@@ -877,7 +935,7 @@ fn get_checks_rmd(
     }
 
     let parsed = air_r_parser::parse(&virtual_source, RParserOptions::default());
-    let has_parse_errors = parsed.has_error();
+    let has_parse_errors = parsed.has_errors();
 
     let syntax = parsed.syntax();
     let suppression = SuppressionManager::from_node(&syntax, &virtual_source);
@@ -905,9 +963,7 @@ fn get_checks_rmd(
     checker.package_cache = config.package_cache.clone();
 
     let expressions = &parsed.tree().expressions();
-    for expr in expressions {
-        check_expression(&expr, &mut checker)?;
-    }
+    check_expressions(expressions, &mut checker, has_parse_errors)?;
     // check_document runs suppression filtering internally, so
     // checker.diagnostics is the post-suppression list after this call.
     // Rmd chunks don't participate in package-level analysis; the one
@@ -934,6 +990,9 @@ fn get_checks_rmd(
             d.filename = file.to_path_buf();
             d.fix = Fix::empty();
             d.range = offset_map.remap_range(d.range);
+            for label in &mut d.labels {
+                label.range = offset_map.remap_range(label.range);
+            }
             d
         })
         .collect();
@@ -1015,7 +1074,6 @@ mod tests {
             min_r_version: None,
             allow_dirty: false,
             allow_no_vcs: true,
-            assignment: None,
         };
         let mut config = crate::config::build_config(&args, None, vec![target_path.clone()])
             .expect("build config");
@@ -1041,6 +1099,32 @@ mod tests {
 
     const DESC_IMPORTS_DPLYR: &str = "Package: fixture\nVersion: 1.0.0\nImports: dplyr\n";
     const COMPLEX_FILTER: &str = "x |> filter(a > 1 | is.na(a))\n";
+
+    #[test]
+    fn test_todo_comment_roxygen_examples() {
+        // Check markers in the original comments, without rechecking extracted examples.
+        assert_snapshot!(
+            lint_in_package(
+                &[
+                    ("DESCRIPTION", "Package: fixture\nVersion: 0.0.1\n"),
+                    (
+                        "R/example.R",
+                        "\
+#' TODO: finish docs
+#' @examples
+#' # jarl-ignore unused_object: illustrative code
+#' x <- 1 # TODO: example code
+#' # FIXME: example comment
+f <- function() NULL
+",
+                    ),
+                ],
+                "R/example.R",
+                "todo_comment",
+            ),
+            @"todo_comment"
+        );
+    }
 
     #[test]
     fn test_description_imports_does_not_attach() {
@@ -1131,7 +1215,6 @@ mod tests {
             min_r_version: None,
             allow_dirty: false,
             allow_no_vcs: true,
-            assignment: None,
         };
         let config = crate::config::build_config(&args, None, vec![target_path.clone()])
             .expect("build config");
@@ -1144,6 +1227,7 @@ mod tests {
             &target_path,
             &index,
             &config,
+            &crate::package::PackageAnalysis::default(),
             &pkg_contexts,
             &file_pkg_info,
         );
@@ -1199,6 +1283,25 @@ mod tests {
             packages.iter().position(|p| p == "base") < packages.iter().position(|p| p == "dplyr"),
             "{packages:?}"
         );
+    }
+
+    #[test]
+    fn test_namespace_blanket_import_attaches_once() {
+        let packages = loaded_packages_for(
+            &[
+                (
+                    "DESCRIPTION",
+                    "Package: fixture\nVersion: 1.0.0\nDepends: MASS\n",
+                ),
+                ("NAMESPACE", "import(MASS)\nimport(rlang)\n"),
+                ("R/x.R", "f <- function() 1\n"),
+            ],
+            "R/x.R",
+        );
+
+        // `import(rlang)` is added, `import(MASS)` is already there via `Depends`.
+        assert!(packages.contains(&"rlang".to_string()), "{packages:?}");
+        assert_eq!(packages.iter().filter(|p| *p == "MASS").count(), 1);
     }
 
     #[test]

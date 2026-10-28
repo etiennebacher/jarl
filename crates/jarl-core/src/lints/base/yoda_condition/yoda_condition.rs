@@ -108,15 +108,31 @@ fn swap_edits(a: &AnyRExpression, b: &AnyRExpression, parenthesize_b: bool) -> (
     )
 }
 
+/// Whether a binary operator binds tighter than the comparison operators, i.e.
+/// whether `a OP b == c` groups as `(a OP b) == c`.
+fn binds_tighter_than_comparison(kind: RSyntaxKind) -> bool {
+    matches!(
+        kind,
+        RSyntaxKind::PLUS
+            | RSyntaxKind::MINUS
+            | RSyntaxKind::MULTIPLY
+            | RSyntaxKind::DIVIDE
+            | RSyntaxKind::PIPE
+            | RSyntaxKind::SPECIAL
+            | RSyntaxKind::COLON
+            | RSyntaxKind::EXPONENTIATE
+            | RSyntaxKind::EXPONENTIATE2
+    )
+}
+
 fn needs_comparison_parentheses(expr: &AnyRExpression) -> anyhow::Result<bool> {
     match expr {
-        AnyRExpression::RBinaryExpression(binary) => Ok(
-            OperatorPrecedence::try_from_binary_operator(binary.operator()?.kind())
-                .is_none_or(|precedence| precedence <= OperatorPrecedence::Relational)
+        AnyRExpression::RBinaryExpression(binary) => {
+            Ok(!binds_tighter_than_comparison(binary.operator()?.kind())
                 // Even arithmetic can end with a prefix that absorbs a comparison:
                 // `1 == x + !y` must become `(x + !y) == 1`.
-                || needs_comparison_parentheses(&binary.right()?)?,
-        ),
+                || needs_comparison_parentheses(&binary.right()?)?)
+        }
         AnyRExpression::RUnaryExpression(unary) => {
             Ok(!matches!(
                 unary.operator()?.kind(),

@@ -1,3 +1,4 @@
+use crate::utils::StatementsExt;
 use std::collections::{HashMap, HashSet};
 
 use crate::checker::Checker;
@@ -35,7 +36,7 @@ pub fn duplicated_arguments(ast: &RCall, checker: &Checker) -> anyhow::Result<Op
 
     let fun_name = match function? {
         AnyRExpression::AnyRValue(x) => x.into_syntax().text_trimmed().to_string(),
-        AnyRExpression::RBracedExpressions(x) => x
+        AnyRExpression::RBracedStatements(x) => x
             .expressions()
             .into_iter()
             .map(|x| x.to_string())

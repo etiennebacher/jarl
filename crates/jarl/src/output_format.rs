@@ -415,7 +415,22 @@ impl Emitter for GithubEmitter {
             } else {
                 diagnostic.message.body.clone()
             };
-            writeln!(writer, "[{}] {}", diagnostic.message.rule, message)?;
+            write!(writer, "[{}] {}", diagnostic.message.rule, message)?;
+            // A workflow command is a single line, so the labels follow the
+            // message as URL-encoded newlines that GitHub renders as line breaks.
+            for label in &diagnostic.labels {
+                write!(writer, "%0A{}", label.text)?;
+                if let Some(loc) = label.location {
+                    write!(
+                        writer,
+                        " ({file}:{}:{})",
+                        loc.row(),
+                        loc.column() + 1,
+                        file = diagnostic.filename.to_string_lossy()
+                    )?;
+                }
+            }
+            writeln!(writer)?;
         }
 
         writer.flush()?;
@@ -504,6 +519,8 @@ struct SarifResult<'a> {
     locations: [SarifLocation; 1],
     #[serde(skip_serializing_if = "Vec::is_empty")]
     fixes: Vec<SarifFix>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    related_locations: Vec<SarifRelatedLocation<'a>>,
 }
 
 #[derive(Debug, Serialize)]
@@ -515,6 +532,15 @@ struct SarifMessage<'a> {
 #[serde(rename_all = "camelCase")]
 struct SarifLocation {
     physical_location: SarifPhysicalLocation,
+}
+
+/// A location that explains a result, with its own message (SARIF `relatedLocations`).
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SarifRelatedLocation<'a> {
+    id: usize,
+    physical_location: SarifPhysicalLocation,
+    message: SarifMessage<'a>,
 }
 
 #[derive(Debug, Serialize)]
@@ -686,6 +712,27 @@ impl Emitter for SarifEmitter {
                 Vec::new()
             };
 
+            let related_locations = diagnostic
+                .labels
+                .iter()
+                .enumerate()
+                .map(|(id, label)| SarifRelatedLocation {
+                    id,
+                    physical_location: SarifPhysicalLocation {
+                        artifact_location: SarifArtifactLocation {
+                            uri: uri.clone(),
+                            uri_base_id: "ROOTPATH",
+                        },
+                        region: range_to_region(
+                            content,
+                            label.range.start().into(),
+                            label.range.end().into(),
+                        ),
+                    },
+                    message: SarifMessage { text: Cow::Borrowed(label.text.as_str()) },
+                })
+                .collect();
+
             results.push(SarifResult {
                 rule_id: diagnostic.message.rule.name(),
                 rule_index: rule_indices[diagnostic.message.rule.name()],
@@ -698,6 +745,7 @@ impl Emitter for SarifEmitter {
                     },
                 }],
                 fixes,
+                related_locations,
             });
         }
 

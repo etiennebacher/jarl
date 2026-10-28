@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-core/src/lints/base/string_boundary/mod.rs
-expression: "get_fixed_text(vec![\"substr(x, 1, 2) == 'ab'\", \"substr(x, 1L, 2L) == 'ab'\",\n\"substr(x, 1L, end) == 'ab'\", \"substr(x, 1L, end) != 'ab'\",\n\"substr(x, 3, nchar(x)) != 'ab'\", \"'ab' == substr(x, 1L, end)\",\n\"substring(x, nchar(x) - 4L, nchar(x)) == 'abcde'\",\n\"substring(x, start, nchar(x)) == 'abcde'\",\n\"substring(colnames(x), start, nchar(colnames(x))) == 'abc'\",\n\"substr(c('abc', 'def'), 1, 1) == c('a', 'a')\",], \"string_boundary\", None)"
+expression: "get_unsafe_fixed_text(vec![\"substr(x, 1, 2) == 'ab'\",\n\"substr(x, 1L, 2L) == 'ab'\", \"substr(x, 1.0, 2.0) == 'ab'\",\n\"substr(x, 1., 2e0) == 'ab'\", \"substr(x, 1L, 2L) != 'ab'\",\n\"'ab' == substr(x, 1L, 2L)\", \"'ab' != substr(x, 1L, 2L)\",\n\"substring(x, 1, 2) == 'ab'\", \"substr(stop = 2, x = x, start = 1) == 'ab'\",\n\"substr(stop = 2, x, 1) == 'ab'\",\n\"substring(last = 2, text = x, first = 1) == 'ab'\",\n\"substring(x, nchar(x) - 4L, nchar(x)) == 'abcde'\",\n\"substr(x, nchar(x) - 1, nchar(x)) != 'ab'\",\n\"'ab' == substring(x, nchar(x) - 1, nchar(x))\",\n\"'ab' != substring(x, nchar(x) - 1, nchar(x))\",\n\"substr(x, nchar(x), nchar(x)) == 'a'\",\n\"substring(x, nchar(x) - 0L, nchar(x)) == 'a'\",\n\"substring(x, nchar(x = x) - 1, nchar(x = x)) == 'ab'\",\n\"substring(colnames(x), nchar(colnames(x)) - 2, nchar(colnames(x))) == 'abc'\",\n\"substr(x, 1, 1) == '你'\",\n\"substring(x, nchar(x) - 1, nchar(x)) == '你好'\", \"substr(x, 1, 2) == 'a '\",\n\"substr(x, 1, 1) == ' '\", r#\"substr(x, 1, 1) == r\"(你)\"\"#,\nr#\"substring(x, nchar(x), nchar(x)) == R'---[你]---'\"#,\nr#\"substr(x, 1, 2) == r\"(\\n)\"\"#,], \"string_boundary\")"
 ---
 OLD:
 ====
@@ -18,28 +18,63 @@ startsWith(x, 'ab')
 
 OLD:
 ====
-substr(x, 1L, end) == 'ab'
+substr(x, 1.0, 2.0) == 'ab'
 NEW:
 ====
 startsWith(x, 'ab')
 
 OLD:
 ====
-substr(x, 1L, end) != 'ab'
+substr(x, 1., 2e0) == 'ab'
+NEW:
+====
+startsWith(x, 'ab')
+
+OLD:
+====
+substr(x, 1L, 2L) != 'ab'
 NEW:
 ====
 !startsWith(x, 'ab')
 
 OLD:
 ====
-substr(x, 3, nchar(x)) != 'ab'
+'ab' == substr(x, 1L, 2L)
 NEW:
 ====
-!endsWith(x, 'ab')
+startsWith(x, 'ab')
 
 OLD:
 ====
-'ab' == substr(x, 1L, end)
+'ab' != substr(x, 1L, 2L)
+NEW:
+====
+!startsWith(x, 'ab')
+
+OLD:
+====
+substring(x, 1, 2) == 'ab'
+NEW:
+====
+startsWith(x, 'ab')
+
+OLD:
+====
+substr(stop = 2, x = x, start = 1) == 'ab'
+NEW:
+====
+startsWith(x, 'ab')
+
+OLD:
+====
+substr(stop = 2, x, 1) == 'ab'
+NEW:
+====
+startsWith(x, 'ab')
+
+OLD:
+====
+substring(last = 2, text = x, first = 1) == 'ab'
 NEW:
 ====
 startsWith(x, 'ab')
@@ -53,21 +88,98 @@ endsWith(x, 'abcde')
 
 OLD:
 ====
-substring(x, start, nchar(x)) == 'abcde'
+substr(x, nchar(x) - 1, nchar(x)) != 'ab'
 NEW:
 ====
-endsWith(x, 'abcde')
+!endsWith(x, 'ab')
 
 OLD:
 ====
-substring(colnames(x), start, nchar(colnames(x))) == 'abc'
+'ab' == substring(x, nchar(x) - 1, nchar(x))
+NEW:
+====
+endsWith(x, 'ab')
+
+OLD:
+====
+'ab' != substring(x, nchar(x) - 1, nchar(x))
+NEW:
+====
+!endsWith(x, 'ab')
+
+OLD:
+====
+substr(x, nchar(x), nchar(x)) == 'a'
+NEW:
+====
+endsWith(x, 'a')
+
+OLD:
+====
+substring(x, nchar(x) - 0L, nchar(x)) == 'a'
+NEW:
+====
+endsWith(x, 'a')
+
+OLD:
+====
+substring(x, nchar(x = x) - 1, nchar(x = x)) == 'ab'
+NEW:
+====
+endsWith(x, 'ab')
+
+OLD:
+====
+substring(colnames(x), nchar(colnames(x)) - 2, nchar(colnames(x))) == 'abc'
 NEW:
 ====
 endsWith(colnames(x), 'abc')
 
 OLD:
 ====
-substr(c('abc', 'def'), 1, 1) == c('a', 'a')
+substr(x, 1, 1) == '你'
 NEW:
 ====
-startsWith(c('abc', 'def'), c('a', 'a'))
+startsWith(x, '你')
+
+OLD:
+====
+substring(x, nchar(x) - 1, nchar(x)) == '你好'
+NEW:
+====
+endsWith(x, '你好')
+
+OLD:
+====
+substr(x, 1, 2) == 'a '
+NEW:
+====
+startsWith(x, 'a ')
+
+OLD:
+====
+substr(x, 1, 1) == ' '
+NEW:
+====
+startsWith(x, ' ')
+
+OLD:
+====
+substr(x, 1, 1) == r"(你)"
+NEW:
+====
+startsWith(x, r"(你)")
+
+OLD:
+====
+substring(x, nchar(x), nchar(x)) == R'---[你]---'
+NEW:
+====
+endsWith(x, R'---[你]---')
+
+OLD:
+====
+substr(x, 1, 2) == r"(\n)"
+NEW:
+====
+startsWith(x, r"(\n)")

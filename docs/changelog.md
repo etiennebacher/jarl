@@ -2,10 +2,54 @@
 
 ## Development version
 
+### New features
+
+* New rules:
+
+  * `assignment_on_if_no_else` (#605, @christopherkenny)
+  * `todo_comment` (#739, @Yousa-Mirage)
+
+* Improved rules:
+
+  * The `seq2` rule now also reports `seq_len(length(...))` and suggests `seq_along(...)`
+    (#761, @JosephBARBIERDARNAL).
+
+* Jarl handles parsing errors better, which may lead to more code being analysed
+  in files with parsing errors (#762). Thanks to Davis Vaughan for his work
+  upstream in Air and Aether.
+
+* `undesirable_operator` now accepts inline tables in `operators` and
+  `extend-operators` to attach custom messages to undesirable operators (#742).
+
+* Jarl suggests more potential names when a rule name is unknown (#777).
+
+### Bug fixes
+
+* Prevent `unused_object` from reporting objects exported by `exportPattern()`
+  (#711, @Yousa-Mirage).
+
+## 0.7.1
+
+This release doesn't contain any change compared to the 0.7.0 release found on Github.
+
+For releases found on PyPI, 0.7.1 contains the fix in https://github.com/etiennebacher/jarl/commit/9ad3bd56c141673bbcbd47f99e6878007a6fa6a8 and 0.7.0 doesn't.
+This fix was made shortly after 0.7.0 was released, so I wanted to backport it and release a new 0.7.0.
+However, PyPI doesn't allow to publish twice the same version, even if the first release is deleted.
+Therefore, I release 0.7.1 so that all releases with 0.7.1 match, no matter where they are installed from.
+
+## 0.7.0
+
+::: {.callout-note icon=false title="Released on 2026-10-20" .low-opacity}
+:::
+
 ### Breaking changes
 
-* The `jarl.toml` argument `assignment` (deprecated since 0.5.0) is removed. Use
-  the rule-specific option `[lint.assignment]` instead (#663).
+* The command-line argument `--assignment` and the `jarl.toml` argument `assignment`
+  (both deprecated since 0.5.0) are removed. Use the rule-specific option
+  `[lint.assignment]` in `jarl.toml` instead (#663, #758).
+
+* The rule `browser` (deprecated since 0.5.0) is removed. Use the rule
+  `undesirable_function` instead (#757).
 
 * A fix can now edit several places of a file at once, so in the `json` output
   format the `fix` object contains a list of edits instead of a single
@@ -17,16 +61,32 @@
 
 ### Deprecations
 
-* The `internal_function` rule is deprecated. Use `undesirable_operator` instead.
+* The `internal_function` rule is deprecated and disabled by default. Use
+  `undesirable_operator` instead (#657).
 
-### Changes
+### New and improved rules
 
 * New rules:
 
   * `consecutive_signs` (#745, @Yousa-Mirage)
+  * `cyclomatic_complexity` (#731)
   * `library_call` (#701)
   * `undesirable_operator` (#657, @christopherkenny)
   * `yoda_condition` (#733, @Yousa-Mirage)
+
+* Improved rules:
+
+  * `expect_length` no longer reports cases where `length()` is in the `expected`
+    argument, e.g. `expect_equal(nrow(x), length(y))` (#684).
+
+  * `nzchar` now also reports comparisons of `nchar(x)` with zero, such as
+    `nchar(x) == 0`, and its fixes preserve missing values with
+    `keepNA = TRUE` (#705, @Yousa-Mirage).
+
+  * The `expect_type` rule no longer lints `expect_true(is.null(x))`, which was
+    already reported by the `expect_null` rule (#680, @Yousa-Mirage).
+
+### Other improvements
 
 * `jarl check --stdin-file-path <PATH>` lints code read from stdin, using `<PATH>`
   for config discovery, package detection, `exclude` patterns and diagnostics (#749).
@@ -34,13 +94,6 @@
 * The config file can be named `.jarl.toml` as well as `jarl.toml`. Both names
   are equivalent, and a directory containing both is now an error instead of
   silently using `jarl.toml` (#717).
-
-* `expect_length` no longer reports cases where `length()` is in the `expected`
-  argument, e.g. `expect_equal(nrow(x), length(y))` (#684).
-
-* The `nzchar` rule now also reports comparisons of `nchar(x)` with zero, such
-  as `nchar(x) == 0`, and its fixes preserve missing values with
-  `keepNA = TRUE` (#705, @Yousa-Mirage).
 
 * Only use placeholder text in messages and suggestions (#722).
 
@@ -50,18 +103,22 @@
   cannot be applied because the violation is in part of `@examples` (#702).
 
 * The JSON output now contains information on the fix ("safe", "unsafe", or "none")
-  (#747).
-
-* The JSON output now reports more information on syntax errors
-  (`message`, `range`, `location`) (#748).
+  (#747) and reports more information on syntax errors (`message`, `range`, `location`)
+  (#748).
 
 ### Bug fixes
 
 * Fix scope handling and backtick-quoted names in `for_loop_dup_index`
   (#753, @Yousa-Mirage).
 
+* Fix `string_boundary` false positives for mismatched substring widths and
+  reordered named arguments, and mark its fixes as unsafe (#698, @Yousa-Mirage).
+
 * Prevent `unused_function` and `unused_object` from falsely reporting non-ASCII
   names (#706, @Yousa-Mirage).
+
+* Recognize parenthesized `TRUE` conditions in `repeat` and preserve loop body
+  comments when applying fixes (#754, @Yousa-Mirage).
 
 * Handle uppercase `.RMD`/`.QMD` extensions (and any other letter-case variant)
   files consistently (#709, @Yousa-Mirage).
@@ -84,8 +141,6 @@
 * Prevent fixes for `any_is_na`, `any_duplicated`, and `condition_message`
   from dropping extra unnamed arguments (#677, @Yousa-Mirage).
 
-* Ensure that `--fix` works with multi-byte characters (#672, @Yousa-Mirage).
-
 * The `lengths` rule no longer crashes on calls where `X` is missing from the
   syntax tree, e.g. `sapply(FUN = length)` or `x |> sapply(FUN = length)`. The
   autofix now also produces `lengths(x)` instead of the invalid
@@ -94,11 +149,13 @@
 * Fix language server suppression quickfix positions for non-ASCII text and
   Rmd/Qmd chunk insertion positions (#676, #708, @Yousa-Mirage).
 
+* Prevent `unused_function` and `unused_object` from falsely reporting non-ASCII
+  names (#706, @Yousa-Mirage).
+
+* Ensure that `--fix` works with multi-byte characters (#672, @Yousa-Mirage).
+
 * Avoid invalid `literal_coercion` fixes for strings containing quotes
   (#678, @Yousa-Mirage).
-
-* The `expect_type` rule no longer lints `expect_true(is.null(x))`, which was
-  already reported by the `expect_null` rule (#680, @Yousa-Mirage).
 
 * The `pipe_consistency` rule no longer emits invalid fixes when converting
   `magrittr` pipes with a non-call RHS, such as `x %>% sum` (#683, @Yousa-Mirage).
@@ -174,7 +231,7 @@
 * Jarl now reports rule violations in files that contain syntax errors and provides
   clearer messages for syntax errors (#538, #569).
 
-* New `--output-format sarif` to export to [SARIF](https://sarifweb.azurewebsites.net/)
+* New `--output-format sarif` to export to [SARIF](https://github.com/microsoft/sarif-tutorials)
   (#508, @dieghernan).
 
 * Clearer output for `jarl check --help` (#521).

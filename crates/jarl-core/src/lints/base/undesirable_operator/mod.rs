@@ -4,6 +4,7 @@ pub(crate) mod undesirable_operator;
 #[cfg(test)]
 mod tests {
     use crate::lints::base::undesirable_operator::options::ResolvedUndesirableOperatorOptions;
+    use crate::lints::base::undesirable_operator::options::UndesirableOperatorEntry;
     use crate::lints::base::undesirable_operator::options::UndesirableOperatorOptions;
     use crate::rule_options::ResolvedRuleOptions;
     use crate::settings::{LinterSettings, Settings};
@@ -99,7 +100,7 @@ mod tests {
     #[test]
     fn test_custom_operators_replace_defaults() {
         let settings = settings_with_options(UndesirableOperatorOptions {
-            operators: Some(vec!["%notin%".to_string()]),
+            operators: Some(vec![UndesirableOperatorEntry::Name("%notin%".to_string())]),
             extend_operators: None,
         });
 
@@ -120,10 +121,54 @@ mod tests {
     }
 
     #[test]
+    fn test_undesirable_operator_custom_messages() {
+        let options: UndesirableOperatorOptions = toml::from_str(
+            r#"
+            extend-operators = [
+                { "%notin%" = 'Use `!(x %in% y)` instead.' },
+                { "$" = "Use `[[` for extraction." },
+            ]
+            "#,
+        )
+        .unwrap();
+        let settings = settings_with_options(options);
+
+        assert_snapshot!(
+            snapshot_lint_with_settings("x %notin% y\nx$name\nx <<- 1\n", settings),
+            @"
+        warning: undesirable_operator
+         --> <test>:1:3
+          |
+        1 | x %notin% y
+          |   ------- `%notin%` is listed as an undesirable operator.
+          |
+          = help: Use `!(x %in% y)` instead.
+        warning: undesirable_operator
+         --> <test>:2:2
+          |
+        2 | x$name
+          |  - `$` is listed as an undesirable operator.
+          |
+          = help: Use `[[` for extraction.
+        warning: undesirable_operator
+         --> <test>:3:3
+          |
+        3 | x <<- 1
+          |   --- `<<-` is listed as an undesirable operator.
+          |
+        Found 3 errors.
+        "
+        );
+    }
+
+    #[test]
     fn test_extend_operators() {
         let settings = settings_with_options(UndesirableOperatorOptions {
             operators: None,
-            extend_operators: Some(vec!["%notin%".to_string(), "$".to_string()]),
+            extend_operators: Some(vec![
+                UndesirableOperatorEntry::Name("%notin%".to_string()),
+                UndesirableOperatorEntry::Name("$".to_string()),
+            ]),
         });
 
         assert_snapshot!(

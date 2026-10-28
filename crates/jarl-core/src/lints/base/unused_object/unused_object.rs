@@ -146,23 +146,11 @@ use crate::utils::get_function_name;
 /// ```
 /// <!-- docs: end -->
 pub fn unused_object(
-    expressions: &[RSyntaxNode],
+    info: &SemanticInfo<'_>,
     semantic: &SemanticIndex,
     cross_file_used: &std::collections::HashSet<String>,
     checker: &mut Checker,
 ) -> anyhow::Result<()> {
-    let Some(first) = expressions.first() else {
-        return Ok(());
-    };
-    let root = first.ancestors().last().unwrap_or_else(|| first.clone());
-    let info = SemanticInfo::build(
-        &root,
-        expressions,
-        semantic,
-        &checker.source_index_cache,
-        &checker.packages_in_reach(),
-        &checker.unevaluated_ranges(),
-    );
     let exports = &checker.namespace_exports;
     let skipped = &checker.rule_options.unused_object.skipped_functions;
 
@@ -170,7 +158,7 @@ pub fn unused_object(
     let top_level = ScopeId::from(0);
     for scope_id in info.scope_ids() {
         for (def_id, def) in semantic.definitions(scope_id).iter() {
-            if !should_lint_definition(&info, def, skipped) {
+            if !should_lint_definition(info, def, skipped) {
                 continue;
             }
             if info.is_definition_used(scope_id, def_id) {

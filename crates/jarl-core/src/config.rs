@@ -6,11 +6,8 @@ use crate::{
     rule_set::{ALL_RULES, Category, Rule, RuleSet},
     settings::Settings,
 };
-use air_r_syntax::RSyntaxKind;
 use anyhow::Result;
 use std::{collections::HashSet, path::PathBuf, sync::Arc};
-
-use crate::lints::base::assignment::options::ResolvedAssignmentOptions;
 
 /// Parsed rule selection from CLI or TOML configuration.
 ///
@@ -48,8 +45,6 @@ pub struct ArgsConfig {
     pub allow_dirty: bool,
     /// Apply fixes even if there is no version control system?
     pub allow_no_vcs: bool,
-    /// Which assignment operator to use? Can be `"<-"` or `"="`.
-    pub assignment: Option<String>,
 }
 
 #[derive(Clone)]
@@ -158,14 +153,9 @@ pub fn build_config(
         rules_to_apply
     };
 
-    let mut rule_options = toml_settings
+    let rule_options = toml_settings
         .map(|s| s.linter.rule_options.clone())
         .unwrap_or_default();
-
-    // CLI --assignment overrides the TOML-resolved value
-    if let Some(cli_assignment) = &check_config.assignment {
-        rule_options.assignment = parse_assignment_cli(cli_assignment)?;
-    }
 
     let check_roxygen = toml_settings
         .and_then(|s| s.linter.check_roxygen)
@@ -471,14 +461,8 @@ fn unknown_rules_error(message: String, help: Vec<String>) -> anyhow::Error {
     anyhow::Error::new(UnknownRulesError { message, help })
 }
 
-/// Find valid rule names closest to `input` for a "did you mean" suggestion.
-///
-/// Returns up to 3 candidates that all share the minimum edit distance, and
-/// only when that distance is within an acceptance threshold (so unrelated
-/// input like "foo" yields no suggestion). Uses Damerau-Levenshtein distance,
-/// which also accounts for adjacent transpositions (e.g. "treu" -> "true").
-/// Suggest known rule names close to `input`, for "did you mean" hints when a
-/// user passes an unknown rule (e.g. to `jarl rule <name>`).
+/// Suggest known rule names for "did you mean" hints when a user passes an
+/// unknown rule (e.g. to `jarl rule <name>`).
 pub fn suggest_rules(input: &str) -> Vec<String> {
     let candidates: Vec<&str> = crate::rule_set::ALL_RULES
         .iter()
@@ -487,6 +471,14 @@ pub fn suggest_rules(input: &str) -> Vec<String> {
     suggest_rule_names(input, &candidates)
 }
 
+/// Find valid rule names for a "did you mean" suggestion.
+///
+/// Starts with up to 3 candidates that all share the minimum edit distance,
+/// and only when that distance is within an acceptance threshold (so unrelated
+/// input like "foo" yields no typo suggestion). Uses Damerau-Levenshtein
+/// distance, which also accounts for adjacent transpositions (e.g. "treu" ->
+/// "true"). Then appends every other name containing `input` as a substring
+/// (e.g. "null" -> all rules with "null" in their name).
 fn suggest_rule_names(input: &str, candidates: &[&str]) -> Vec<String> {
     // Allow roughly one edit per three characters, with a floor of 1 so short
     // typos are still caught.
@@ -498,17 +490,25 @@ fn suggest_rule_names(input: &str, candidates: &[&str]) -> Vec<String> {
         .filter(|(distance, _)| *distance <= threshold)
         .collect();
 
-    let Some(&(best_distance, _)) = scored.iter().min_by_key(|(distance, _)| *distance) else {
-        return Vec::new();
-    };
+    let mut suggestions: Vec<String> = Vec::new();
+    if let Some(&(best_distance, _)) = scored.iter().min_by_key(|(distance, _)| *distance) {
+        scored.retain(|(distance, _)| *distance == best_distance);
+        scored.sort_by(|a, b| a.1.cmp(b.1));
+        suggestions.extend(scored.into_iter().take(3).map(|(_, name)| name.to_string()));
+    }
 
-    scored.retain(|(distance, _)| *distance == best_distance);
-    scored.sort_by(|a, b| a.1.cmp(b.1));
-    scored
-        .into_iter()
-        .take(3)
-        .map(|(_, name)| name.to_string())
-        .collect()
+    // Very short inputs would match nearly every rule.
+    if input.chars().count() >= 3 {
+        let mut containing: Vec<&str> = candidates
+            .iter()
+            .copied()
+            .filter(|name| name.contains(input) && !suggestions.iter().any(|s| s == name))
+            .collect();
+        containing.sort();
+        suggestions.extend(containing.into_iter().map(str::to_string));
+    }
+
+    suggestions
 }
 
 /// Reconcile rules from CLI and TOML configuration.
@@ -615,16 +615,5 @@ pub(crate) fn filter_rules_by_version(
                 })
                 .collect::<RuleSet>()
         }
-    }
-}
-
-fn parse_assignment_cli(value: &str) -> Result<ResolvedAssignmentOptions> {
-    match value {
-        "<-" => Ok(ResolvedAssignmentOptions { operator: RSyntaxKind::ASSIGN }),
-        "=" => Ok(ResolvedAssignmentOptions { operator: RSyntaxKind::EQUAL }),
-        _ => Err(anyhow::anyhow!(
-            "Invalid value in `--assignment`: {}",
-            value
-        )),
     }
 }
