@@ -2,7 +2,6 @@ use crate::diagnostic::*;
 use crate::rule_set::Rule;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
-use oak_core::syntax_ext::RIdentifierExt;
 
 pub struct ForLoopIndex;
 
@@ -50,7 +49,8 @@ impl Violation for ForLoopIndex {
 pub fn for_loop_index(ast: &RForStatement) -> anyhow::Result<Option<Diagnostic>> {
     let RForStatementFields { variable, sequence, .. } = ast.as_fields();
     let variable = variable?;
-    let name = variable.name_text();
+    let name = variable.to_trimmed_string();
+    let name = name.trim_matches('`');
     let sequence = sequence?;
 
     let mut walk = sequence.syntax().preorder();
@@ -75,7 +75,7 @@ pub fn for_loop_index(ast: &RForStatement) -> anyhow::Result<Option<Diagnostic>>
         let Some(identifier) = RIdentifier::cast(node) else {
             continue;
         };
-        if identifier.name_text() != name {
+        if identifier.to_trimmed_string().trim_matches('`') != name {
             continue;
         }
         // In `x()` and `obj$x`, the bare function name and field selector
