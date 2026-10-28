@@ -32,6 +32,9 @@
 * Prevent `unused_object` from reporting objects exported by `exportPattern()`
   (#711, @Yousa-Mirage).
 
+* Fix detection of backtick-quoted indices in `for_loop_dup_index`
+  (#753, @Yousa-Mirage).
+
 ## 0.7.1
 
 This release doesn't contain any change compared to the 0.7.0 release found on Github.
