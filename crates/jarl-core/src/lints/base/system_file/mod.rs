@@ -83,6 +83,19 @@ mod tests {
         Found 1 error.
         "
         );
+        assert_snapshot!(
+            snapshot_lint("system.file(file.path('R'), file.path('package', fsep = '-'))"),
+            @"
+        warning: system_file
+         --> <test>:1:1
+          |
+        1 | system.file(file.path('R'), file.path('package', fsep = '-'))
+          | ------------------------------------------------------------- `system.file(file.path(...))` is redundant.
+          |
+          = help: Use `system.file(...)` directly.
+        Found 1 error.
+        "
+        );
 
         assert_snapshot!(
             snapshot_lint("system.file(\n # a comment\nfile.path('path', 'to', 'data'), package = 'foo')"),
@@ -114,6 +127,9 @@ mod tests {
                     "system.file(base::file.path('path', 'to', 'data'), package = 'foo')",
                     "system.file(file.path('path'), 'prefix', base::file.path('to', 'data'), package = 'foo')",
                     "system.file(file.path('path'), file.path('to', 'data'), package = 'foo')",
+                    "system.file(file.path('R'), file.path('package', fsep = '-'))",
+                    "system.file(file.path('package', fsep = '-'), base::file.path('R'))",
+                    "system.file(file.path(), file.path('R'))",
                     "system.file(\n # leading comment\nfile.path('path', 'to', 'data'), package = 'foo')",
                     "system.file(file.path(\n # inner comment\n'path', 'to', 'data'), package = 'foo')",
                     "system.file(file.path('path', 'to', 'data'),\n # between arguments\npackage = 'foo')",

@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-core/src/lints/base/system_file/mod.rs
-expression: "get_fixed_text(vec![\"system.file(file.path('path', 'to', 'data'), package = 'foo')\",\n\"system.file(file.path('path', 'to', 'data'))\",\n\"base::system.file(file.path('path', 'to', 'data'), package = 'foo')\",\n\"system.file('prefix', file.path('path', 'to', 'data'), package = 'foo')\",\n\"system.file(base::file.path('path', 'to', 'data'), package = 'foo')\",\n\"system.file(file.path('path'), 'prefix', base::file.path('to', 'data'), package = 'foo')\",\n\"system.file(file.path('path'), file.path('to', 'data'), package = 'foo')\",\n\"system.file(\\n # leading comment\\nfile.path('path', 'to', 'data'), package = 'foo')\",\n\"system.file(file.path(\\n # inner comment\\n'path', 'to', 'data'), package = 'foo')\",\n\"system.file(file.path('path', 'to', 'data'),\\n # between arguments\\npackage = 'foo')\",],\n\"system_file\", None)"
+expression: "get_fixed_text(vec![\"system.file(file.path('path', 'to', 'data'), package = 'foo')\",\n\"system.file(file.path('path', 'to', 'data'))\",\n\"base::system.file(file.path('path', 'to', 'data'), package = 'foo')\",\n\"system.file('prefix', file.path('path', 'to', 'data'), package = 'foo')\",\n\"system.file(base::file.path('path', 'to', 'data'), package = 'foo')\",\n\"system.file(file.path('path'), 'prefix', base::file.path('to', 'data'), package = 'foo')\",\n\"system.file(file.path('path'), file.path('to', 'data'), package = 'foo')\",\n\"system.file(file.path('R'), file.path('package', fsep = '-'))\",\n\"system.file(file.path('package', fsep = '-'), base::file.path('R'))\",\n\"system.file(file.path(), file.path('R'))\",\n\"system.file(\\n # leading comment\\nfile.path('path', 'to', 'data'), package = 'foo')\",\n\"system.file(file.path(\\n # inner comment\\n'path', 'to', 'data'), package = 'foo')\",\n\"system.file(file.path('path', 'to', 'data'),\\n # between arguments\\npackage = 'foo')\",],\n\"system_file\", None)"
 ---
 OLD:
 ====
@@ -50,6 +50,27 @@ system.file(file.path('path'), file.path('to', 'data'), package = 'foo')
 NEW:
 ====
 system.file('path', 'to', 'data', package = 'foo')
+
+OLD:
+====
+system.file(file.path('R'), file.path('package', fsep = '-'))
+NEW:
+====
+system.file('R', file.path('package', fsep = '-'))
+
+OLD:
+====
+system.file(file.path('package', fsep = '-'), base::file.path('R'))
+NEW:
+====
+system.file(file.path('package', fsep = '-'), 'R')
+
+OLD:
+====
+system.file(file.path(), file.path('R'))
+NEW:
+====
+system.file(file.path(), 'R')
 
 OLD:
 ====

@@ -72,47 +72,41 @@ pub fn system_file(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnost
             return Ok(None);
         };
 
-        if arg.name_clause().is_some() {
-            replacement_args.push(arg.to_trimmed_string());
-            continue;
-        }
+        if arg.name_clause().is_none()
+            && let Some(file_path_call) = value.as_r_call()
+            && matches!(
+                file_path_call.function()?.to_trimmed_text().text(),
+                "file.path" | "base::file.path"
+            )
+        {
+            let mut inner_args = Vec::new();
+            let mut has_named_arg = false;
+            for inner_arg in file_path_call.arguments()?.items() {
+                let Ok(inner_arg) = inner_arg else {
+                    return Ok(None);
+                };
 
-        let Some(file_path_call) = value.as_r_call() else {
-            replacement_args.push(arg.to_trimmed_string());
-            continue;
-        };
-        let inner_function = file_path_call.function()?;
-        let inner_function_text = inner_function.to_trimmed_text();
-        if inner_function_text != "file.path" && inner_function_text != "base::file.path" {
-            replacement_args.push(arg.to_trimmed_string());
-            continue;
-        }
+                // Named arguments such as `fsep = "-"` belong to `file.path()`
+                // and cannot be moved to `system.file()`.
+                if inner_arg.name_clause().is_some() {
+                    has_named_arg = true;
+                    break;
+                }
 
-        let mut inner_args = Vec::new();
-        for inner_arg in file_path_call.arguments()?.items() {
-            let Ok(inner_arg) = inner_arg else {
-                return Ok(None);
-            };
-
-            // Named arguments such as `fsep = "-"` belong to `file.path()`
-            // and cannot be moved to `system.file()` without changing the
-            // result.
-            if inner_arg.name_clause().is_some() {
-                return Ok(None);
+                if inner_arg.value().is_none() {
+                    return Ok(None);
+                }
+                inner_args.push(inner_arg.to_trimmed_string());
             }
 
-            let Some(_) = inner_arg.value() else {
-                return Ok(None);
-            };
-            inner_args.push(inner_arg.to_trimmed_string());
+            if !has_named_arg && !inner_args.is_empty() {
+                has_file_path = true;
+                replacement_args.extend(inner_args);
+                continue;
+            }
         }
 
-        if inner_args.is_empty() {
-            return Ok(None);
-        }
-
-        has_file_path = true;
-        replacement_args.extend(inner_args);
+        replacement_args.push(arg.to_trimmed_string());
     }
 
     if !has_file_path {
