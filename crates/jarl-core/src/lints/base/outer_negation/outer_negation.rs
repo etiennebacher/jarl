@@ -46,6 +46,7 @@ pub fn outer_negation(
         "all" => "any",
         _ => return Ok(None),
     };
+
     let function = ast.function()?;
     let name_range = match &function {
         AnyRExpression::RIdentifier(_) => function.syntax().text_trimmed_range(),
@@ -95,6 +96,7 @@ pub fn outer_negation(
     }
 
     let mut value = unwrap_or_return_none!(data);
+    let data_range = value.syntax().text_trimmed_range();
     while let AnyRExpression::RParenthesizedExpression(paren) = value {
         value = paren.body()?;
     }
@@ -102,12 +104,25 @@ pub fn outer_negation(
     if unary.operator()?.kind() != RSyntaxKind::BANG {
         return Ok(None);
     }
-    let operand = unary.argument()?;
+    let mut operand = unary.argument()?;
     // Leave tidy evaluation's !! and !!! alone, but allow !-x and !+x.
     if let AnyRExpression::RUnaryExpression(inner) = &operand
         && inner.operator()?.kind() == RSyntaxKind::BANG
     {
         return Ok(None);
+    }
+
+    // Strip surrounding parentheses, except those that keep `=` an assignment
+    // or prevent `...` from expanding into several arguments.
+    while let AnyRExpression::RParenthesizedExpression(paren) = &operand {
+        let body = paren.body()?;
+        if matches!(body, AnyRExpression::RDots(_))
+            || matches!(&body, AnyRExpression::RBinaryExpression(binary)
+                if binary.operator()?.kind() == RSyntaxKind::EQUAL)
+        {
+            break;
+        }
+        operand = body;
     }
 
     // Group the new negation when this call is an operand, so e.g.
@@ -140,10 +155,7 @@ pub fn outer_negation(
             if needs_parentheses { "(!" } else { "!" }.to_string(),
         ),
         Edit::replacement(name_range, replacement_function.to_string()),
-        Edit::replacement(
-            unary.syntax().text_trimmed_range(),
-            operand.to_trimmed_string(),
-        ),
+        Edit::replacement(data_range, operand.to_trimmed_string()),
     ];
     if needs_parentheses {
         edits.push(Edit::insertion(range.end(), ")".to_string()));
