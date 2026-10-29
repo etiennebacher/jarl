@@ -260,7 +260,7 @@ g <- function(y, F = function(z) {
     fn test_fix_function_return_implicit() {
         assert_snapshot!(
             "fix_output_implicit",
-            get_fixed_text(
+            get_unsafe_fixed_text(
                 vec![
                     "f <- function(x) {\n  return(x + 1)\n}",
                     "f <- function(x) return(x)",
@@ -277,7 +277,6 @@ g <- function(y, F = function(z) {
                     "f <- function(x) {\n  return(value = x)\n}",
                 ],
                 "function_return",
-                None,
             )
         );
     }
@@ -674,7 +673,7 @@ f <- function(x) {
     fn test_fix_function_return_explicit() {
         assert_snapshot!(
             "fix_output_explicit",
-            get_fixed_text_with_settings(
+            get_unsafe_fixed_text_with_settings(
                 vec![
                     "f <- function(x) {\n  x + 1\n}",
                     "f <- function(x) {\n  if (x) {\n    1\n  } else if (y) 2 else {\n    3\n  }\n}",

@@ -409,7 +409,7 @@ declare_rules! {
         name: "function_return",
         categories: [Read],
         default: Disabled,
-        fix: Safe,
+        fix: Unsafe,
         min_r_version: None,
     },
     Glue => {

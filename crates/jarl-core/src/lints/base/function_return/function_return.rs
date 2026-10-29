@@ -63,6 +63,11 @@ const SKIPPED_FUNCTIONS: &[&str] = &[
 /// an assignment or a loop, since wrapping it in `return()` would change its
 /// meaning or its visibility.
 ///
+/// This rule has an unsafe automatic fix because `return` may refer to a
+/// function argument instead of `base::return()`, for instance in
+/// `function(x, return) x`. Adding a call to `return()` in this function
+/// would fail if the argument `return` is not provided.
+///
 /// ## Why is this bad?
 ///
 /// In R, a function automatically returns the value of its last expression,
