@@ -22,10 +22,12 @@ the function call.
 ```r
 any(!x)
 all(!x)
+any(!x, na.rm = TRUE)
 ```
 
 Use instead:
 ```r
 !all(x)
 !any(x)
+!all(x, na.rm = TRUE)
 ```

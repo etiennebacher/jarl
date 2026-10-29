@@ -117,7 +117,7 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
         checker.report_diagnostic(missing_argument(r_expr, fn_name, checker)?);
     }
     if checker.is_rule_enabled(Rule::OuterNegation) {
-        checker.report_diagnostic(outer_negation(r_expr)?);
+        checker.report_diagnostic(outer_negation(r_expr, fn_name, ns_prefix)?);
     }
     if checker.is_rule_enabled(Rule::RedundantIfelse) {
         checker.report_diagnostic(redundant_ifelse(r_expr, fn_name)?);

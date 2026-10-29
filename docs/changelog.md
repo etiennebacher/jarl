@@ -25,6 +25,9 @@
 
 ### Bug fixes
 
+* Fix `outer_negation` handling of operator precedence, pipes, and `na.rm`,
+  and detect parenthesized and namespace-qualified calls (@Yousa-Mirage).
+
 * `for_loop_index` now detects reused variables in nested expressions,
   including function definitions and variable subscripts, while ignoring
   argument labels and fixed field names (#752, @Yousa-Mirage).
