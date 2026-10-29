@@ -30,6 +30,8 @@ mod tests {
             "any(na.rm = !FALSE)",
             "all('na.rm' = !TRUE)",
             "any(!x, na.rm = TRUE, na.rm = FALSE)",
+            "any(na.rm = TRUE, na.rm = !x)",
+            "all('na.rm' = TRUE, `na.rm` = !x)",
             "any(!!a)",
             "any(!!!a)",
             "all(!!!x)",

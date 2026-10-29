@@ -1,6 +1,6 @@
 use crate::diagnostic::*;
 use crate::rule_set::Rule;
-use crate::utils::{argument_name, node_contains_comments};
+use crate::utils::{get_arg, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -59,38 +59,37 @@ pub fn outer_negation(
     // A pipe can supply additional data that is not negated. Do not rewrite
     // its right-hand call, even when that call is wrapped in parentheses.
     let mut node = ast.syntax().clone();
-    while let Some(parent) = node.parent() {
-        if RParenthesizedExpression::can_cast(parent.kind()) {
-            node = parent;
-            continue;
-        }
-        if let Some(binary) = RBinaryExpression::cast(parent)
-            && binary.right()?.syntax() == &node
-        {
-            let operator = binary.operator()?;
-            if operator.kind() == RSyntaxKind::PIPE
-                || (operator.kind() == RSyntaxKind::SPECIAL
-                    && matches!(operator.text_trimmed(), "%>%" | "%!>%" | "%T>%" | "%<>%"))
-            {
-                return Ok(None);
-            }
-        }
-        break;
+    while let Some(parent) = node
+        .parent()
+        .filter(|parent| RParenthesizedExpression::can_cast(parent.kind()))
+    {
+        node = parent;
+    }
+    if let Some(binary) = node.parent().and_then(RBinaryExpression::cast)
+        && binary.right()?.syntax() == &node
+        && matches!(
+            binary.operator()?.text_trimmed(),
+            "|>" | "%>%" | "%!>%" | "%T>%" | "%<>%"
+        )
+    {
+        return Ok(None);
     }
 
-    // all() and any() take data in `...`; only an exact `na.rm` name is a
-    // control argument. Keep one data argument and at most one na.rm argument.
+    // `...` stops positional matching, so only an exact name binds to na.rm.
+    // Duplicate na.rm names make get_arg() return None, leaving both arguments
+    // in the data count below so the call is skipped.
+    let na_rm = get_arg(ast, &["...", "na.rm"], "na.rm");
     let mut data = None;
-    let mut has_na_rm = false;
     for arg in ast.arguments()?.items() {
         let arg = arg?;
         let value = unwrap_or_return_none!(arg.value());
-        if argument_name(&arg).as_deref() == Some("na.rm") {
-            if has_na_rm {
-                return Ok(None);
-            }
-            has_na_rm = true;
-        } else if data.replace(value).is_some() {
+        if na_rm
+            .as_ref()
+            .is_some_and(|control| control.syntax() == arg.syntax())
+        {
+            continue;
+        }
+        if data.replace(value).is_some() {
             return Ok(None);
         }
     }
