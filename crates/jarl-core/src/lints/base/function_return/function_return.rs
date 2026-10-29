@@ -1,9 +1,9 @@
 use crate::diagnostic::*;
 use crate::lints::base::function_return::options::ReturnMode;
 use crate::rule_set::Rule;
-use crate::utils::{get_function_name, node_contains_comments};
+use crate::utils::{StatementsExt, get_function_name, node_contains_comments};
 use air_r_syntax::*;
-use biome_rowan::{AstNode, AstNodeList, AstSeparatedList};
+use biome_rowan::{AstNode, AstSeparatedList};
 
 /// Functions that are accepted as the last call of a function when
 /// `mode = "explicit"`, since they either return or stop the execution.
@@ -108,8 +108,8 @@ pub fn function_return(
         // Like inline functions (`function(x) x + 1`), braced bodies whose
         // last expression is on the same line as `{` are not checked.
         let Some(last) = body
-            .as_r_braced_expressions()
-            .and_then(|braced| braced.expressions().iter().last())
+            .as_r_braced_statements()
+            .and_then(|braced| braced.expressions().pop())
         else {
             return Ok(vec![]);
         };
@@ -139,7 +139,7 @@ pub fn function_return(
 /// Collect the expressions whose value can be returned by the function.
 fn collect_terminal_expressions(expr: AnyRExpression, out: &mut Vec<AnyRExpression>) {
     match &expr {
-        AnyRExpression::RBracedExpressions(braced) => match braced.expressions().iter().last() {
+        AnyRExpression::RBracedStatements(braced) => match braced.expressions().pop() {
             Some(last) => collect_terminal_expressions(last, out),
             None => out.push(expr),
         },
@@ -272,7 +272,7 @@ fn changes_when_wrapped(expr: &AnyRExpression) -> bool {
                     | RSyntaxKind::EQUAL
             )
         }),
-        AnyRExpression::RBracedExpressions(braced) => braced.expressions().is_empty(),
+        AnyRExpression::RBracedStatements(braced) => braced.expressions().is_empty(),
         AnyRExpression::RForStatement(_)
         | AnyRExpression::RWhileStatement(_)
         | AnyRExpression::RRepeatStatement(_) => true,

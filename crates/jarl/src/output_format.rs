@@ -19,6 +19,30 @@ fn make_hyperlink(text: &str) -> String {
 use jarl_core::diagnostic::{Diagnostic, render_diagnostic};
 use jarl_core::location::Location;
 
+/// Where emitters read the source of the files mentioned in diagnostics from.
+/// Files come from disk, except the virtual path of code linted from stdin,
+/// which has no file to read.
+#[derive(Debug, Default)]
+pub struct Sources {
+    stdin: Option<(String, String)>,
+}
+
+impl Sources {
+    /// Sources where `path` stands for the code `contents` read from stdin.
+    pub fn with_stdin(path: &std::path::Path, contents: String) -> Self {
+        Self { stdin: Some((relativize_path(path), contents)) }
+    }
+
+    fn read(&self, path: &std::path::Path) -> std::io::Result<String> {
+        match &self.stdin {
+            Some((stdin_path, contents)) if *stdin_path == relativize_path(path) => {
+                Ok(contents.clone())
+            }
+            _ => fs::read_to_string(path),
+        }
+    }
+}
+
 /// Prints a section header like `── Summary ──────────────────────────────────`
 /// padded to 57 characters total.
 pub fn print_section_header(title: &str) {
@@ -168,6 +192,7 @@ pub trait Emitter {
         writer: &mut W,
         diagnostics: &[&Diagnostic],
         errors: &[(String, anyhow::Error)],
+        sources: &Sources,
     ) -> anyhow::Result<()>;
 }
 
@@ -199,11 +224,11 @@ fn emit_errors_concise(errors: &[(String, anyhow::Error)]) {
 /// an annotated source snippet (message + underlined range), reusing the same
 /// renderer as lint diagnostics. Falls back to the generic summary line when the
 /// parser attached no structured information or the source can't be read.
-fn emit_errors_full(errors: &[(String, anyhow::Error)], renderer: &Renderer) {
+fn emit_errors_full(errors: &[(String, anyhow::Error)], sources: &Sources, renderer: &Renderer) {
     for (path, err) in errors {
         match err.downcast_ref::<jarl_core::error::ParseError>() {
             Some(parse_error) if !parse_error.syntax_errors.is_empty() => {
-                match fs::read_to_string(&parse_error.filename) {
+                match sources.read(&parse_error.filename) {
                     Ok(source) => {
                         for syntax_error in &parse_error.syntax_errors {
                             let rendered = jarl_core::diagnostic::render_syntax_error(
@@ -233,6 +258,7 @@ impl Emitter for ConciseEmitter {
         writer: &mut W,
         diagnostics: &[&Diagnostic],
         errors: &[(String, anyhow::Error)],
+        _sources: &Sources,
     ) -> anyhow::Result<()> {
         let mut writer = BufWriter::new(writer);
 
@@ -294,6 +320,7 @@ impl Emitter for JsonEmitter {
         writer: &mut W,
         diagnostics: &[&Diagnostic],
         errors: &[(String, anyhow::Error)],
+        _sources: &Sources,
     ) -> anyhow::Result<()> {
         let mut writer = BufWriter::new(writer);
 
@@ -355,6 +382,7 @@ impl Emitter for GithubEmitter {
         writer: &mut W,
         diagnostics: &[&Diagnostic],
         errors: &[(String, anyhow::Error)],
+        _sources: &Sources,
     ) -> anyhow::Result<()> {
         let mut writer = BufWriter::new(writer);
         emit_errors_concise(errors);
@@ -387,7 +415,22 @@ impl Emitter for GithubEmitter {
             } else {
                 diagnostic.message.body.clone()
             };
-            writeln!(writer, "[{}] {}", diagnostic.message.rule, message)?;
+            write!(writer, "[{}] {}", diagnostic.message.rule, message)?;
+            // A workflow command is a single line, so the labels follow the
+            // message as URL-encoded newlines that GitHub renders as line breaks.
+            for label in &diagnostic.labels {
+                write!(writer, "%0A{}", label.text)?;
+                if let Some(loc) = label.location {
+                    write!(
+                        writer,
+                        " ({file}:{}:{})",
+                        loc.row(),
+                        loc.column() + 1,
+                        file = diagnostic.filename.to_string_lossy()
+                    )?;
+                }
+            }
+            writeln!(writer)?;
         }
 
         writer.flush()?;
@@ -476,6 +519,8 @@ struct SarifResult<'a> {
     locations: [SarifLocation; 1],
     #[serde(skip_serializing_if = "Vec::is_empty")]
     fixes: Vec<SarifFix>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    related_locations: Vec<SarifRelatedLocation<'a>>,
 }
 
 #[derive(Debug, Serialize)]
@@ -487,6 +532,15 @@ struct SarifMessage<'a> {
 #[serde(rename_all = "camelCase")]
 struct SarifLocation {
     physical_location: SarifPhysicalLocation,
+}
+
+/// A location that explains a result, with its own message (SARIF `relatedLocations`).
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SarifRelatedLocation<'a> {
+    id: usize,
+    physical_location: SarifPhysicalLocation,
+    message: SarifMessage<'a>,
 }
 
 #[derive(Debug, Serialize)]
@@ -565,6 +619,7 @@ impl Emitter for SarifEmitter {
         writer: &mut W,
         diagnostics: &[&Diagnostic],
         errors: &[(String, anyhow::Error)],
+        sources: &Sources,
     ) -> anyhow::Result<()> {
         let mut writer = BufWriter::new(writer);
         emit_errors_concise(errors);
@@ -608,7 +663,7 @@ impl Emitter for SarifEmitter {
             let content = match content_cache.entry(diagnostic.filename.clone()) {
                 std::collections::hash_map::Entry::Occupied(entry) => entry.into_mut(),
                 std::collections::hash_map::Entry::Vacant(entry) => {
-                    let Ok(content) = fs::read_to_string(&diagnostic.filename) else {
+                    let Ok(content) = sources.read(&diagnostic.filename) else {
                         continue;
                     };
                     entry.insert(content)
@@ -657,6 +712,27 @@ impl Emitter for SarifEmitter {
                 Vec::new()
             };
 
+            let related_locations = diagnostic
+                .labels
+                .iter()
+                .enumerate()
+                .map(|(id, label)| SarifRelatedLocation {
+                    id,
+                    physical_location: SarifPhysicalLocation {
+                        artifact_location: SarifArtifactLocation {
+                            uri: uri.clone(),
+                            uri_base_id: "ROOTPATH",
+                        },
+                        region: range_to_region(
+                            content,
+                            label.range.start().into(),
+                            label.range.end().into(),
+                        ),
+                    },
+                    message: SarifMessage { text: Cow::Borrowed(label.text.as_str()) },
+                })
+                .collect();
+
             results.push(SarifResult {
                 rule_id: diagnostic.message.rule.name(),
                 rule_index: rule_indices[diagnostic.message.rule.name()],
@@ -669,6 +745,7 @@ impl Emitter for SarifEmitter {
                     },
                 }],
                 fixes,
+                related_locations,
             });
         }
 
@@ -712,6 +789,7 @@ impl Emitter for FullEmitter {
         writer: &mut W,
         diagnostics: &[&Diagnostic],
         errors: &[(String, anyhow::Error)],
+        sources: &Sources,
     ) -> anyhow::Result<()> {
         let mut writer = BufWriter::new(writer);
         // Use plain renderer when NO_COLOR is set or in snapshots
@@ -725,7 +803,7 @@ impl Emitter for FullEmitter {
         // First, print all parsing errors
         if !errors.is_empty() {
             writer.flush()?; // Flush before writing to stderr
-            emit_errors_full(errors, &renderer);
+            emit_errors_full(errors, sources, &renderer);
             if !diagnostics.is_empty() {
                 eprintln!(); // Add separator between errors and diagnostics
             }
@@ -750,7 +828,7 @@ impl Emitter for FullEmitter {
         // Pre-load all files into cache
         for diagnostic in diagnostics {
             if !file_cache.contains_key(diagnostic.filename.as_path()) {
-                match fs::read_to_string(&diagnostic.filename) {
+                match sources.read(&diagnostic.filename) {
                     Ok(content) => {
                         file_cache.insert(diagnostic.filename.as_path(), content);
                     }

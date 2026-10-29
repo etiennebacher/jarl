@@ -144,7 +144,7 @@ mod tests {
     /// `find("!!x", "!x")` returns the inner unary expression.
     fn find(source: &str, text: &str) -> AnyRExpression {
         let parsed = air_r_parser::parse(source, RParserOptions::default());
-        assert!(!parsed.has_error(), "`{source}` failed to parse");
+        assert!(!parsed.has_errors(), "`{source}` failed to parse");
         parsed
             .syntax()
             .descendants()

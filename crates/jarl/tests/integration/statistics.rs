@@ -99,7 +99,7 @@ fn test_stats_with_syntax_error() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: expected an expression
+    error: Expected a loop body but instead found the end of the file.
      --> test.R:1:7
       |
     1 | repeat
@@ -136,7 +136,7 @@ fn test_stats_with_diagnostic_and_syntax_error() -> anyhow::Result<()> {
     Rules with `[^]` have an automatic unsafe fix.
 
     ----- stderr -----
-    error: expected an expression
+    error: Expected a loop body but instead found the end of the file.
      --> test.R:2:7
       |
     2 | repeat

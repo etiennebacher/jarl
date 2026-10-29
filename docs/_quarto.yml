@@ -86,15 +86,16 @@ website:
             - rules/all_equal.md
             - rules/any_duplicated.md
             - rules/any_is_na.md
+            - rules/assignment_on_if_no_else.md
             - rules/assignment.md
             - rules/blanket_suppression.md
-            - rules/browser.md
             - rules/class_equals.md
             - rules/coalesce.md
             - rules/comparison_negation.md
             - rules/condition_call.md
             - rules/condition_message.md
             - rules/consecutive_signs.md
+            - rules/cyclomatic_complexity.md
             - rules/download_file.md
             - rules/dplyr_filter_out.md
             - rules/dplyr_group_by_ungroup.md
@@ -160,6 +161,7 @@ website:
             - rules/string_boundary.md
             - rules/strings_as_factors.md
             - rules/system_file.md
+            - rules/todo_comment.md
             - rules/true_false_symbol.md
             - rules/undesirable_function.md
             - rules/undesirable_operator.md
@@ -172,3 +174,4 @@ website:
             - rules/unused_object.md
             - rules/vector_logic.md
             - rules/which_grepl.md
+            - rules/yoda_condition.md

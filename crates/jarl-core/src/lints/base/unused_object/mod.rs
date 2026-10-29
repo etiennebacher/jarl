@@ -45,7 +45,6 @@ mod tests {
             min_r_version: None,
             allow_dirty: false,
             allow_no_vcs: true,
-            assignment: None,
         };
         let config = crate::config::build_config(&args, None, vec![main_path.to_path_buf()])
             .expect("build config");

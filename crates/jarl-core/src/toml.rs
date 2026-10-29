@@ -16,6 +16,7 @@ use std::path::PathBuf;
 
 use crate::config::resolve_rule_names;
 use crate::lints::base::assignment::options::AssignmentOptions;
+use crate::lints::base::cyclomatic_complexity::options::CyclomaticComplexityOptions;
 use crate::lints::base::duplicated_arguments::options::DuplicatedArgumentsOptions;
 use crate::lints::base::function_return::options::FunctionReturnOptions;
 use crate::lints::base::if_not_else::options::IfNotElseOptions;
@@ -101,8 +102,10 @@ pub fn parse_jarl_toml(path: &Path) -> Result<TomlOptions, ParseTomlError> {
 
 /// `[lint.<rule>]` options holding inline tables whose keys must be quoted,
 /// as `(rule, options)` pairs.
-const QUOTED_KEY_OPTIONS: &[(&str, &[&str])] =
-    &[("undesirable_function", &["functions", "extend-functions"])];
+const QUOTED_KEY_OPTIONS: &[(&str, &[&str])] = &[
+    ("undesirable_function", &["functions", "extend-functions"]),
+    ("undesirable_operator", &["operators", "extend-operators"]),
+];
 
 /// Find an unquoted key in an inline table listed in [QUOTED_KEY_OPTIONS] and
 /// return the error message for it.
@@ -361,6 +364,13 @@ pub struct LinterTomlOptions {
     /// Valid values are `"<-"` (the default) and `"="`.
     pub assignment: Option<AssignmentOptions>,
 
+    /// # Options for the `cyclomatic_complexity` rule
+    ///
+    /// Use `max-complexity` to set the highest score a function (or the
+    /// top-level code of a file) is allowed to reach before it is reported.
+    #[serde(rename = "cyclomatic_complexity")]
+    pub cyclomatic_complexity: Option<CyclomaticComplexityOptions>,
+
     /// # Options for the `duplicated_arguments` rule
     ///
     /// Use `skipped-functions` to fully replace the default list of functions
@@ -448,6 +458,8 @@ pub struct LinterTomlOptions {
     ///
     /// Use `operators` to fully replace the default list of undesirable operators.
     /// Use `extend-operators` to add to the default list.
+    /// Entries in `operators` and `extend-operators` can be strings or inline
+    /// tables mapping an operator to a custom message.
     /// Specifying both is an error.
     #[serde(rename = "undesirable_operator")]
     pub undesirable_operator: Option<UndesirableOperatorOptions>,

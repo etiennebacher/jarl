@@ -27,6 +27,7 @@ mod rule;
 mod rules;
 mod shell_completion;
 mod statistics;
+mod stdin;
 mod syntax_errors;
 mod toml;
 mod toml_hierarchical;

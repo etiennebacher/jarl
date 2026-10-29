@@ -4,7 +4,10 @@
 //! It handles diagnostics, code actions, and fixes for automatic issue resolution.
 
 use anyhow::{Result, anyhow};
-use gen_lsp_types::{Code, Diagnostic, DiagnosticSeverity, Message, Position, Range};
+use gen_lsp_types::{
+    Code, Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity, Location, Message,
+    Position, Range, Uri,
+};
 use serde::{Deserialize, Serialize};
 
 use std::path::{Path, PathBuf};
@@ -16,14 +19,11 @@ use crate::utils::should_exclude_file_based_on_settings;
 
 use air_fs::relativize_path;
 use air_workspace::resolve::PathResolver;
-use jarl_core::check::get_checks;
+use jarl_core::check::{analyze_packages, get_checks, package_sibling_r_files};
 use jarl_core::config::{ArgsConfig, build_config};
 use jarl_core::diagnostic::Diagnostic as JarlDiagnostic;
 use jarl_core::discovery::{DiscoveredSettings, discover_settings};
-use jarl_core::fs::has_r_extension;
-use jarl_core::package::{is_in_r_package, make_package_analysis, summarize_package_info};
 use jarl_core::rule_set::Rule;
-use jarl_core::settings::Settings;
 
 /// A single replacement making up a fix
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -81,10 +81,18 @@ pub fn lint_document(snapshot: &DocumentSnapshot) -> Result<LintOutput> {
         refreshed_packages,
     } = run_jarl_linting(content, file_path.as_deref(), snapshot)?;
 
+    // Labels are only sent to clients that can show them.
+    let related_information_uri = supports_related_information(snapshot).then(|| snapshot.uri());
+
     // Convert to LSP diagnostics with fix information
     let mut lsp_diagnostics = Vec::new();
     for jarl_diagnostic in jarl_diagnostics {
-        let lsp_diagnostic = convert_to_lsp_diagnostic(&jarl_diagnostic, content, encoding)?;
+        let lsp_diagnostic = convert_to_lsp_diagnostic(
+            &jarl_diagnostic,
+            content,
+            encoding,
+            related_information_uri,
+        )?;
         lsp_diagnostics.push(lsp_diagnostic);
     }
 
@@ -128,7 +136,7 @@ fn run_jarl_linting(
 
     // Discover settings from the actual file path.
     let actual_file_path = vec![file_path.to_string_lossy().to_string()];
-    let mut resolver = PathResolver::new(Settings::default());
+    let mut resolver = PathResolver::new();
     for DiscoveredSettings { directory, settings, .. } in discover_settings(&actual_file_path)? {
         resolver.add(&directory, settings);
         tracing::debug!("Discovered settings from directory: {:?}", directory);
@@ -152,7 +160,6 @@ fn run_jarl_linting(
         min_r_version: None,
         allow_dirty: false,
         allow_no_vcs: false,
-        assignment: None,
     };
 
     let toml_settings = resolver.items().first().map(|item| item.value());
@@ -172,17 +179,8 @@ fn run_jarl_linting(
 
     // Compute package-level analysis using the real file's sibling R files.
     let analysis_paths =
-        collect_sibling_r_files(file_path).unwrap_or_else(|| vec![file_path.to_path_buf()]);
-    let (pkg_contexts, file_pkg_info) = summarize_package_info(&analysis_paths);
-    let namespace_contents: std::collections::HashMap<PathBuf, String> = pkg_contexts
-        .iter()
-        .filter_map(|(root, ctx)| {
-            ctx.namespace_content
-                .as_ref()
-                .map(|c| (root.clone(), c.clone()))
-        })
-        .collect();
-    let pkg = make_package_analysis(&analysis_paths, &config, &namespace_contents);
+        package_sibling_r_files(file_path).unwrap_or_else(|| vec![file_path.to_path_buf()]);
+    let (pkg, pkg_contexts, file_pkg_info) = analyze_packages(&analysis_paths, &config);
 
     // Call get_checks directly with the in-memory content and the real
     // (relativized) file path, avoiding the old tempfile round-trip.
@@ -248,27 +246,26 @@ fn run_jarl_linting(
     })
 }
 
-/// If `file_path` lives inside an R package's `R/` directory, return all
-/// `.R` files in that directory. Returns `None` otherwise.
-fn collect_sibling_r_files(file_path: &Path) -> Option<Vec<PathBuf>> {
-    if !is_in_r_package(file_path).unwrap_or(false) {
-        return None;
-    }
-    let r_dir = file_path.parent()?;
-    let entries = std::fs::read_dir(r_dir).ok()?;
-    let files = entries
-        .filter_map(|e| e.ok())
-        .map(|e| e.path())
-        .filter(|p| has_r_extension(p))
-        .collect();
-    Some(files)
+/// Whether the client displays `relatedInformation` on diagnostics.
+fn supports_related_information(snapshot: &DocumentSnapshot) -> bool {
+    snapshot
+        .client_capabilities()
+        .text_document
+        .as_ref()
+        .and_then(|text_document| text_document.publish_diagnostics.as_ref())
+        .and_then(|publish| publish.diagnostics_capabilities.related_information)
+        .unwrap_or(false)
 }
 
-/// Convert a Jarl diagnostic to LSP diagnostic format with fix information
+/// Convert a Jarl diagnostic to LSP diagnostic format with fix information.
+///
+/// `related_information_uri` is the document URI when the client supports
+/// related information: the diagnostic's labels then point at it.
 fn convert_to_lsp_diagnostic(
     jarl_diag: &JarlDiagnostic,
     content: &str,
     encoding: PositionEncoding,
+    related_information_uri: Option<&Uri>,
 ) -> Result<Diagnostic> {
     // Use the TextRange from the diagnostic for accurate positioning
     let text_range = jarl_diag.range;
@@ -312,6 +309,26 @@ fn convert_to_lsp_diagnostic(
         jarl_diag.message.body.clone()
     };
 
+    let related_information = match related_information_uri {
+        Some(uri) if !jarl_diag.labels.is_empty() => Some(
+            jarl_diag
+                .labels
+                .iter()
+                .map(|label| {
+                    let start =
+                        byte_offset_to_lsp_position(label.range.start().into(), content, encoding)?;
+                    let end =
+                        byte_offset_to_lsp_position(label.range.end().into(), content, encoding)?;
+                    Ok(DiagnosticRelatedInformation {
+                        location: Location::new(uri.clone(), Range::new(start, end)),
+                        message: label.text.clone(),
+                    })
+                })
+                .collect::<Result<Vec<_>>>()?,
+        ),
+        _ => None,
+    };
+
     let diagnostic = Diagnostic {
         range,
         severity: Some(severity),
@@ -319,7 +336,7 @@ fn convert_to_lsp_diagnostic(
         code_description: None,
         source: Some(DIAGNOSTIC_SOURCE.to_string()),
         message: Message::String(message),
-        related_information: None,
+        related_information,
         tags: None,
         data: fix_data, // Include fix information for code actions when available
     };
@@ -436,6 +453,76 @@ mod tests {
             PositionEncoding::UTF8,
             ClientCapabilities::default(),
         )
+    }
+
+    fn related_information_snapshot(
+        file_path: &std::path::Path,
+        content: &str,
+        supported: bool,
+    ) -> DocumentSnapshot {
+        let uri = Uri::from_file_path(file_path).unwrap();
+        let mut capabilities = ClientCapabilities::default();
+        if supported {
+            capabilities.text_document = Some(gen_lsp_types::TextDocumentClientCapabilities {
+                publish_diagnostics: Some(gen_lsp_types::PublishDiagnosticsClientCapabilities {
+                    diagnostics_capabilities: gen_lsp_types::DiagnosticsCapabilities {
+                        related_information: Some(true),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                }),
+                ..Default::default()
+            });
+        }
+        DocumentSnapshot::new(
+            TextDocument::new(content.to_string(), 1),
+            DocumentKey::from(uri),
+            PositionEncoding::UTF8,
+            capabilities,
+        )
+    }
+
+    #[test]
+    fn test_labels_become_related_information_when_supported() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test.R");
+        let content = "x <- 1\nx <- if (a) 2\n";
+        std::fs::write(&file_path, content).unwrap();
+
+        let snapshot = related_information_snapshot(&file_path, content, true);
+        let output = lint_document(&snapshot).unwrap();
+        let diagnostic = output
+            .diagnostics
+            .iter()
+            .find(|d| matches!(&d.code, Some(Code::String(c)) if c == "assignment_on_if_no_else"))
+            .expect("assignment_on_if_no_else is reported");
+        let related = diagnostic
+            .related_information
+            .as_ref()
+            .expect("related information");
+        assert_eq!(related.len(), 1);
+        assert_eq!(related[0].message, "`x` was last assigned here");
+        assert_eq!(
+            related[0].location.range,
+            Range::new(Position::new(0, 0), Position::new(0, 1))
+        );
+    }
+
+    #[test]
+    fn test_labels_are_dropped_when_unsupported() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test.R");
+        let content = "x <- 1\nx <- if (a) 2\n";
+        std::fs::write(&file_path, content).unwrap();
+
+        let snapshot = related_information_snapshot(&file_path, content, false);
+        let output = lint_document(&snapshot).unwrap();
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .all(|d| d.related_information.is_none())
+        );
     }
 
     #[test]

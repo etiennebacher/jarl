@@ -1,8 +1,9 @@
 use crate::diagnostic::*;
 use crate::rule_set::Rule;
+use crate::utils::StatementsExt;
 use crate::utils::{get_function_name, line_start, next_line_start};
 use air_r_syntax::*;
-use biome_rowan::{AstNode, AstNodeList, TextRange, TextSize};
+use biome_rowan::{AstNode, TextRange, TextSize};
 
 /// A top-level statement that is either a `library()` call (possibly wrapped
 /// in `suppressMessages()`/`suppressPackageStartupMessages()`) or an `if`
@@ -176,7 +177,7 @@ fn if_is_library_only(if_stmt: &RIfStatement) -> bool {
 /// library statements, or a single library statement itself (including a
 /// nested `if` for `else if` chains).
 fn branch_is_library_only(branch: &AnyRExpression) -> bool {
-    if let Some(braced) = branch.as_r_braced_expressions() {
+    if let Some(braced) = branch.as_r_braced_statements() {
         return braced
             .expressions()
             .iter()

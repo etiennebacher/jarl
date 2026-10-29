@@ -398,7 +398,7 @@ impl SuppressionManager {
         // Increment nesting level when entering braced expressions (function bodies, etc.)
         let mut is_first = is_first_expression;
         for child in node.children() {
-            let child_nesting = if child.kind() == RSyntaxKind::R_BRACED_EXPRESSIONS {
+            let child_nesting = if child.kind() == RSyntaxKind::R_BRACED_STATEMENTS {
                 nesting_level + 1
             } else {
                 nesting_level

@@ -367,8 +367,8 @@ fn classify_class_expression(expression: &AnyRExpression) -> ClassExpressionKind
         return ClassExpressionKind::Dynamic;
     };
 
-    let content = string.content_token();
-    let class_name = content.as_ref().map_or("", |token| token.text_trimmed());
+    let class_name = string.inner_string_text().ok();
+    let class_name = class_name.as_ref().map_or("", |text| text.text());
 
     if NON_S3_CLASSES.contains(&class_name) {
         ClassExpressionKind::UnsupportedLiteral

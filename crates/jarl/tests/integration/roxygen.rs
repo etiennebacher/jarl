@@ -1247,3 +1247,60 @@ foo <- function(x) x
 
     Ok(())
 }
+
+/// The label of a diagnostic is remapped from the example's virtual source to
+/// the real file together with the diagnostic's own range.
+#[test]
+fn test_roxygen_examples_labels_are_remapped() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
+        ),
+        ("NAMESPACE", ""),
+        (
+            "R/test.R",
+            "\
+#' Title
+#' @examples
+#' x <- 1
+#' x <- if (a) 2
+foo <- function() NULL
+",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("assignment_on_if_no_else")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: assignment_on_if_no_else
+     --> R/test.R:4:4
+      |
+    3 | #' x <- 1
+      |    - `x` was last assigned here
+    4 | #' x <- if (a) 2
+      |    ^^^^^^^^^^^^^ This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
+      |
+      = help: Add a final `else` branch if `NULL` is the intended fallback, or move the assignment into the `if` branches.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
