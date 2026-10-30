@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.10.19">
+<meta name="generator" content="quarto-1.10.20">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -77,7 +77,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-bf27225e3a48a9273f3daa8f8e829971.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-17888a1159294d3eb470f19f6f52f5a5.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="site_libs/bootstrap/bootstrap-38576ff869e23da2867d7480c872199b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
@@ -406,6 +406,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><p>Improved rules:</p>
 <ul>
 <li>The <code>seq2</code> rule now also reports <code>seq_len(length(...))</code> and suggests <code>seq_along(...)</code> (<a href="https://github.com/etiennebacher/jarl/issues/761" target="_blank">#761</a>, <span class="citation" data-cites="JosephBARBIERDARNAL"><a href="https://github.com/JosephBARBIERDARNAL" target="_blank">@JosephBARBIERDARNAL</a></span>).</li>
+<li><code>outer_negation</code> now reports cases with <code>!</code> both inside and outside the call (<a href="https://github.com/etiennebacher/jarl/issues/779" target="_blank">#779</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</li>
 </ul></li>
 <li><p>Jarl handles parsing errors better, which may lead to more code being analysed in files with parsing errors (<a href="https://github.com/etiennebacher/jarl/issues/762" target="_blank">#762</a>). Thanks to Davis Vaughan for his work upstream in Air and Aether.</p></li>
 <li><p><code>undesirable_operator</code> now accepts inline tables in <code>operators</code> and <code>extend-operators</code> to attach custom messages to undesirable operators (<a href="https://github.com/etiennebacher/jarl/issues/742" target="_blank">#742</a>).</p></li>
@@ -415,6 +416,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="bug-fixes" class="level3">
 <h3 class="anchored" data-anchor-id="bug-fixes">Bug fixes</h3>
 <ul>
+<li><p>Fix <code>outer_negation</code> handling of operator precedence, pipes, and <code>na.rm</code>, and detect parenthesized and namespace-qualified calls. Its fix is now unsafe because it can change warnings and errors for inputs that are not logical (<a href="https://github.com/etiennebacher/jarl/issues/779" target="_blank">#779</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
 <li><p><code>for_loop_index</code> now detects reused variables in nested expressions, including function definitions and variable subscripts, while ignoring argument labels and fixed field names (<a href="https://github.com/etiennebacher/jarl/issues/752" target="_blank">#752</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
 <li><p>Prevent <code>unused_object</code> from reporting objects exported by <code>exportPattern()</code> (<a href="https://github.com/etiennebacher/jarl/issues/711" target="_blank">#711</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
 <li><p>Fix detection of backtick-quoted indices in <code>for_loop_dup_index</code> (<a href="https://github.com/etiennebacher/jarl/issues/753" target="_blank">#753</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
