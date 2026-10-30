@@ -13,6 +13,8 @@
 
   * The `seq2` rule now also reports `seq_len(length(...))` and suggests `seq_along(...)`
     (#761, @JosephBARBIERDARNAL).
+  * `outer_negation` now reports cases with `!` both inside and outside the call (#779,
+    @Yousa-Mirage).
 
 * Jarl handles parsing errors better, which may lead to more code being analysed
   in files with parsing errors (#762). Thanks to Davis Vaughan for his work
@@ -26,7 +28,7 @@
 ### Bug fixes
 
 * Fix `outer_negation` handling of operator precedence, pipes, and `na.rm`,
-  and detect parenthesized and namespace-qualified calls (@Yousa-Mirage).
+  and detect parenthesized and namespace-qualified calls (#779, @Yousa-Mirage).
 
 * `for_loop_index` now detects reused variables in nested expressions,
   including function definitions and variable subscripts, while ignoring
