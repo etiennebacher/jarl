@@ -1,8 +1,11 @@
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_name, get_arg_by_name_then_position, node_contains_comments};
+use crate::rule_set::Rule;
+use crate::utils::{Formals, get_arg, get_arg_by_name, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 use biome_rowan::AstSeparatedList;
+
+const FORMALS_APPLY: Formals = &["X", "MARGIN", "FUN"];
 
 /// Version added: 0.6.0
 ///
@@ -51,9 +54,9 @@ pub fn apply_paste(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnost
         return Ok(None);
     }
 
-    let x = get_arg_by_name_then_position(&args, "X", 1);
-    let margin = get_arg_by_name_then_position(&args, "MARGIN", 2);
-    let fun = get_arg_by_name_then_position(&args, "FUN", 3);
+    let x = get_arg(ast, FORMALS_APPLY, "X");
+    let margin = get_arg(ast, FORMALS_APPLY, "MARGIN");
+    let fun = get_arg(ast, FORMALS_APPLY, "FUN");
     let collapse = unwrap_or_return_none!(get_arg_by_name(&args, "collapse"));
 
     let fun_value = unwrap_or_return_none!(fun.and_then(|arg| arg.value()));
@@ -81,17 +84,12 @@ pub fn apply_paste(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnost
 
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "apply_paste".to_string(),
+            Rule::ApplyPaste,
             "`apply()` with `paste()` is inefficient.".to_string(),
             Some("Use `do.call(paste, c(x, sep = ...))` instead.".to_string()),
         ),
         range,
-        Fix {
-            content: fix,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(range, fix, node_contains_comments(ast.syntax())),
     );
 
     Ok(Some(diagnostic))
