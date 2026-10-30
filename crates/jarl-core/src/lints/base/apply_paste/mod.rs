@@ -17,6 +17,8 @@ mod tests {
         expect_no_lint("apply(x, 1, paste)", "apply_paste", None);
         // Margin is not 1
         expect_no_lint("apply(x, 2, paste, collapse = \"_\")", "apply_paste", None);
+        // `collapse = NULL` doesn't collapse rows
+        expect_no_lint("apply(x, 1, paste, collapse = NULL)", "apply_paste", None);
         // Extra argument forwarded to `paste` that we can't translate
         expect_no_lint(
             "apply(x, 1, paste, sep = \" \", collapse = \"_\")",

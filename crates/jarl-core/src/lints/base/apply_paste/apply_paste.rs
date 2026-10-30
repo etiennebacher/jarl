@@ -22,10 +22,22 @@ const FORMALS_APPLY: Formals = &["X", "MARGIN", "FUN"];
 /// obtained in a single call with `do.call(paste, c(x, sep = ...))`, which is
 /// both faster and clearer.
 ///
-/// The automated fix is marked unsafe because `do.call(paste, c(x, sep = ...))`
-/// only reproduces the original result when `x` is a `data.frame` (a list of
-/// columns). For a plain matrix, `c(x, sep = ...)` flattens all elements
-/// instead of keeping one entry per column, so the fix would change the result.
+/// The automated fix is marked unsafe because the result of
+/// `do.call(paste, c(x, sep = ...))` depends on the type and content of `x`. 
+/// It can differ from the original call when:
+///
+/// - `x` is a matrix: `c(x, sep = ...)` is not a list, so `do.call()` errors.
+/// - `x` is a `data.frame` mixing character and non-character columns:
+///   `apply()` converts it with `as.matrix()`, which pads numbers and logicals
+///   to a common width (e.g. `" 1_x"` instead of `"1_x"`).
+/// - `x` has a column named `sep`, `collapse`, or `recycle0`: it is matched to
+///   the argument of `paste()` with the same name, which either errors or
+///   changes the output.
+/// - `x` has non-automatic row names: `apply()` uses them to name the output,
+///   `do.call(paste, ...)` does not.
+/// - `collapse` is a variable that evaluates to `NULL`: `apply()` doesn't
+///   collapse rows, while `c()` drops `sep = NULL` so `paste()` uses its
+///   default `sep = " "`.
 ///
 /// ## Example
 ///
@@ -79,6 +91,10 @@ pub fn apply_paste(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnost
     let x = x_value.to_trimmed_string();
 
     let collapse_value = unwrap_or_return_none!(collapse.value());
+    // `collapse = NULL` doesn't collapse rows, so there's nothing to rewrite.
+    if collapse_value.as_r_null_expression().is_some() {
+        return Ok(None);
+    }
     let collapse = collapse_value.to_trimmed_string();
 
     let range = ast.syntax().text_trimmed_range();
