@@ -43,3 +43,27 @@ updates:
       rust:
         patterns:
           - '*'
+
+  # VS Code / Positron extension
+  - package-ecosystem: npm
+    directory: '/editors/code'
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 14
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-patch']
+      # Must not be newer than `engines.vscode` in package.json, otherwise
+      # `vsce package` fails
+      - dependency-name: '@types/vscode'
+      # Matches the Node version shipped with VS Code
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+    commit-message:
+      prefix: build
+      prefix-development: chore(vscode)
+    groups:
+      vscode:
+        patterns:
+          - '*'
