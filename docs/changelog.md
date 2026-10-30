@@ -27,6 +27,9 @@
 
 * Jarl suggests more potential names when a rule name is unknown (#777).
 
+* New option `ignore-roxygen` in `jarl.toml` to ignore some rules only in
+  roxygen `@examples` and `@examplesIf` sections (#780).
+
 ### Bug fixes
 
 * Fix `outer_negation` handling of operator precedence, pipes, and `na.rm`,

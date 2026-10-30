@@ -134,6 +134,17 @@
             "null"
           ]
         },
+        "ignore-roxygen": {
+          "title": "Rules to ignore in roxygen examples",
+          "description": "A list of rules (or rule groups) that are not checked in R code found in\nroxygen2 `@examples` and `@examplesIf` sections. These rules are still\nchecked in the rest of the file.\n\nFor example:\n\n```toml\n[lint]\nignore-roxygen = [\"unused_object\"]\n```",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
         "assignment": {
           "title": "Options for the `assignment` rule",
           "description": "Use `operator` to specify which assignment operator to enforce.\nValid values are `\"<-\"` (the default) and `\"=\"`.",

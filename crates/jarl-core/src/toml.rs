@@ -153,6 +153,7 @@ const LINT_OPTIONS: &[&str] = &[
     "per-file-ignores",
     "check-roxygen",
     "fix-roxygen",
+    "ignore-roxygen",
 ];
 
 /// Find a `[lint]` key that holds a non-table value but isn't a primary option.
@@ -358,6 +359,20 @@ pub struct LinterTomlOptions {
     ///
     /// Defaults to `false`.
     pub fix_roxygen: Option<bool>,
+
+    /// # Rules to ignore in roxygen examples
+    ///
+    /// A list of rules (or rule groups) that are not checked in R code found in
+    /// roxygen2 `@examples` and `@examplesIf` sections. These rules are still
+    /// checked in the rest of the file.
+    ///
+    /// For example:
+    ///
+    /// ```toml
+    /// [lint]
+    /// ignore-roxygen = ["unused_object"]
+    /// ```
+    pub ignore_roxygen: Option<Vec<String>>,
     /// # Options for the `assignment` rule
     ///
     /// Use `operator` to specify which assignment operator to enforce.
@@ -545,6 +560,7 @@ impl TomlOptions {
             default_exclude: linter.default_exclude,
             check_roxygen: linter.check_roxygen,
             fix_roxygen: linter.fix_roxygen,
+            ignore_roxygen: linter.ignore_roxygen,
             fixable: linter.fixable,
             unfixable: linter.unfixable,
             rule_options,
