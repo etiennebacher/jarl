@@ -296,6 +296,7 @@ configuration file, see the relevant rule documentation page for details:
 * [`assignment`](../rules/assignment.md#configuration-options)
 * [`cyclomatic_complexity`](../rules/cyclomatic_complexity.md#configuration-options)
 * [`duplicated_arguments`](../rules/duplicated_arguments.md#configuration-options)
+* [`function_return`](../rules/function_return.md#configuration-options)
 * [`if_not_else`](../rules/if_not_else.md#configuration-options)
 * [`implicit_assignment`](../rules/implicit_assignment.md#configuration-options)
 * [`missing_argument`](../rules/missing_argument.md#configuration-options)

@@ -93,6 +93,7 @@ declare_rule_options! {
     base::assignment => ResolvedAssignmentOptions,
     base::cyclomatic_complexity => ResolvedCyclomaticComplexityOptions,
     base::duplicated_arguments => ResolvedDuplicatedArgumentsOptions,
+    base::function_return => ResolvedFunctionReturnOptions,
     base::if_not_else => ResolvedIfNotElseOptions,
     base::implicit_assignment => ResolvedImplicitAssignmentOptions,
     base::missing_argument => ResolvedMissingArgumentOptions,

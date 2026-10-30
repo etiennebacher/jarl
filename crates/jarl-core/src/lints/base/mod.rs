@@ -21,6 +21,7 @@ pub(crate) mod equals_null;
 pub(crate) mod fixed_regex;
 pub(crate) mod for_loop_dup_index;
 pub(crate) mod for_loop_index;
+pub(crate) mod function_return;
 pub(crate) mod glue;
 pub(crate) mod grepv;
 pub(crate) mod if_always_true;

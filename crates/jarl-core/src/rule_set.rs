@@ -405,6 +405,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    FunctionReturn => {
+        name: "function_return",
+        categories: [Read],
+        default: Disabled,
+        fix: Unsafe,
+        min_r_version: None,
+    },
     Glue => {
         name: "glue",
         categories: [Corr, Susp],

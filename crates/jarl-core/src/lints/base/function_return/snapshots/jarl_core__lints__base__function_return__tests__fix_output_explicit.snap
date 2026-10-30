@@ -1,0 +1,124 @@
+---
+source: crates/jarl-core/src/lints/base/function_return/mod.rs
+expression: "get_fixed_text_with_settings(vec![\"f <- function(x) {\\n  x + 1\\n}\",\n\"f <- function(x) {\\n  if (x) {\\n    1\\n  } else if (y) 2 else {\\n    3\\n  }\\n}\",\n\"f <- function(x) {\\n  switch(x, a = 1, 2)\\n}\",\n\"f <- function(x) {\\n  x |>\\n    # comment\\n    mean()\\n}\",\n\"f <- function(x) {\\n  function() {\\n    x\\n  }\\n}\",\n\"f <- function(x) {\\n  y <- x\\n}\", \"f <- function(x) {\\n  y = x\\n}\",\n\"f <- function(x) {\\n  for (i in x) print(i)\\n}\",\n\"f <- function(x) {\\n  if (x) {\\n  } else {\\n    return(1)\\n  }\\n}\",],\n\"function_return\", None, Some(settings(ReturnMode::Explicit)),)"
+---
+OLD:
+====
+f <- function(x) {
+  x + 1
+}
+NEW:
+====
+f <- function(x) {
+  return(x + 1)
+}
+
+OLD:
+====
+f <- function(x) {
+  if (x) {
+    1
+  } else if (y) 2 else {
+    3
+  }
+}
+NEW:
+====
+f <- function(x) {
+  if (x) {
+    return(1)
+  } else if (y) return(2) else {
+    return(3)
+  }
+}
+
+OLD:
+====
+f <- function(x) {
+  switch(x, a = 1, 2)
+}
+NEW:
+====
+f <- function(x) {
+  switch(x, a = return(1), return(2))
+}
+
+OLD:
+====
+f <- function(x) {
+  x |>
+    # comment
+    mean()
+}
+NEW:
+====
+f <- function(x) {
+  return(x |>
+    # comment
+    mean())
+}
+
+OLD:
+====
+f <- function(x) {
+  function() {
+    x
+  }
+}
+NEW:
+====
+f <- function(x) {
+  return(function() {
+    return(x)
+  })
+}
+
+OLD:
+====
+f <- function(x) {
+  y <- x
+}
+NEW:
+====
+f <- function(x) {
+  y <- x
+}
+
+OLD:
+====
+f <- function(x) {
+  y = x
+}
+NEW:
+====
+f <- function(x) {
+  y = x
+}
+
+OLD:
+====
+f <- function(x) {
+  for (i in x) print(i)
+}
+NEW:
+====
+f <- function(x) {
+  for (i in x) print(i)
+}
+
+OLD:
+====
+f <- function(x) {
+  if (x) {
+  } else {
+    return(1)
+  }
+}
+NEW:
+====
+f <- function(x) {
+  if (x) {
+  } else {
+    return(1)
+  }
+}

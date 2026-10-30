@@ -119,6 +119,7 @@ website:
             - rules/fixed_regex.md
             - rules/for_loop_dup_index.md
             - rules/for_loop_index.md
+            - rules/function_return.md
             - rules/glue.md
             - rules/grepv.md
             - rules/if_always_true.md

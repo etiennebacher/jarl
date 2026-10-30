@@ -170,6 +170,18 @@
             }
           ]
         },
+        "function_return": {
+          "title": "Options for the `function_return` rule",
+          "description": "Use `mode` to choose the preferred return style in functions. Valid\nvalues are `\"implicit\"` (default) and `\"explicit\"`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FunctionReturnOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "if_not_else": {
           "title": "Options for the `if_not_else` rule",
           "description": "Use `skipped-functions` to fully replace the default list of functions\nwhose negated calls are allowed as an `if`/`ifelse()` condition. Use\n`extend-skipped-functions` to add to the default list.\nSpecifying both is an error.",
@@ -365,6 +377,19 @@
           "items": {
             "type": "string"
           }
+        }
+      },
+      "additionalProperties": false
+    },
+    "FunctionReturnOptions": {
+      "description": "<!-- docs: start -->\nThe `mode` option takes a single value (`\"implicit\"` or `\"explicit\"`)\nindicating the preferred return style in functions. If `mode = \"implicit\"`,\nthen any `return()` call in a terminal position of a function will be\nreported. If `mode = \"explicit\"`, then any terminal expression that isn't\nwrapped in `return()` (or in a function that stops execution, such as\n`stop()`) will be reported.\n\n### Default values\n\n```toml\nmode = \"implicit\"\n```\n\n### TOML settings\n\n```toml\n[lint]\n...\n\n[lint.function_return]\n# Require explicit `return()` calls instead\nmode = \"explicit\"\n```\n<!-- docs: end -->",
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
       "additionalProperties": false

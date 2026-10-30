@@ -18,6 +18,7 @@ use crate::config::resolve_rule_names;
 use crate::lints::base::assignment::options::AssignmentOptions;
 use crate::lints::base::cyclomatic_complexity::options::CyclomaticComplexityOptions;
 use crate::lints::base::duplicated_arguments::options::DuplicatedArgumentsOptions;
+use crate::lints::base::function_return::options::FunctionReturnOptions;
 use crate::lints::base::if_not_else::options::IfNotElseOptions;
 use crate::lints::base::implicit_assignment::options::ImplicitAssignmentOptions;
 use crate::lints::base::missing_argument::options::MissingArgumentOptions;
@@ -378,6 +379,13 @@ pub struct LinterTomlOptions {
     /// Specifying both is an error.
     #[serde(rename = "duplicated_arguments")]
     pub duplicated_arguments: Option<DuplicatedArgumentsOptions>,
+
+    /// # Options for the `function_return` rule
+    ///
+    /// Use `mode` to choose the preferred return style in functions. Valid
+    /// values are `"implicit"` (default) and `"explicit"`.
+    #[serde(rename = "function_return")]
+    pub function_return: Option<FunctionReturnOptions>,
 
     /// # Options for the `if_not_else` rule
     ///
