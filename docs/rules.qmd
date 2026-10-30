@@ -106,6 +106,7 @@ dat <- as.data.frame(
     c("library_call", "readability", "❗", "Disabled by default"),
     c("list2df", "performance, readability", "✅", "R >= 4.0"),
     c("literal_coercion", "readability", "✅", ""),
+    c("loop_invariant", "performance", "❌", "Disabled by default"),
     c("matrix_apply", "performance", "✅", ""),
     c("misnamed_suppression", "comments", "❌", ""),
     c("misplaced_file_suppression", "comments", "❌", ""),

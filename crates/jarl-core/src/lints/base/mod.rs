@@ -35,6 +35,7 @@ pub(crate) mod lengths;
 pub(crate) mod library_call;
 pub(crate) mod list2df;
 pub(crate) mod literal_coercion;
+pub(crate) mod loop_invariant;
 pub(crate) mod matrix_apply;
 pub(crate) mod missing_argument;
 pub(crate) mod nested_pipe;

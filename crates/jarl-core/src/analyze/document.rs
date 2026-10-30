@@ -1,4 +1,4 @@
-use air_r_syntax::{AnyRExpression, RBinaryExpression, RSyntaxNode};
+use air_r_syntax::{AnyRExpression, RBinaryExpression, RForStatement, RSyntaxNode};
 use biome_rowan::{AstNode, SyntaxNodeCast};
 use oak_semantic::semantic_index::SemanticIndex;
 
@@ -7,6 +7,7 @@ use crate::diagnostic::*;
 use crate::lints::base::assignment_on_if_no_else::assignment_on_if_no_else::assignment_on_if_no_else;
 use crate::lints::base::empty_file::empty_file::empty_file;
 use crate::lints::base::library_call::library_call::library_call;
+use crate::lints::base::loop_invariant::loop_invariant::loop_invariant;
 use crate::lints::base::todo_comment::todo_comment::todo_comment;
 use crate::lints::base::unreachable_code::unreachable_code::unreachable_code_top_level;
 use crate::lints::base::unused_object::unused_object::unused_object;
@@ -64,6 +65,17 @@ pub(crate) fn check_document(
                 for node in expression.descendants() {
                     if let Some(binary) = node.cast::<RBinaryExpression>() {
                         checker.report_diagnostic(assignment_on_if_no_else(&binary, &info)?);
+                    }
+                }
+            }
+        }
+        if checker.is_rule_enabled(Rule::LoopInvariant) {
+            for expression in &expressions {
+                for node in expression.descendants() {
+                    if let Some(for_statement) = node.cast::<RForStatement>() {
+                        for diagnostic in loop_invariant(&for_statement, semantic, &info)? {
+                            checker.report_diagnostic(Some(diagnostic));
+                        }
                     }
                 }
             }
