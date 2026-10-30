@@ -327,6 +327,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#unfixable" id="toc-unfixable" class="nav-link" data-scroll-target="#unfixable"><code>unfixable</code></a></li>
   <li><a href="#check-roxygen" id="toc-check-roxygen" class="nav-link" data-scroll-target="#check-roxygen"><code>check-roxygen</code></a></li>
   <li><a href="#fix-roxygen" id="toc-fix-roxygen" class="nav-link" data-scroll-target="#fix-roxygen"><code>fix-roxygen</code></a></li>
+  <li><a href="#ignore-roxygen" id="toc-ignore-roxygen" class="nav-link" data-scroll-target="#ignore-roxygen"><code>ignore-roxygen</code></a></li>
   </ul></li>
   <li><a href="#rule-specific-arguments" id="toc-rule-specific-arguments" class="nav-link" data-scroll-target="#rule-specific-arguments">Rule-specific arguments</a></li>
   </ul>
@@ -530,6 +531,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Default: <code>false</code></p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="dt">fix-roxygen</span> <span class="op">=</span> <span class="cn">false</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="ignore-roxygen" class="level3">
+<h3 class="anchored" data-anchor-id="ignore-roxygen"><code>ignore-roxygen</code></h3>
+<p>This takes a list of rule names or groups that should not be checked in <code>roxygen2</code> <code>@examples</code> and <code>@examplesIf</code> sections. These rules are still checked in the rest of the file.</p>
+<p>Default: <code>[]</code></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="dt">ignore-roxygen</span> <span class="op">=</span> <span class="op">[</span><span class="st">"unused_object"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 </section>
 <section id="rule-specific-arguments" class="level2">
