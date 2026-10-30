@@ -32,6 +32,9 @@
 
 ### Bug fixes
 
+* Fix `download_file` handling of binary URL suffixes, string literals, namespaces,
+  and ignored `mode` arguments with external download methods (@Yousa-Mirage).
+
 * Fix `outer_negation` handling of operator precedence, pipes, and `na.rm`,
   and detect parenthesized and namespace-qualified calls. Its fix is now 
   unsafe because it can change warnings and errors for inputs that are not 
