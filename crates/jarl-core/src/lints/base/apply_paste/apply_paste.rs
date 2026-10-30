@@ -23,7 +23,7 @@ const FORMALS_APPLY: Formals = &["X", "MARGIN", "FUN"];
 /// both faster and clearer.
 ///
 /// The automated fix is marked unsafe because the result of
-/// `do.call(paste, c(x, sep = ...))` depends on the type and content of `x`. 
+/// `do.call(paste, c(x, sep = ...))` depends on the type and content of `x`.
 /// It can differ from the original call when:
 ///
 /// - `x` is a matrix: `c(x, sep = ...)` is not a list, so `do.call()` errors.
