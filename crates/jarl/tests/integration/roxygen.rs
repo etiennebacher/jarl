@@ -1476,7 +1476,8 @@ ignore-roxygen = true
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name(),
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
         @"
 
     success: false
@@ -1485,7 +1486,7 @@ ignore-roxygen = true
 
     ----- stderr -----
     jarl failed
-      Cause: Failed to parse /tmp/.tmpK13720/jarl.toml:
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
     TOML parse error at line 2, column 18
       |
     2 | ignore-roxygen = true
