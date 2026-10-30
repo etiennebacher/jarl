@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-core/src/lints/base/literal_coercion/mod.rs
-expression: "get_fixed_text(vec![\"as.integer(1)\", \"as.numeric(1)\", \"as.character(1)\",\n\"as.logical(\\\"true\\\")\", \"as.integer(NA)\", \"as.character(NA)\", \"lgl(1L)\",\n\"rlang::lgl(1L)\", \"int(1, )\",], \"literal_coercion\", None)"
+expression: "get_fixed_text(vec![\"as.integer(1)\", \"as.numeric(1)\", \"as.character(1)\",\nr#\"as.character('say \"hi\"')\"#, r#\"chr('say \"hi\"')\"#, \"as.logical(\\\"true\\\")\",\n\"as.integer(NA)\", \"as.character(NA)\", \"lgl(1L)\", \"rlang::lgl(1L)\",\n\"int(1, )\",], \"literal_coercion\", None)"
 ---
 OLD:
 ====
@@ -22,6 +22,20 @@ as.character(1)
 NEW:
 ====
 "1"
+
+OLD:
+====
+as.character('say "hi"')
+NEW:
+====
+'say "hi"'
+
+OLD:
+====
+chr('say "hi"')
+NEW:
+====
+'say "hi"'
 
 OLD:
 ====

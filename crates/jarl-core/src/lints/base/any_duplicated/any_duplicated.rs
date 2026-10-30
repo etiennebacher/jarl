@@ -1,9 +1,11 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_nested_functions_content, node_contains_comments};
 use air_r_syntax::*;
 
 pub struct AnyDuplicated;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.8
 ///
 /// ## What it does
@@ -37,9 +39,10 @@ pub struct AnyDuplicated;
 /// ## References
 ///
 /// See `?anyDuplicated`
+/// <!-- docs: end -->
 impl Violation for AnyDuplicated {
-    fn name(&self) -> String {
-        "any_duplicated".to_string()
+    fn rule(&self) -> Rule {
+        Rule::AnyDuplicated
     }
     fn body(&self) -> String {
         "`any(duplicated(...))` is inefficient.".to_string()
@@ -61,11 +64,10 @@ pub fn any_duplicated(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagn
     Ok(Some(Diagnostic::new(
         AnyDuplicated,
         range,
-        Fix {
-            content: format!("anyDuplicated({inner_content}) > 0"),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(&outer_syntax),
-        },
+        Fix::new(
+            range,
+            format!("anyDuplicated({inner_content}) > 0"),
+            node_contains_comments(&outer_syntax),
+        ),
     )))
 }

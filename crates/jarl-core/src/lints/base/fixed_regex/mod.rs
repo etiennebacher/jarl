@@ -31,13 +31,13 @@ mod tests {
         expect_no_lint("grepl('Foo', x, fixed = fixed)", "fixed_regex", None);
         expect_no_lint("grepl('Foo', x, fixed = FALSE)", "fixed_regex", None);
 
-        // TODO: once again, get_arg_by_name_then_position() fails to get the correct value
-        // fixed = TRUE but by position
-        // expect_no_lint(
-        //     "{gsub('abc', '', y, ignore.case = FALSE, perl = FALSE, TRUE)}",
-        //     "fixed_regex",
-        //     None,
-        // );
+        // fixed = TRUE but by position: `ignore.case` and `perl` are named, so
+        // the trailing positional argument lands in `fixed`.
+        expect_no_lint(
+            "{gsub('abc', '', y, ignore.case = FALSE, perl = FALSE, TRUE)}",
+            "fixed_regex",
+            None,
+        );
 
         // ignore.case is explicitly supplied (TRUE, FALSE, or variable)
         expect_no_lint(

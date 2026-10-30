@@ -4,18 +4,18 @@ pub(crate) mod unused_function;
 #[cfg(test)]
 mod tests {
     use super::unused_function::*;
-    use crate::namespace::parse_namespace_exports;
+    use crate::namespace::Namespace;
     use crate::package::{scan_extra_package_paths, scan_r_package_paths};
     use std::collections::HashMap;
     use std::fs;
     use tempfile::TempDir;
 
-    // ── parse_namespace_exports ─────────────────────────────────────────
+    // ── Namespace ─────────────────────────────────────────
 
     #[test]
     fn test_parse_simple_exports() {
         let content = "export(foo)\nexport(bar)\n";
-        let exports = parse_namespace_exports(content, &[]);
+        let exports = Namespace::parse(content).exported([]);
         assert!(exports.contains("foo"));
         assert!(exports.contains("bar"));
         assert_eq!(exports.len(), 2);
@@ -24,7 +24,7 @@ mod tests {
     #[test]
     fn test_parse_multi_export() {
         let content = "export(foo, bar, baz)\n";
-        let exports = parse_namespace_exports(content, &[]);
+        let exports = Namespace::parse(content).exported([]);
         assert!(exports.contains("foo"));
         assert!(exports.contains("bar"));
         assert!(exports.contains("baz"));
@@ -34,8 +34,8 @@ mod tests {
     #[test]
     fn test_parse_export_pattern() {
         let content = "exportPattern(\"^[[:alpha:]]\")\n";
-        let all_names = vec!["foo", "bar", ".hidden"];
-        let exports = parse_namespace_exports(content, &all_names);
+        let all_names = ["foo", "bar", ".hidden"];
+        let exports = Namespace::parse(content).exported(all_names.iter().copied());
         assert!(exports.contains("foo"));
         assert!(exports.contains("bar"));
         assert!(!exports.contains(".hidden"));
@@ -44,14 +44,14 @@ mod tests {
     #[test]
     fn test_parse_s3method() {
         let content = "S3method(print, myclass)\n";
-        let exports = parse_namespace_exports(content, &[]);
+        let exports = Namespace::parse(content).exported([]);
         assert!(exports.contains("print.myclass"));
     }
 
     #[test]
     fn test_parse_comments_ignored() {
         let content = "# export(secret)\nexport(public)\n";
-        let exports = parse_namespace_exports(content, &[]);
+        let exports = Namespace::parse(content).exported([]);
         assert!(!exports.contains("secret"));
         assert!(exports.contains("public"));
     }
@@ -59,21 +59,21 @@ mod tests {
     #[test]
     fn test_parse_s3method_namespaced_generic() {
         let content = "S3method(pkg::record_print, tinytable)\n";
-        let exports = parse_namespace_exports(content, &[]);
+        let exports = Namespace::parse(content).exported([]);
         assert!(exports.contains("record_print.tinytable"));
     }
 
     #[test]
     fn test_parse_s3method_triple_colon() {
         let content = "S3method(pkg:::record_print, tinytable)\n";
-        let exports = parse_namespace_exports(content, &[]);
+        let exports = Namespace::parse(content).exported([]);
         assert!(exports.contains("record_print.tinytable"));
     }
 
     #[test]
     fn test_parse_s3method_with_explicit_method() {
         let content = "S3method(print, myclass, print_myclass_impl)\n";
-        let exports = parse_namespace_exports(content, &[]);
+        let exports = Namespace::parse(content).exported([]);
         assert!(exports.contains("print_myclass_impl"));
         assert!(!exports.contains("print.myclass"));
     }
@@ -81,7 +81,7 @@ mod tests {
     #[test]
     fn test_parse_s3method_with_if_guard() {
         let content = "if (getRversion() >= \"4.4.0\") S3method(sort_by, data.table)\n";
-        let exports = parse_namespace_exports(content, &[]);
+        let exports = Namespace::parse(content).exported([]);
         assert!(
             exports.contains("sort_by.data.table"),
             "expected sort_by.data.table, got: {:?}",
@@ -92,62 +92,8 @@ mod tests {
     #[test]
     fn test_parse_export_with_if_guard() {
         let content = "if (getRversion() >= \"4.4.0\") export(sort_by)\n";
-        let exports = parse_namespace_exports(content, &[]);
+        let exports = Namespace::parse(content).exported([]);
         assert!(exports.contains("sort_by"));
-    }
-
-    // ── scan_symbols ─────────────────────────────────────────────────────
-
-    #[test]
-    fn test_scan_symbols_from_calls() {
-        let syms = scan_symbols("foo(1)\nbar(x, y)\n");
-        assert!(syms.contains_key("foo"));
-        assert!(syms.contains_key("bar"));
-        assert!(syms.contains_key("x"));
-        assert!(syms.contains_key("y"));
-    }
-
-    #[test]
-    fn test_scan_symbols_from_assignments() {
-        let syms = scan_symbols("x <- 1\ny + z\n");
-        assert!(syms.contains_key("x"));
-        assert!(syms.contains_key("y"));
-        assert!(syms.contains_key("z"));
-    }
-
-    #[test]
-    fn test_scan_symbols_nested() {
-        let syms = scan_symbols("outer(inner(x))\n");
-        assert!(syms.contains_key("outer"));
-        assert!(syms.contains_key("inner"));
-        assert!(syms.contains_key("x"));
-    }
-
-    #[test]
-    fn test_scan_symbols_ignores_comments() {
-        let syms = scan_symbols("# foo(bar)\nreal()\n");
-        assert!(!syms.contains_key("foo"));
-        assert!(!syms.contains_key("bar"));
-        assert!(syms.contains_key("real"));
-    }
-
-    #[test]
-    fn test_scan_symbols_ignores_indented_comments() {
-        let syms = scan_symbols("  # foo(bar)\n");
-        assert!(!syms.contains_key("foo"));
-    }
-
-    #[test]
-    fn test_scan_symbols_includes_roxygen_comments() {
-        let syms = scan_symbols("#' \\Sexpr[stage=render]{dplyr:::methods_rd(\"rows_insert\")}\n");
-        assert!(syms.contains_key("methods_rd"));
-    }
-
-    #[test]
-    fn test_scan_symbols_ignores_numbers() {
-        let syms = scan_symbols("123 + foo\n");
-        assert!(syms.contains_key("foo"));
-        assert!(!syms.contains_key("123"));
     }
 
     // ── compute_unused_from_shared ──────────────────────────────────
@@ -158,9 +104,9 @@ mod tests {
 
     /// Read the NAMESPACE file from `pkg_root` into a map suitable for
     /// `compute_unused_from_shared`.
-    fn read_namespace(pkg_root: &std::path::Path) -> HashMap<std::path::PathBuf, String> {
+    fn read_namespace(pkg_root: &std::path::Path) -> HashMap<std::path::PathBuf, Namespace> {
         let content = fs::read_to_string(pkg_root.join("NAMESPACE")).unwrap();
-        HashMap::from([(pkg_root.to_path_buf(), content)])
+        HashMap::from([(pkg_root.to_path_buf(), Namespace::parse(&content))])
     }
 
     #[test]
@@ -215,6 +161,48 @@ mod tests {
         assert!(
             result.is_empty(),
             "helper is called by public_fn, should not be flagged"
+        );
+    }
+
+    #[test]
+    fn test_non_ascii_function_used_across_files_not_flagged() {
+        let dir = TempDir::new().unwrap();
+        let r_dir = dir.path().join("R");
+        fs::create_dir(&r_dir).unwrap();
+        fs::write(dir.path().join("DESCRIPTION"), "Package: test").unwrap();
+        fs::write(dir.path().join("NAMESPACE"), "export(public_fn)\n").unwrap();
+
+        let file_a = r_dir.join("definitions.R");
+        fs::write(
+            &file_a,
+            "中文函数 <- function(x) x\n未使用 <- function() 1\nunused_helper <- function() 2\n",
+        )
+        .unwrap();
+
+        let file_b = r_dir.join("uses.R");
+        fs::write(&file_b, "use_functions <- function(x) 中文函数(x)\n").unwrap();
+
+        let shared = scan_r_package_paths(&[file_a, file_b], true);
+        let result =
+            compute_unused_from_shared(&shared, &default_options(), &read_namespace(dir.path()));
+
+        assert!(
+            !result
+                .values()
+                .any(|v| v.iter().any(|(name, _, _)| name == "中文函数")),
+            "used non-ASCII function should not be flagged"
+        );
+        assert!(
+            result
+                .values()
+                .any(|v| v.iter().any(|(name, _, _)| name == "未使用")),
+            "unused non-ASCII function should still be flagged"
+        );
+        assert!(
+            result
+                .values()
+                .any(|v| v.iter().any(|(name, _, _)| name == "unused_helper")),
+            "unused ASCII function should still be flagged"
         );
     }
 
@@ -587,7 +575,6 @@ mod tests {
             min_r_version: None,
             allow_dirty: false,
             allow_no_vcs: true,
-            assignment: None,
         };
 
         let config = build_config(&args, None, paths).unwrap();
@@ -600,7 +587,8 @@ mod tests {
             if let Ok(diagnostics) = result {
                 for d in diagnostics {
                     let content = fs::read_to_string(&d.filename).unwrap();
-                    let rendered = render_diagnostic(&content, path, &d.message.name, d, &renderer);
+                    let rendered =
+                        render_diagnostic(&content, path, d.message.rule.name(), d, &renderer);
                     all_diagnostics.push((d, rendered));
                 }
             }
@@ -842,16 +830,16 @@ mod tests {
          --> [PKG]/R/unused_1.R:1:1
           |
         1 | unused_fn_1 <- function() 1
-          | ----------- `unused_fn_1` is defined but never called in this package.
+          | ----------- `unused_fn_1` is defined but is never called in this package nor is it exported in NAMESPACE.
           |
-          = help: Defined at [PKG]/R/unused_1.R:1:1 but never called
+          = help: Defined at [PKG]/R/unused_1.R:1:1.
         warning: unused_function
          --> [PKG]/R/unused_2.R:1:1
           |
         1 | unused_fn_2 <- function() 2
-          | ----------- `unused_fn_2` is defined but never called in this package.
+          | ----------- `unused_fn_2` is defined but is never called in this package nor is it exported in NAMESPACE.
           |
-          = help: Defined at [PKG]/R/unused_2.R:1:1 but never called
+          = help: Defined at [PKG]/R/unused_2.R:1:1.
         Found 2 errors.
         "
         );

@@ -1,4 +1,5 @@
 # which_grepl
+
 ::: {.callout-note title="Added in 0.0.8" .low-opacity}
 :::
 
@@ -10,6 +11,10 @@ Checks for usage of `which(grepl(...))` and replaces it with `grep(...)`.
 
 `which(grepl(...))` is harder to read and is less efficient than `grep()`
 since it requires two passes on the vector.
+
+This rule has an automatic fix for direct calls and for pipe chains where
+the piped value can be unambiguously assigned to `grepl()`'s `pattern` or
+`x` argument.
 
 ## Example
 

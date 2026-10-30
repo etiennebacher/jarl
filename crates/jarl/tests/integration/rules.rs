@@ -636,6 +636,7 @@ fn test_select_all_keyword() -> anyhow::Result<()> {
     let case = CliTest::with_file(
         "test.R",
         "
+library(testthat)
 any(is.na(x))
 expect_equal(foo(x), TRUE)
 ",
@@ -656,17 +657,17 @@ expect_equal(foo(x), TRUE)
     exit_code: 1
     ----- stdout -----
     warning: any_is_na
-     --> test.R:2:1
+     --> test.R:3:1
       |
-    2 | any(is.na(x))
+    3 | any(is.na(x))
       | ------------- `any(is.na(...))` is inefficient.
       |
       = help: Use `anyNA(...)` instead.
 
     warning: expect_true_false
-     --> test.R:3:1
+     --> test.R:4:1
       |
-    3 | expect_equal(foo(x), TRUE)
+    4 | expect_equal(foo(x), TRUE)
       | -------------------------- `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
       |
       = help: Use `expect_true(x)` instead.
@@ -697,9 +698,9 @@ expect_equal(foo(x), TRUE)
     exit_code: 1
     ----- stdout -----
     warning: any_is_na
-     --> test.R:2:1
+     --> test.R:3:1
       |
-    2 | any(is.na(x))
+    3 | any(is.na(x))
       | ------------- `any(is.na(...))` is inefficient.
       |
       = help: Use `anyNA(...)` instead.
@@ -721,6 +722,7 @@ fn test_extend_select() -> anyhow::Result<()> {
     let case = CliTest::with_file(
         "test.R",
         "
+library(testthat)
 any(is.na(x))
 expect_equal(foo(x), TRUE)
 ",
@@ -741,17 +743,17 @@ expect_equal(foo(x), TRUE)
     exit_code: 1
     ----- stdout -----
     warning: any_is_na
-     --> test.R:2:1
+     --> test.R:3:1
       |
-    2 | any(is.na(x))
+    3 | any(is.na(x))
       | ------------- `any(is.na(...))` is inefficient.
       |
       = help: Use `anyNA(...)` instead.
 
     warning: expect_true_false
-     --> test.R:3:1
+     --> test.R:4:1
       |
-    3 | expect_equal(foo(x), TRUE)
+    4 | expect_equal(foo(x), TRUE)
       | -------------------------- `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
       |
       = help: Use `expect_true(x)` instead.
@@ -780,17 +782,17 @@ expect_equal(foo(x), TRUE)
     exit_code: 1
     ----- stdout -----
     warning: any_is_na
-     --> test.R:2:1
+     --> test.R:3:1
       |
-    2 | any(is.na(x))
+    3 | any(is.na(x))
       | ------------- `any(is.na(...))` is inefficient.
       |
       = help: Use `anyNA(...)` instead.
 
     warning: expect_true_false
-     --> test.R:3:1
+     --> test.R:4:1
       |
-    3 | expect_equal(foo(x), TRUE)
+    4 | expect_equal(foo(x), TRUE)
       | -------------------------- `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
       |
       = help: Use `expect_true(x)` instead.
@@ -835,7 +837,7 @@ fn test_extend_select_unknown_rule() -> anyhow::Result<()> {
 
 #[test]
 fn test_deprecated_rule_warning_from_cli() -> anyhow::Result<()> {
-    let case = CliTest::with_file("test.R", "browser()")?;
+    let case = CliTest::with_file("test.R", "foo:::bar")?;
 
     // Selecting `browser` via --select should emit a deprecation warning on stderr
     insta::assert_snapshot!(
@@ -843,7 +845,7 @@ fn test_deprecated_rule_warning_from_cli() -> anyhow::Result<()> {
             .arg("check")
             .arg(".")
             .arg("--select")
-            .arg("browser")
+            .arg("internal_function")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -851,19 +853,20 @@ fn test_deprecated_rule_warning_from_cli() -> anyhow::Result<()> {
     success: false
     exit_code: 1
     ----- stdout -----
-    warning: browser
+    warning: internal_function
      --> test.R:1:1
       |
-    1 | browser()
-      | --------- Calls to `browser()` should be removed.
+    1 | foo:::bar
+      | --------- Accessing a package's internal function with `:::` is likely to break in the future.
       |
+      = help: Use public functions via `::` instead.
 
 
     ── Summary ──────────────────────────────────────
     Found 1 error.
 
     ── Warnings ─────────────────────────────────────
-    Rule `browser` is deprecated since v0.5.0. Use `undesirable_function` instead.
+    Rule `internal_function` is deprecated since v0.7.0. Use `undesirable_operator` instead.
 
     ----- stderr -----
     "
@@ -875,12 +878,12 @@ fn test_deprecated_rule_warning_from_cli() -> anyhow::Result<()> {
 #[test]
 fn test_deprecated_rule_warning_from_toml() -> anyhow::Result<()> {
     let case = CliTest::with_files([
-        ("test.R", "browser()"),
+        ("test.R", "foo:::bar"),
         (
             "jarl.toml",
             r#"
 [lint]
-select = ["browser"]
+select = ["internal_function"]
 "#,
         ),
     ])?;
@@ -897,19 +900,20 @@ select = ["browser"]
     success: false
     exit_code: 1
     ----- stdout -----
-    warning: browser
+    warning: internal_function
      --> test.R:1:1
       |
-    1 | browser()
-      | --------- Calls to `browser()` should be removed.
+    1 | foo:::bar
+      | --------- Accessing a package's internal function with `:::` is likely to break in the future.
       |
+      = help: Use public functions via `::` instead.
 
 
     ── Summary ──────────────────────────────────────
     Found 1 error.
 
     ── Warnings ─────────────────────────────────────
-    Rule `browser` is deprecated since v0.5.0. Use `undesirable_function` instead.
+    Rule `internal_function` is deprecated since v0.7.0. Use `undesirable_operator` instead.
 
     ----- stderr -----
     "

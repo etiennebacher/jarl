@@ -1,10 +1,12 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
 pub struct EqualsNaN;
 
+/// <!-- docs: start -->
 /// Version added: 0.4.0
 ///
 /// ## What it does
@@ -34,9 +36,10 @@ pub struct EqualsNaN;
 /// x <- c(1, 2, 3, NaN)
 /// is.nan(x)
 /// ```
+/// <!-- docs: end -->
 impl Violation for EqualsNaN {
-    fn name(&self) -> String {
-        "equals_nan".to_string()
+    fn rule(&self) -> Rule {
+        Rule::EqualsNaN
     }
     fn body(&self) -> String {
         "Comparing to NaN with `==`, `!=` or `%in%` is problematic.".to_string()
@@ -88,32 +91,29 @@ pub fn equals_nan(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>>
         RSyntaxKind::EQUAL2 => Diagnostic::new(
             EqualsNaN,
             range,
-            Fix {
-                content: format!("is.nan({replacement})"),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
+            Fix::new(
+                range,
+                format!("is.nan({replacement})"),
+                node_contains_comments(ast.syntax()),
+            ),
         ),
         RSyntaxKind::NOT_EQUAL => Diagnostic::new(
             EqualsNaN,
             range,
-            Fix {
-                content: format!("!is.nan({replacement})"),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
+            Fix::new(
+                range,
+                format!("!is.nan({replacement})"),
+                node_contains_comments(ast.syntax()),
+            ),
         ),
         RSyntaxKind::SPECIAL if operator.text_trimmed() == "%in%" => Diagnostic::new(
             EqualsNaN,
             range,
-            Fix {
-                content: format!("is.nan({replacement})"),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
+            Fix::new(
+                range,
+                format!("is.nan({replacement})"),
+                node_contains_comments(ast.syntax()),
+            ),
         ),
         _ => unreachable!("This case is an early return"),
     };

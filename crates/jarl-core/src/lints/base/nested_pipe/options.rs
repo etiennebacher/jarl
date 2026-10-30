@@ -5,11 +5,33 @@ use crate::rule_options::resolve_with_extend;
 /// Default outer calls whose nested pipes are allowed.
 const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &["try", "tryCatch", "withCallingHandlers"];
 
-/// TOML options for `[lint.nested_pipe]`.
+/// <!-- docs: start -->
 ///
 /// Use `skipped-functions` to fully replace the default list of outer calls
 /// whose nested pipes are allowed. Use `extend-skipped-functions` to add to the
 /// default list. Specifying both is an error.
+///
+/// ### Default values
+///
+/// ```toml
+/// skipped-functions = [
+///     "try",
+///     "tryCatch",
+///     "withCallingHandlers"
+/// ]
+/// ```
+///
+/// ### TOML settings
+///
+/// ```toml
+/// [lint]
+/// ...
+///
+/// [lint.nested_pipe]
+/// # also allow in stopifnot()
+/// extend-skipped-fuctions = ["stopifnot"]
+/// ```
+/// <!-- docs: end -->
 #[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]

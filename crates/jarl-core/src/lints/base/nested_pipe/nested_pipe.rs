@@ -1,11 +1,13 @@
 use crate::checker::Checker;
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::get_function_name;
 use air_r_syntax::*;
 use biome_rowan::{AstNode, SyntaxResult};
 
 pub struct NestedPipe;
 
+/// <!-- docs: start -->
 /// Version added: 0.6.0
 ///
 /// ## What it does
@@ -37,9 +39,10 @@ pub struct NestedPipe;
 ///
 /// print(out)
 /// ```
+/// <!-- docs: end -->
 impl Violation for NestedPipe {
-    fn name(&self) -> String {
-        "nested_pipe".to_string()
+    fn rule(&self) -> Rule {
+        Rule::NestedPipe
     }
     fn body(&self) -> String {
         "Don't nest pipes inside other calls.".to_string()
@@ -75,7 +78,7 @@ pub fn nested_pipe(
     // "nested in a call" (e.g. a function body or `local({ ... })`).
     let mut enclosing_arg = None;
     for ancestor in ast.syntax().ancestors() {
-        if RBracedExpressions::can_cast(ancestor.kind()) {
+        if RBracedStatements::can_cast(ancestor.kind()) {
             return Ok(None);
         }
         if let Some(arg) = RArgument::cast(ancestor) {

@@ -1,10 +1,15 @@
-use air_r_syntax::{RExpressionList, RSyntaxNode};
-use biome_rowan::{AstNode, AstNodeList};
+use air_r_syntax::{AnyRExpression, RBinaryExpression, RSyntaxNode};
+use biome_rowan::{AstNode, SyntaxNodeCast};
+use oak_semantic::semantic_index::SemanticIndex;
 
 use crate::checker::Checker;
 use crate::diagnostic::*;
+use crate::lints::base::assignment_on_if_no_else::assignment_on_if_no_else::assignment_on_if_no_else;
 use crate::lints::base::empty_file::empty_file::empty_file;
+use crate::lints::base::library_call::library_call::library_call;
+use crate::lints::base::todo_comment::todo_comment::todo_comment;
 use crate::lints::base::unreachable_code::unreachable_code::unreachable_code_top_level;
+use crate::lints::base::unused_object::unused_object::unused_object;
 use crate::lints::comments::blanket_suppression::blanket_suppression::blanket_suppression;
 use crate::lints::comments::invalid_chunk_suppression::invalid_chunk_suppression::invalid_chunk_suppression;
 use crate::lints::comments::misnamed_suppression::misnamed_suppression::misnamed_suppression;
@@ -15,14 +20,17 @@ use crate::lints::comments::unexplained_suppression::unexplained_suppression::un
 use crate::lints::comments::unmatched_range_suppression::unmatched_range_suppression::{
     unmatched_range_suppression_end, unmatched_range_suppression_start,
 };
+use crate::package::PackageFileAnalysis;
 use crate::rule_set::Rule;
+use jarl_semantic::SemanticInfo;
 
 pub(crate) fn check_document(
-    expressions: &RExpressionList,
+    expressions: &[AnyRExpression],
     syntax: &RSyntaxNode,
+    contents: &str,
     checker: &mut Checker,
-    duplicate_assignments: &[(String, biome_rowan::TextRange, String)],
-    unused_functions: &[(String, biome_rowan::TextRange, String)],
+    package: &PackageFileAnalysis,
+    semantic: Option<&SemanticIndex>,
 ) -> anyhow::Result<()> {
     // --- Document-level analysis ---
 
@@ -35,7 +43,40 @@ pub(crate) fn check_document(
         }
     }
 
+    // Semantic lints. `SemanticInfo` walks the whole tree and indexes every
+    // `source()` target, so it is built once and shared.
+    if let Some(semantic) = semantic
+        && checker.requires_semantic_analysis()
+    {
+        let info = SemanticInfo::build(
+            syntax,
+            &expressions,
+            semantic,
+            &checker.source_index_cache,
+            &checker.packages_in_reach(),
+            &checker.unevaluated_ranges(),
+        );
+        if checker.is_rule_enabled(Rule::UnusedObject) {
+            unused_object(&info, semantic, &package.cross_file_used, checker)?;
+        }
+        if checker.is_rule_enabled(Rule::AssignmentOnIfNoElse) {
+            for expression in &expressions {
+                for node in expression.descendants() {
+                    if let Some(binary) = node.cast::<RBinaryExpression>() {
+                        checker.report_diagnostic(assignment_on_if_no_else(&binary, &info)?);
+                    }
+                }
+            }
+        }
+    }
+
     // --- Comment/suppression checks ---
+
+    if checker.is_rule_enabled(Rule::TodoComment) {
+        for diagnostic in todo_comment(syntax) {
+            checker.report_diagnostic(Some(diagnostic));
+        }
+    }
 
     // Report blanket suppression comments (file-level, done once)
     if checker.is_rule_enabled(Rule::BlanketSuppression) {
@@ -104,10 +145,10 @@ pub(crate) fn check_document(
     // Emit package-level diagnostics before suppression filtering so that
     // # jarl-ignore and # jarl-ignore-file comments can suppress them.
     if checker.is_rule_enabled(Rule::DuplicatedFunctionDefinition) {
-        for (name, range, help) in duplicate_assignments {
+        for (name, range, help) in &package.duplicate_assignments {
             checker.report_diagnostic(Some(Diagnostic::new(
                 ViolationData::new(
-                    "duplicated_function_definition".to_string(),
+                    Rule::DuplicatedFunctionDefinition,
                     format!("`{name}` is defined more than once in this package."),
                     Some(help.clone()),
                 ),
@@ -118,11 +159,11 @@ pub(crate) fn check_document(
     }
 
     if checker.is_rule_enabled(Rule::UnusedFunction) {
-        for (name, range, help) in unused_functions {
+        for (name, range, help) in &package.unused_functions {
             checker.report_diagnostic(Some(Diagnostic::new(
                 ViolationData::new(
-                    "unused_function".to_string(),
-                    format!("`{name}` is defined but never called in this package."),
+                    Rule::UnusedFunction,
+                    format!("`{name}` is defined but is never called in this package nor is it exported in NAMESPACE."),
                     Some(help.clone()),
                 ),
                 *range,
@@ -135,6 +176,16 @@ pub(crate) fn check_document(
         checker.report_diagnostic(empty_file(&expressions, syntax));
     }
 
+    // It is frequent to call `library()` after the first chunk in Rmd/Qmd
+    // (ecosystem checks) so skip these files.
+    if checker.is_rule_enabled(Rule::LibraryCall)
+        && !crate::fs::has_rmd_extension(&checker.file_path)
+    {
+        for diagnostic in library_call(&expressions, contents) {
+            checker.report_diagnostic(Some(diagnostic));
+        }
+    }
+
     // Filter diagnostics by suppressions. This removes suppressed violations
     // and tracks which suppressions were used (for outdated suppression detection).
     // Must happen BEFORE checking for outdated suppressions.
@@ -145,7 +196,7 @@ pub(crate) fn check_document(
     // Report outdated suppressions (suppressions that didn't suppress anything).
     if checker.is_rule_enabled(Rule::OutdatedSuppression) {
         let unused = checker.suppression.get_unused_suppressions();
-        let outdated_diagnostics = outdated_suppression(&unused);
+        let outdated_diagnostics = outdated_suppression(&unused, contents);
         for diag in outdated_diagnostics {
             checker.report_diagnostic(Some(diag));
         }

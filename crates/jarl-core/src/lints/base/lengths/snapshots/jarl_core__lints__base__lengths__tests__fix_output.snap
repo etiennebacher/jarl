@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-core/src/lints/base/lengths/mod.rs
-expression: "get_fixed_text(vec![\"sapply(x, length)\", \"sapply(x, FUN = length)\",\n\"vapply(mtcars, length, integer(1))\",], \"lengths\", None)"
+expression: "get_fixed_text(vec![\"sapply(x, length)\", \"sapply(x, FUN = length)\",\n\"sapply(X = x, FUN = length)\", \"vapply(mtcars, length, integer(1))\",],\n\"lengths\", None)"
 ---
 OLD:
 ====
@@ -12,6 +12,13 @@ lengths(x)
 OLD:
 ====
 sapply(x, FUN = length)
+NEW:
+====
+lengths(x)
+
+OLD:
+====
+sapply(X = x, FUN = length)
 NEW:
 ====
 lengths(x)

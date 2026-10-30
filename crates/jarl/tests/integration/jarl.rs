@@ -18,37 +18,39 @@ fn test_must_pass_path() -> anyhow::Result<()> {
     ----- stderr -----
     Check a set of files or directories
 
-    Usage: jarl check [OPTIONS] <FILES>...
+    Usage: jarl check [OPTIONS] [FILES]...
 
     Arguments:
-      <FILES>...  List of files or directories to check or fix lints, for example `jarl check .`.
+      [FILES]...  List of files or directories to check or fix lints, for example `jarl check .`.
 
     File selection:
-          --exclude=<FILES>     List of file patterns to exclude from linting, separated by a comma (no spaces). Must be passed with an equals sign, e.g. `--exclude=R/*.R`, so the shell does not expand glob patterns.
-          --no-default-exclude  Do not apply the default set of file patterns that should be excluded.
+          --stdin-file-path <PATH>  Read the code to check from stdin. The path is not read and doesn't have to exist: it is used to find the configuration and package, to apply `exclude` patterns, and as file name in diagnostics, e.g. `jarl check --stdin-file-path R/foo.R`.
+          --exclude=<FILES>         List of file patterns to exclude from linting, separated by a comma (no spaces). Must be passed with an equals sign, e.g. `--exclude=R/*.R`, so the shell does not expand glob patterns.
+          --no-default-exclude      Do not apply the default set of file patterns that should be excluded.
 
     Rule selection:
       -s, --select <RULES>         Names of rules to include, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF". [default: ""]
       -e, --extend-select <RULES>  Like `--select` but adds additional rules in addition to those already specified. [default: ""]
       -i, --ignore <RULES>         Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF". [default: ""]
 
+    Fix options:
+      -f, --fix           Automatically fix issues detected by the linter.
+      -u, --unsafe-fixes  Include fixes that may not retain the original intent of the  code.
+          --fix-only      Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.
+          --allow-dirty   Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.
+          --allow-no-vcs  Apply fixes even if there is no version control system.
+
     Other options:
-      -f, --fix                            Automatically fix issues detected by the linter.
-      -u, --unsafe-fixes                   Include fixes that may not retain the original intent of the  code.
-          --fix-only                       Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.
-          --allow-dirty                    Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.
-          --allow-no-vcs                   Apply fixes even if there is no version control system.
       -w, --with-timing                    Show the time taken by the function.
       -m, --min-r-version <MIN_R_VERSION>  The mimimum R version to be used by the linter. Some rules only work starting from a specific version.
           --output-format <OUTPUT_FORMAT>  Output serialization format for violations. [default: full] [possible values: full, concise, github, json, sarif]
-          --assignment <ASSIGNMENT>        [DEPRECATED: use `[lint.assignment]` in jarl.toml] Assignment operator to use, can be either `<-` or `=`.
           --statistics                     Show counts for every rule with at least one violation.
           --add-jarl-ignore[=<REASON>]     Automatically insert a `# jarl-ignore` comment to suppress all violations.
                                            The default reason can be customized with `--add-jarl-ignore="my_reason"`.
       -h, --help                           Print help (see a summary with '-h')
 
     Global options:
-          --log-level <LOG_LEVEL>  The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
+          --log-level <LOG_LEVEL>  The log level [default: warn] [possible values: error, warn, info, debug, trace]
     "#
     );
 
@@ -96,7 +98,12 @@ fn test_parsing_error() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    Error: Failed to parse test.R due to syntax errors.
+    error: Expected an expression but instead found the end of the file.
+     --> test.R:1:5
+      |
+    1 | f <-
+      |     ^
+      |
     "
     );
 
@@ -133,7 +140,12 @@ fn test_parsing_error_for_some_files() -> anyhow::Result<()> {
     1 fixable with the `--fix` option.
 
     ----- stderr -----
-    Error: Failed to parse test.R due to syntax errors.
+    error: Expected an expression but instead found the end of the file.
+     --> test.R:1:5
+      |
+    1 | f <-
+      |     ^
+      |
     "
     );
 
@@ -169,7 +181,12 @@ fn test_parsing_error_with_valid_code_in_same_file() -> anyhow::Result<()> {
     Found 1 error.
 
     ----- stderr -----
-    Error: Failed to parse test.R due to syntax errors.
+    error: Expected an expression but instead found the end of the file.
+     --> test.R:2:5
+      |
+    2 | f <-
+      |     ^
+      |
     "
     );
 
@@ -476,14 +493,16 @@ fn test_corner_case() -> anyhow::Result<()> {
 #[test]
 fn test_fix_options() -> anyhow::Result<()> {
     // File with 3 lints:
-    // - any_is_na (has fix)
-    // - class_equals (has unsafe fix)
+    // - any_is_na (has safe fix)
+    // - all_equal (has unsafe fix)
     // - duplicated_arguments (has no fix)
     let case = CliTest::with_file(
         "test.R",
-        "any(is.na(x))\nclass(x) == 'foo'\nlist(x = 1, x = 2)",
+        "any(is.na(x))\n!all.equal(x, y)\nlist(x = 1, x = 2)",
     )?;
-    let test_contents = "any(is.na(x))\nclass(x) == 'foo'\nlist(x = 1, x = 2)";
+    let test_contents = "any(is.na(x))\n!all.equal(x, y)\nlist(x = 1, x = 2)";
+    let safe_fixed_contents = "anyNA(x)\n!all.equal(x, y)\nlist(x = 1, x = 2)";
+    let all_fixed_contents = "anyNA(x)\n!isTRUE(all.equal(x, y))\nlist(x = 1, x = 2)";
 
     insta::assert_snapshot!(
         &mut case
@@ -513,6 +532,7 @@ fn test_fix_options() -> anyhow::Result<()> {
     ----- stderr -----
     "#
     );
+    assert_eq!(case.read_file("test.R")?, safe_fixed_contents);
 
     case.write_file("test.R", test_contents)?;
     insta::assert_snapshot!(
@@ -544,6 +564,7 @@ fn test_fix_options() -> anyhow::Result<()> {
     ----- stderr -----
     "#
     );
+    assert_eq!(case.read_file("test.R")?, all_fixed_contents);
 
     case.write_file("test.R", test_contents)?;
     insta::assert_snapshot!(
@@ -568,6 +589,7 @@ fn test_fix_options() -> anyhow::Result<()> {
     ----- stderr -----
     "
     );
+    assert_eq!(case.read_file("test.R")?, all_fixed_contents);
 
     case.write_file("test.R", test_contents)?;
     insta::assert_snapshot!(
@@ -591,6 +613,30 @@ fn test_fix_options() -> anyhow::Result<()> {
     ----- stderr -----
     "
     );
+    assert_eq!(case.read_file("test.R")?, safe_fixed_contents);
+
+    case.write_file("test.R", test_contents)?;
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--fix-only")
+            .arg("--allow-no-vcs")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+    assert_eq!(case.read_file("test.R")?, safe_fixed_contents);
 
     case.write_file("test.R", test_contents)?;
     insta::assert_snapshot!(
@@ -614,6 +660,7 @@ fn test_fix_options() -> anyhow::Result<()> {
     ----- stderr -----
     "
     );
+    assert_eq!(case.read_file("test.R")?, all_fixed_contents);
 
     Ok(())
 }

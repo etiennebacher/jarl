@@ -32,7 +32,9 @@ The column "Has fix" can take the following values:
 
 -   ❌ No fix
 
-```{css, eval=TRUE, echo=FALSE}
+```{css}
+/*| eval: true*/
+/*| echo: false*/
 .Reactable {
 	background-color: transparent !important;
 }
@@ -46,7 +48,10 @@ The column "Has fix" can take the following values:
 }
 ```
 
-```{r, eval=TRUE, echo=FALSE, warning=FALSE}
+```{r}
+#| eval: true
+#| echo: false
+#| warning: false
 library(reactable)
 dat <- as.data.frame(
   rbind(
@@ -55,13 +60,15 @@ dat <- as.data.frame(
     c("any_is_na", "performance", "✅", ""),
     c("apply_paste", "performance", "❗", ""),
     c("assignment", "readability", "✅", "Disabled by default"),
+    c("assignment_on_if_no_else", "suspicious", "❌", ""),
     c("blanket_suppression", "comments", "❌", ""),
-    c("browser", "correctness", "❌", ""),
     c("class_equals", "suspicious", "❗", ""),
     c("coalesce", "readability", "✅", "R >= 4.4"),
-    c("comparison_negation", "readability", "✅", ""),
+    c("comparison_negation", "readability", "❗", ""),
     c("condition_call", "readability", "❗", "Disabled by default"),
     c("condition_message", "readability", "✅", "Disabled by default"),
+    c("consecutive_signs", "readability, suspicious", "❌", ""),
+    c("cyclomatic_complexity", "readability", "❌", "Disabled by default"),
     c("dplyr_filter_out", "dplyr", "✅", "Disabled by default"),
     c("dplyr_group_by_ungroup", "dplyr", "✅", "Disabled by default"),
     c("download_file", "suspicious", "❌", ""),
@@ -85,17 +92,19 @@ dat <- as.data.frame(
     c("fixed_regex", "performance", "✅", "Disabled by default"),
     c("for_loop_dup_index", "correctness, suspicious", "❌", ""),
     c("for_loop_index", "readability", "❌", ""),
+    c("function_return", "readability", "❗", "Disabled by default"),
     c("glue", "correctness", "❌", ""),
     c("grepv", "readability", "✅", "R >= 4.5"),
     c("if_always_true", "readability, suspicious", "❌", ""),
     c("if_not_else", "readability", "❌", "Disabled by default"),
     c("implicit_assignment", "readability", "❌", ""),
-    c("internal_function", "suspicious", "❌", ""),
+    c("internal_function", "suspicious", "❌", "Disabled by default"),
     c("invalid_chunk_suppression", "comments", "❌", ""),
     c("is_numeric", "readability", "✅", ""),
     c("length_levels", "readability", "✅", ""),
     c("length_test", "correctness", "✅", ""),
     c("lengths", "performance, readability", "✅", ""),
+    c("library_call", "readability", "❗", "Disabled by default"),
     c("list2df", "performance, readability", "✅", "R >= 4.0"),
     c("literal_coercion", "readability", "✅", ""),
     c("matrix_apply", "performance", "✅", ""),
@@ -107,7 +116,8 @@ dat <- as.data.frame(
     c("notin", "readability", "✅", "R >= 4.6"),
     c("numeric_leading_zero", "readability", "✅", ""),
     c("nzchar", "performance", "❗", "Disabled by default"),
-    c("outer_negation", "performance, readability", "✅", ""),
+    c("outdated_suppression", "comments", "✅", ""),
+    c("outer_negation", "performance, readability", "❗", ""),
     c(
       "pipe_consistency",
       "readability",
@@ -127,24 +137,27 @@ dat <- as.data.frame(
     c("repeat", "readability", "✅", ""),
     c("sample_int", "readability", "✅", ""),
     c("seq", "suspicious", "✅", ""),
-    c("seq2", "suspicious", "✅", ""),
+    c("seq2", "readability, suspicious", "✅", ""),
     c("sort", "performance, readability", "✅", ""),
     c("sprintf", "correctness, suspicious", "✅", ""),
     c("stopifnot_all", "readability", "❗", "Disabled by default"),
-    c("string_boundary", "performance, readability", "✅", ""),
+    c("string_boundary", "performance, readability", "❗", ""),
     c("strings_as_factors", "suspicious", "❌", "R < 4.0"),
     c("system_file", "readability", "✅", ""),
+    c("todo_comment", "readability", "❌", "Disabled by default"),
     c("true_false_symbol", "readability", "❌", ""),
     c("undesirable_function", "correctness", "❌", ""),
+    c("undesirable_operator", "correctness", "❌", ""),
     c("unexplained_suppression", "comments", "❌", ""),
     c("unmatched_range_suppression", "comments", "❌", ""),
     c("unnecessary_nesting", "readability", "✅", "Disabled by default"),
     c("unnecessary_parentheses", "readability", "✅", ""),
     c("unreachable_code", "readability, suspicious", "❌", ""),
     c("unused_function", "correctness", "❌", ""),
-    c("unused_suppression", "comments", "❌", ""),
+    c("unused_object", "correctness", "❌", "Disabled by default"),
     c("vector_logic", "performance", "❌", ""),
-    c("which_grepl", "performance, readability", "✅", "")
+    c("which_grepl", "performance, readability", "✅", ""),
+    c("yoda_condition", "readability", "❗", "Disabled by default")
   )
 )
 names(dat) <- c("Rule name", "Group", "Has fix", "Conditions")

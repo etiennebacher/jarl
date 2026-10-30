@@ -1,13 +1,18 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{
-    get_arg_by_name_then_position, get_function_name, get_function_namespace_prefix,
+    Formals, get_arg, get_function_name, get_function_namespace_prefix,
     get_nested_functions_content, get_unnamed_args, node_contains_comments,
 };
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 
+const FORMALS_EXPECT_FALSE: Formals = &["object", "info", "label"];
+const FORMALS_GREPL: Formals = &["pattern", "x", "ignore.case", "perl", "fixed", "useBytes"];
+
 pub struct ExpectNoMatch;
 
+/// <!-- docs: start -->
 /// Version added: 0.5.0
 ///
 /// ## What it does
@@ -38,9 +43,10 @@ pub struct ExpectNoMatch;
 /// expect_no_match(x, "foo")
 /// expect_no_match(x, "bar", perl = FALSE, fixed = FALSE)
 /// ```
+/// <!-- docs: end -->
 impl Violation for ExpectNoMatch {
-    fn name(&self) -> String {
-        "expect_no_match".to_string()
+    fn rule(&self) -> Rule {
+        Rule::TestthatExpectNoMatch
     }
 
     fn body(&self) -> String {
@@ -81,7 +87,7 @@ pub fn expect_no_match(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diag
     let args = ast.arguments()?.items();
 
     // Get first argument
-    let object = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "object", 1));
+    let object = unwrap_or_return_none!(get_arg(ast, FORMALS_EXPECT_FALSE, "object"));
 
     let object_value = unwrap_or_return_none!(object.value());
 
@@ -94,9 +100,8 @@ pub fn expect_no_match(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diag
 
     // All grepl args can be passed to expect_no_match, so keep them all for fix
     let grepl_args = grepl_call.arguments()?.items();
-    let pattern_arg =
-        unwrap_or_return_none!(get_arg_by_name_then_position(&grepl_args, "pattern", 1));
-    let x_arg = unwrap_or_return_none!(get_arg_by_name_then_position(&grepl_args, "x", 2));
+    let pattern_arg = unwrap_or_return_none!(get_arg(grepl_call, FORMALS_GREPL, "pattern"));
+    let x_arg = unwrap_or_return_none!(get_arg(grepl_call, FORMALS_GREPL, "x"));
 
     let x_text = unwrap_or_return_none!(x_arg.value())
         .to_trimmed_text()
@@ -147,16 +152,15 @@ pub fn expect_no_match(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diag
     let diagnostic = Diagnostic::new(
         ExpectNoMatch,
         range,
-        Fix {
-            content: format!(
+        Fix::new(
+            range,
+            format!(
                 "{}expect_no_match({})",
                 namespace_prefix,
                 inner_content.join(", ")
             ),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))

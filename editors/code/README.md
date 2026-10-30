@@ -18,6 +18,14 @@ See the website: https://jarl.etiennebacher.com/
 
 ## Changelog
 
+## Development
+
+Jarl now publishes diagnostics when opening a file, not just when saving it.
+
+### 0.0.13
+
+This version bundles Jarl 0.6.0.
+
 ### 0.0.12
 
 This version bundles Jarl 0.5.0.

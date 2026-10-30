@@ -1,0 +1,77 @@
+---
+source: crates/jarl-core/src/lints/base/library_call/mod.rs
+expression: "get_unsafe_fixed_text(vec![\"library(dplyr)\\nx <- 1\\nlibrary(\\n  # leading\\n  purrr\\n)\\n\",\n\"library(dplyr)\\nx <- 1\\nlibrary(purrr # inline\\n)\\n\",\n\"library(dplyr)\\nx <- 1\\nlibrary(purrr) # trailing\\n\",\n\"library(dplyr)\\nx <- 1\\n# preceding\\nlibrary(purrr)\\n\",\n\"library(dplyr)\\nx <- 1\\nlibrary(purrr); y <- 2 # trailing\\n\",],\n\"library_call\",)"
+---
+OLD:
+====
+library(dplyr)
+x <- 1
+library(
+  # leading
+  purrr
+)
+
+NEW:
+====
+library(dplyr)
+library(
+  # leading
+  purrr
+)
+x <- 1
+
+
+OLD:
+====
+library(dplyr)
+x <- 1
+library(purrr # inline
+)
+
+NEW:
+====
+library(dplyr)
+library(purrr # inline
+)
+x <- 1
+
+
+OLD:
+====
+library(dplyr)
+x <- 1
+library(purrr) # trailing
+
+NEW:
+====
+library(dplyr)
+library(purrr) # trailing
+x <- 1
+
+
+OLD:
+====
+library(dplyr)
+x <- 1
+# preceding
+library(purrr)
+
+NEW:
+====
+library(dplyr)
+library(purrr)
+x <- 1
+# preceding
+
+
+OLD:
+====
+library(dplyr)
+x <- 1
+library(purrr); y <- 2 # trailing
+
+NEW:
+====
+library(dplyr)
+x <- 1
+library(purrr); y <- 2 # trailing

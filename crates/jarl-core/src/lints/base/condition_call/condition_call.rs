@@ -1,8 +1,10 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_arg_by_name, node_contains_comments};
 use air_r_syntax::*;
-use biome_rowan::AstNode;
+use biome_rowan::{AstNode, TextRange};
 
+/// <!-- docs: start -->
 /// Version added: 0.6.0
 ///
 /// ## What it does
@@ -62,6 +64,7 @@ use biome_rowan::AstNode;
 /// ## References
 ///
 /// * https://design.tidyverse.org/err-call.html
+/// <!-- docs: end -->
 pub fn condition_call(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     if fn_name != "stop" {
         return Ok(None);
@@ -105,12 +108,11 @@ pub fn condition_call(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagn
             (
                 "Including the call in the error message may lead to confusion.".to_string(),
                 "Use `call. = FALSE` instead.".to_string(),
-                Fix {
-                    content: "FALSE".to_string(),
-                    start: value_range_start.into(),
-                    end: value_range_end.into(),
+                Fix::new(
+                    TextRange::new(value_range_start, value_range_end),
+                    "FALSE".to_string(),
                     to_skip,
-                },
+                ),
             )
         }
         // `call.` is absent: it defaults to `TRUE`, so insert `call. = FALSE`.
@@ -129,14 +131,14 @@ pub fn condition_call(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagn
             (
                 "`stop()` includes the call in the error message by default, which may lead to confusion.".to_string(),
                 "Add `call. = FALSE` to hide it.".to_string(),
-                Fix { content, start, end: start, to_skip },
+                Fix::new_with_offsets(start, start, content, to_skip),
             )
         }
     };
 
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
-        ViolationData::new("condition_call".to_string(), body, Some(suggestion)),
+        ViolationData::new(Rule::ConditionCall, body, Some(suggestion)),
         range,
         fix,
     );

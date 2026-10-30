@@ -233,8 +233,9 @@ if (x) {
           |
         2 | / if (x) {
         3 | |   if (y) {
+        4 | |     if (z) {
+        5 | |       1L
         ... |
-        7 | |   }
         8 | | }
           | |_- There is no need for nested if conditions here.
           |

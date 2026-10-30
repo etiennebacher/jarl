@@ -36,7 +36,7 @@ pub(crate) fn init_logging(log_level: LogLevel) {
     tracing::trace!("Initialized logging");
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, clap::ValueEnum)]
 pub enum LogLevel {
     Error,
     #[default]

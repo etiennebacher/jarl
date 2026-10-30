@@ -1,5 +1,6 @@
 use crate::diagnostic::*;
 use crate::lints::base::quotes::options::PreferredQuote;
+use crate::rule_set::Rule;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -35,6 +36,7 @@ impl ParsedString<'_> {
     }
 }
 
+/// <!-- docs: start -->
 /// Version added: 0.5.0
 ///
 /// ## What it does
@@ -50,13 +52,9 @@ impl ParsedString<'_> {
 ///
 /// Base R documentation and the Tidyverse style guide recommend using double
 /// quotes for all strings, except for when the string already contains double
-/// quotes. Therefore, by default, this rule expects double quotes (`"`).
-///
-/// To prefer single quotes, set this in `jarl.toml`:
-/// ```toml
-/// [lint.quotes]
-/// quote = "single"
-/// ```
+/// quotes. Therefore, by default, this rule expects double quotes (`"`). See
+/// configuration options (below) for details about how to configure Jarl to
+/// prefer single quotes.
 ///
 /// For regular strings, this rule allows the opposite quote when needed to
 /// avoid escaping the preferred quote. For example,
@@ -109,6 +107,7 @@ impl ParsedString<'_> {
 ///
 /// - [Tidyverse style guide](https://style.tidyverse.org/syntax.html#character-vectors)
 /// - [R documentation](https://stat.ethz.ch/R-manual/R-patched/library/base/html/Quotes.html)
+/// <!-- docs: end -->
 pub fn quotes(
     ast: &AnyRValue,
     preferred_quote: PreferredQuote,
@@ -150,17 +149,12 @@ pub fn quotes(
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "quotes".to_string(),
+            Rule::Quotes,
             quote_message(preferred_quote).to_string(),
             None,
         ),
         range,
-        Fix {
-            content: replacement,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: false,
-        },
+        Fix::new(range, replacement, false),
     );
 
     Ok(Some(diagnostic))

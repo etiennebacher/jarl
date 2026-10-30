@@ -1,0 +1,47 @@
+name: Check schema
+
+on:
+  pull_request:
+    paths:
+      - crates/**
+      - artifacts/jarl.schema.json
+      - .github/workflows/check-schema.yml
+  push:
+    branches:
+      - main
+    paths:
+      - crates/**
+      - artifacts/jarl.schema.json
+      - .github/workflows/check-schema.yml
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-schema:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Rust
+        run: rustup update stable && rustup default stable
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+
+      - name: Set up just
+        uses: extractions/setup-just@v3
+
+      - name: Regenerate schema
+        run: just gen-schema
+
+      - name: Check that the schema is up to date
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::artifacts/jarl.schema.json is out of date. Run 'just gen-schema' locally and commit the changes."
+            git status --porcelain
+            git diff
+            exit 1
+          fi

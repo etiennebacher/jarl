@@ -1,9 +1,14 @@
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_name, get_arg_by_name_then_position, node_contains_comments};
+use crate::rule_set::Rule;
+use crate::utils::{Formals, get_arg, get_arg_by_name, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 use biome_rowan::AstSeparatedList;
 
+/// Omits `simplify`, which follows `...`.
+const FORMALS_APPLY: Formals = &["X", "MARGIN", "FUN"];
+
+/// <!-- docs: start -->
 /// Version added: 0.0.16
 ///
 /// ## What it does
@@ -53,15 +58,16 @@ use biome_rowan::AstSeparatedList;
 /// ## References
 ///
 /// See `?colSums`
+/// <!-- docs: end -->
 pub fn matrix_apply(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     if fn_name != "apply" {
         return Ok(None);
     }
 
     let args = ast.arguments()?.items();
-    let x = get_arg_by_name_then_position(&args, "X", 1);
-    let margin = get_arg_by_name_then_position(&args, "MARGIN", 2);
-    let fun = get_arg_by_name_then_position(&args, "FUN", 3);
+    let x = get_arg(ast, FORMALS_APPLY, "X");
+    let margin = get_arg(ast, FORMALS_APPLY, "MARGIN");
+    let fun = get_arg(ast, FORMALS_APPLY, "FUN");
 
     // We allow having `na.rm` as additional argument but it must be named anyway.
     // If it is present and we still have more than 4 args, it means that there
@@ -134,17 +140,12 @@ pub fn matrix_apply(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnos
 
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "matrix_apply".to_string(),
+            Rule::MatrixApply,
             msg.to_string(),
             Some(suggestion.to_string()),
         ),
         range,
-        Fix {
-            content: fix,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(range, fix, node_contains_comments(ast.syntax())),
     );
 
     Ok(Some(diagnostic))

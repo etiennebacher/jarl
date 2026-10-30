@@ -1,9 +1,11 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::get_function_name;
 use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.3.0
 ///
 /// ## What it does
@@ -44,6 +46,7 @@ use biome_rowan::AstNode;
 /// ## References
 ///
 /// See `?Logic`
+/// <!-- docs: end -->
 pub fn vector_logic(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let operator = ast.operator()?;
     if operator.kind() != RSyntaxKind::AND && operator.kind() != RSyntaxKind::OR {
@@ -78,7 +81,7 @@ pub fn vector_logic(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic
 
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
-        ViolationData::new("vector_logic".to_string(), msg.to_string(), None),
+        ViolationData::new(Rule::VectorLogic, msg.to_string(), None),
         range,
         Fix::empty(),
     );

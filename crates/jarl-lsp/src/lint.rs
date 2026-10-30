@@ -4,7 +4,10 @@
 //! It handles diagnostics, code actions, and fixes for automatic issue resolution.
 
 use anyhow::{Result, anyhow};
-use lsp_types::{Diagnostic, DiagnosticSeverity, NumberOrString, Position, Range};
+use gen_lsp_types::{
+    Code, Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity, Location, Message,
+    Position, Range, Uri,
+};
 use serde::{Deserialize, Serialize};
 
 use std::path::{Path, PathBuf};
@@ -14,24 +17,31 @@ use crate::document::PositionEncoding;
 use crate::session::DocumentSnapshot;
 use crate::utils::should_exclude_file_based_on_settings;
 
+use air_fs::relativize_path;
 use air_workspace::resolve::PathResolver;
-use jarl_core::check::get_checks;
+use jarl_core::check::{analyze_packages, get_checks, package_sibling_r_files};
 use jarl_core::config::{ArgsConfig, build_config};
 use jarl_core::diagnostic::Diagnostic as JarlDiagnostic;
 use jarl_core::discovery::{DiscoveredSettings, discover_settings};
-use jarl_core::fs::{has_r_extension, relativize_path};
-use jarl_core::package::{is_in_r_package, make_package_analysis, summarize_package_info};
-use jarl_core::settings::Settings;
+use jarl_core::rule_set::Rule;
+
+/// A single replacement making up a fix
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DiagnosticEdit {
+    /// The replacement content for the edit
+    pub content: String,
+    /// The start byte offset of the edit range
+    pub start: usize,
+    /// The end byte offset of the edit range
+    pub end: usize,
+}
 
 /// Fix information that can be attached to a diagnostic for code actions
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DiagnosticFix {
-    /// The replacement content for the fix
-    pub content: String,
-    /// The start byte offset of the fix range
-    pub start: usize,
-    /// The end byte offset of the fix range
-    pub end: usize,
+    /// The edits making up the fix, applied together. Empty when the
+    /// diagnostic has no fix.
+    pub edits: Vec<DiagnosticEdit>,
     /// Whether this fix is safe to apply automatically
     pub is_safe: bool,
     /// The name of the rule that produced this diagnostic
@@ -71,10 +81,18 @@ pub fn lint_document(snapshot: &DocumentSnapshot) -> Result<LintOutput> {
         refreshed_packages,
     } = run_jarl_linting(content, file_path.as_deref(), snapshot)?;
 
+    // Labels are only sent to clients that can show them.
+    let related_information_uri = supports_related_information(snapshot).then(|| snapshot.uri());
+
     // Convert to LSP diagnostics with fix information
     let mut lsp_diagnostics = Vec::new();
     for jarl_diagnostic in jarl_diagnostics {
-        let lsp_diagnostic = convert_to_lsp_diagnostic(&jarl_diagnostic, content, encoding)?;
+        let lsp_diagnostic = convert_to_lsp_diagnostic(
+            &jarl_diagnostic,
+            content,
+            encoding,
+            related_information_uri,
+        )?;
         lsp_diagnostics.push(lsp_diagnostic);
     }
 
@@ -118,7 +136,7 @@ fn run_jarl_linting(
 
     // Discover settings from the actual file path.
     let actual_file_path = vec![file_path.to_string_lossy().to_string()];
-    let mut resolver = PathResolver::new(Settings::default());
+    let mut resolver = PathResolver::new();
     for DiscoveredSettings { directory, settings, .. } in discover_settings(&actual_file_path)? {
         resolver.add(&directory, settings);
         tracing::debug!("Discovered settings from directory: {:?}", directory);
@@ -142,7 +160,6 @@ fn run_jarl_linting(
         min_r_version: None,
         allow_dirty: false,
         allow_no_vcs: false,
-        assignment: None,
     };
 
     let toml_settings = resolver.items().first().map(|item| item.value());
@@ -162,17 +179,8 @@ fn run_jarl_linting(
 
     // Compute package-level analysis using the real file's sibling R files.
     let analysis_paths =
-        collect_sibling_r_files(file_path).unwrap_or_else(|| vec![file_path.to_path_buf()]);
-    let (pkg_contexts, file_pkg_info) = summarize_package_info(&analysis_paths);
-    let namespace_contents: std::collections::HashMap<PathBuf, String> = pkg_contexts
-        .iter()
-        .filter_map(|(root, ctx)| {
-            ctx.namespace_content
-                .as_ref()
-                .map(|c| (root.clone(), c.clone()))
-        })
-        .collect();
-    let pkg = make_package_analysis(&analysis_paths, &config, &namespace_contents);
+        package_sibling_r_files(file_path).unwrap_or_else(|| vec![file_path.to_path_buf()]);
+    let (pkg, pkg_contexts, file_pkg_info) = analyze_packages(&analysis_paths, &config);
 
     // Call get_checks directly with the in-memory content and the real
     // (relativized) file path, avoiding the old tempfile round-trip.
@@ -185,6 +193,9 @@ fn run_jarl_linting(
         &pkg,
         &pkg_contexts,
         &file_pkg_info,
+        // The buffer being linted is the in-memory editor content, which can
+        // differ from the on-disk content the cached index was built from.
+        false,
     )?;
 
     // Hide unused_function diagnostics when the package-wide count exceeds
@@ -219,7 +230,7 @@ fn run_jarl_linting(
                 .unwrap_or(50);
 
             if total_unused > threshold {
-                diagnostics.retain(|d| d.message.name != "unused_function");
+                diagnostics.retain(|d| d.message.rule != Rule::UnusedFunction);
                 total_unused
             } else {
                 0
@@ -235,27 +246,26 @@ fn run_jarl_linting(
     })
 }
 
-/// If `file_path` lives inside an R package's `R/` directory, return all
-/// `.R` files in that directory. Returns `None` otherwise.
-fn collect_sibling_r_files(file_path: &Path) -> Option<Vec<PathBuf>> {
-    if !is_in_r_package(file_path).unwrap_or(false) {
-        return None;
-    }
-    let r_dir = file_path.parent()?;
-    let entries = std::fs::read_dir(r_dir).ok()?;
-    let files = entries
-        .filter_map(|e| e.ok())
-        .map(|e| e.path())
-        .filter(|p| has_r_extension(p))
-        .collect();
-    Some(files)
+/// Whether the client displays `relatedInformation` on diagnostics.
+fn supports_related_information(snapshot: &DocumentSnapshot) -> bool {
+    snapshot
+        .client_capabilities()
+        .text_document
+        .as_ref()
+        .and_then(|text_document| text_document.publish_diagnostics.as_ref())
+        .and_then(|publish| publish.diagnostics_capabilities.related_information)
+        .unwrap_or(false)
 }
 
-/// Convert a Jarl diagnostic to LSP diagnostic format with fix information
+/// Convert a Jarl diagnostic to LSP diagnostic format with fix information.
+///
+/// `related_information_uri` is the document URI when the client supports
+/// related information: the diagnostic's labels then point at it.
 fn convert_to_lsp_diagnostic(
     jarl_diag: &JarlDiagnostic,
     content: &str,
     encoding: PositionEncoding,
+    related_information_uri: Option<&Uri>,
 ) -> Result<Diagnostic> {
     // Use the TextRange from the diagnostic for accurate positioning
     let text_range = jarl_diag.range;
@@ -269,16 +279,23 @@ fn convert_to_lsp_diagnostic(
 
     // TODO-etienne: don't have that
     // let severity = convert_severity(jarl_diag.severity);
-    let severity = DiagnosticSeverity::WARNING;
+    let severity = DiagnosticSeverity::Warning;
 
     // Extract fix information if available
     // Always include fix_data even if there's no actual fix, so we can access the rule_name
     let diagnostic_fix = DiagnosticFix {
-        content: jarl_diag.fix.content.clone(),
-        start: jarl_diag.fix.start,
-        end: jarl_diag.fix.end,
+        edits: jarl_diag
+            .fix
+            .edits
+            .iter()
+            .map(|edit| DiagnosticEdit {
+                content: edit.content.clone(),
+                start: edit.start(),
+                end: edit.end(),
+            })
+            .collect(),
         is_safe: jarl_diag.has_safe_fix(),
-        rule_name: jarl_diag.message.name.clone(),
+        rule_name: jarl_diag.message.rule.name().to_string(),
         diagnostic_start: start_offset,
         diagnostic_end: end_offset,
     };
@@ -292,19 +309,47 @@ fn convert_to_lsp_diagnostic(
         jarl_diag.message.body.clone()
     };
 
+    let related_information = match related_information_uri {
+        Some(uri) if !jarl_diag.labels.is_empty() => Some(
+            jarl_diag
+                .labels
+                .iter()
+                .map(|label| {
+                    let start =
+                        byte_offset_to_lsp_position(label.range.start().into(), content, encoding)?;
+                    let end =
+                        byte_offset_to_lsp_position(label.range.end().into(), content, encoding)?;
+                    Ok(DiagnosticRelatedInformation {
+                        location: Location::new(uri.clone(), Range::new(start, end)),
+                        message: label.text.clone(),
+                    })
+                })
+                .collect::<Result<Vec<_>>>()?,
+        ),
+        _ => None,
+    };
+
     let diagnostic = Diagnostic {
         range,
         severity: Some(severity),
-        code: Some(NumberOrString::String(jarl_diag.message.name.clone())),
+        code: Some(Code::String(jarl_diag.message.rule.name().to_string())),
         code_description: None,
         source: Some(DIAGNOSTIC_SOURCE.to_string()),
-        message,
-        related_information: None,
+        message: Message::String(message),
+        related_information,
         tags: None,
         data: fix_data, // Include fix information for code actions when available
     };
 
     Ok(diagnostic)
+}
+
+/// Plain text of a diagnostic message
+pub fn message_text(message: &Message) -> &str {
+    match message {
+        Message::String(text) => text,
+        Message::MarkupContent(content) => &content.value,
+    }
 }
 
 /// Convert byte offset to LSP Position (made public for code actions)
@@ -382,7 +427,7 @@ pub fn byte_offset_to_lsp_position(
 // fn convert_severity(severity: JarlSeverity) -> DiagnosticSeverity {
 //     match severity {
 //         JarlSeverity::Error => DiagnosticSeverity::ERROR,
-//         JarlSeverity::Warning => DiagnosticSeverity::WARNING,
+//         JarlSeverity::Warning => DiagnosticSeverity::Warning,
 //         JarlSeverity::Info => DiagnosticSeverity::INFORMATION,
 //         JarlSeverity::Hint => DiagnosticSeverity::HINT,
 //     }
@@ -395,10 +440,10 @@ mod tests {
     use super::*;
     use crate::document::{DocumentKey, TextDocument};
     use crate::session::DocumentSnapshot;
-    use lsp_types::{ClientCapabilities, Url};
+    use gen_lsp_types::{ClientCapabilities, MarkupContent, MarkupKind, Uri};
 
     fn create_test_snapshot(file_path: &std::path::Path, content: &str) -> DocumentSnapshot {
-        let uri = Url::from_file_path(file_path).unwrap();
+        let uri = Uri::from_file_path(file_path).unwrap();
         let key = DocumentKey::from(uri);
         let document = TextDocument::new(content.to_string(), 1);
 
@@ -408,6 +453,76 @@ mod tests {
             PositionEncoding::UTF8,
             ClientCapabilities::default(),
         )
+    }
+
+    fn related_information_snapshot(
+        file_path: &std::path::Path,
+        content: &str,
+        supported: bool,
+    ) -> DocumentSnapshot {
+        let uri = Uri::from_file_path(file_path).unwrap();
+        let mut capabilities = ClientCapabilities::default();
+        if supported {
+            capabilities.text_document = Some(gen_lsp_types::TextDocumentClientCapabilities {
+                publish_diagnostics: Some(gen_lsp_types::PublishDiagnosticsClientCapabilities {
+                    diagnostics_capabilities: gen_lsp_types::DiagnosticsCapabilities {
+                        related_information: Some(true),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                }),
+                ..Default::default()
+            });
+        }
+        DocumentSnapshot::new(
+            TextDocument::new(content.to_string(), 1),
+            DocumentKey::from(uri),
+            PositionEncoding::UTF8,
+            capabilities,
+        )
+    }
+
+    #[test]
+    fn test_labels_become_related_information_when_supported() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test.R");
+        let content = "x <- 1\nx <- if (a) 2\n";
+        std::fs::write(&file_path, content).unwrap();
+
+        let snapshot = related_information_snapshot(&file_path, content, true);
+        let output = lint_document(&snapshot).unwrap();
+        let diagnostic = output
+            .diagnostics
+            .iter()
+            .find(|d| matches!(&d.code, Some(Code::String(c)) if c == "assignment_on_if_no_else"))
+            .expect("assignment_on_if_no_else is reported");
+        let related = diagnostic
+            .related_information
+            .as_ref()
+            .expect("related information");
+        assert_eq!(related.len(), 1);
+        assert_eq!(related[0].message, "`x` was last assigned here");
+        assert_eq!(
+            related[0].location.range,
+            Range::new(Position::new(0, 0), Position::new(0, 1))
+        );
+    }
+
+    #[test]
+    fn test_labels_are_dropped_when_unsupported() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test.R");
+        let content = "x <- 1\nx <- if (a) 2\n";
+        std::fs::write(&file_path, content).unwrap();
+
+        let snapshot = related_information_snapshot(&file_path, content, false);
+        let output = lint_document(&snapshot).unwrap();
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .all(|d| d.related_information.is_none())
+        );
     }
 
     #[test]
@@ -420,7 +535,40 @@ mod tests {
         let output = lint_document(&snapshot).unwrap();
         assert_eq!(output.diagnostics.len(), 1);
         assert_eq!(
-            output.diagnostics[0].message,
+            message_text(&output.diagnostics[0].message),
+            "This file is empty or only contains comments. Consider deleting the file."
+        );
+    }
+
+    #[test]
+    fn test_message_text_reads_both_variants() {
+        assert_eq!(message_text(&Message::String("plain".to_string())), "plain");
+        assert_eq!(
+            message_text(&Message::MarkupContent(MarkupContent {
+                kind: MarkupKind::Markdown,
+                value: "**bold**".to_string(),
+            })),
+            "**bold**"
+        );
+    }
+
+    #[test]
+    fn test_diagnostic_wire_format() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test.R");
+        std::fs::write(&file_path, "").unwrap();
+
+        let snapshot = create_test_snapshot(&file_path, "");
+        let output = lint_document(&snapshot).unwrap();
+        let diagnostic = serde_json::to_value(&output.diagnostics[0]).unwrap();
+
+        assert_eq!(diagnostic["severity"], 2);
+        assert_eq!(diagnostic["source"], DIAGNOSTIC_SOURCE);
+        // `code` and `message` are untagged enums, so they must serialize as
+        // bare values rather than as tagged objects.
+        assert_eq!(diagnostic["code"], "empty_file");
+        assert_eq!(
+            diagnostic["message"],
             "This file is empty or only contains comments. Consider deleting the file."
         );
     }
@@ -519,14 +667,14 @@ mod tests {
         std::fs::write(&file_path, content).unwrap();
 
         // Create snapshot for the renv file
-        let uri = lsp_types::Url::from_file_path(&file_path).unwrap();
+        let uri = Uri::from_file_path(&file_path).unwrap();
         let key = crate::document::DocumentKey::from(uri);
         let document = crate::document::TextDocument::new(content.to_string(), 1);
         let snapshot = DocumentSnapshot::new(
             document,
             key,
             PositionEncoding::UTF8,
-            lsp_types::ClientCapabilities::default(),
+            ClientCapabilities::default(),
         );
 
         // Should return no diagnostics because file is excluded
@@ -562,14 +710,14 @@ mod tests {
         std::fs::write(&file_path, content).unwrap();
 
         // Create snapshot for the renv file
-        let uri = lsp_types::Url::from_file_path(&file_path).unwrap();
+        let uri = Uri::from_file_path(&file_path).unwrap();
         let key = crate::document::DocumentKey::from(uri);
         let document = crate::document::TextDocument::new(content.to_string(), 1);
         let snapshot = DocumentSnapshot::new(
             document,
             key,
             PositionEncoding::UTF8,
-            lsp_types::ClientCapabilities::default(),
+            ClientCapabilities::default(),
         );
 
         // Should return diagnostics because file is not excluded
@@ -586,16 +734,16 @@ mod tests {
 
     /// Lint Rmd/Qmd content and return the LSP diagnostics.
     ///
-    /// Writes the content to a real temporary file so that `Url::from_file_path`
+    /// Writes the content to a real temporary file so that `Uri::from_file_path`
     /// produces a valid URI on all platforms (including Windows, where a fake
     /// `file:///test.Rmd` path would cause `to_file_path()` to fail and return
     /// no diagnostics).
-    fn lint_rmd_content(content: &str, ext: &str) -> Vec<lsp_types::Diagnostic> {
+    fn lint_rmd_content(content: &str, ext: &str) -> Vec<Diagnostic> {
         let temp_dir = TempDir::new().unwrap();
         let file_path = temp_dir.path().join(format!("test.{ext}"));
         std::fs::write(&file_path, content).unwrap();
 
-        let uri = lsp_types::Url::from_file_path(&file_path).unwrap();
+        let uri = Uri::from_file_path(&file_path).unwrap();
         let key = DocumentKey::from(uri);
         let document = TextDocument::new(content.to_string(), 1);
         let snapshot = DocumentSnapshot::new(
@@ -608,10 +756,7 @@ mod tests {
     }
 
     /// Filter diagnostics by rule name stored in the `data` field.
-    fn diagnostics_for_rule<'a>(
-        diagnostics: &'a [lsp_types::Diagnostic],
-        rule: &str,
-    ) -> Vec<&'a lsp_types::Diagnostic> {
+    fn diagnostics_for_rule<'a>(diagnostics: &'a [Diagnostic], rule: &str) -> Vec<&'a Diagnostic> {
         diagnostics
             .iter()
             .filter(|d| {
@@ -757,7 +902,7 @@ mod tests {
 
     /// Create a snapshot backed by a real file on disk.
     fn create_snapshot_for_file(file_path: &std::path::Path, content: &str) -> DocumentSnapshot {
-        let uri = Url::from_file_path(file_path).unwrap();
+        let uri = Uri::from_file_path(file_path).unwrap();
         let key = DocumentKey::from(uri);
         let document = TextDocument::new(content.to_string(), 1);
         DocumentSnapshot::new(
@@ -786,9 +931,9 @@ mod tests {
             "expected one duplicate diagnostic, got: {hits:?}"
         );
         assert!(
-            hits[0].message.contains("`foo` is defined more than once"),
+            message_text(&hits[0].message).contains("`foo` is defined more than once"),
             "message should mention `foo`, got: {}",
-            hits[0].message
+            message_text(&hits[0].message)
         );
     }
 
@@ -873,14 +1018,14 @@ mod tests {
         std::fs::write(&file_path, content).unwrap();
 
         // Create snapshot for the generated file
-        let uri = lsp_types::Url::from_file_path(&file_path).unwrap();
+        let uri = Uri::from_file_path(&file_path).unwrap();
         let key = crate::document::DocumentKey::from(uri);
         let document = crate::document::TextDocument::new(content.to_string(), 1);
         let snapshot = DocumentSnapshot::new(
             document,
             key,
             PositionEncoding::UTF8,
-            lsp_types::ClientCapabilities::default(),
+            ClientCapabilities::default(),
         );
 
         // Should return no diagnostics because file matches exclude pattern

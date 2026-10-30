@@ -1059,3 +1059,993 @@ any(is.na(x))
 
     Ok(())
 }
+
+// ---------------------------------------------------------------------------
+// unused_object
+// ---------------------------------------------------------------------------
+
+/// Knitr runs every chunk in one session, so an object no chunk ever reads is
+/// unused. The diagnostic points at the line in the original document.
+#[test]
+fn test_rmd_unused_object_reported() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+---
+title: \"Test\"
+---
+
+```{r}
+x <- 1
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unused_object
+     --> test.Rmd:7:1
+      |
+    7 | x <- 1
+      | - Object `x` is defined but never used.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// Chunks share one environment, so a read in a later chunk uses the object.
+#[test]
+fn test_rmd_object_read_in_a_later_chunk_not_flagged() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+x <- 1
+```
+
+Some prose in between.
+
+```{r}
+print(x)
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// Inline R code in the prose isn't linted, but it does run: an object it
+/// reads is used.
+#[test]
+fn test_rmd_object_read_by_inline_code_not_flagged() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+x <- 1
+```
+
+The value is `r mean(x)`.
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// A chunk that doesn't parse is dropped from the analysis, but it still runs
+/// when the document is knitted, so the objects it reads are not unused.
+#[test]
+fn test_rmd_object_read_in_a_chunk_with_syntax_error_not_flagged() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+x <- 1
+y <- 2
+```
+
+```{r}
+if (x
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unused_object
+     --> test.Rmd:4:1
+      |
+    4 | y <- 2
+      | - Object `y` is defined but never used.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// `source()` in a chunk resolves next to the document: the helper's own
+/// definitions land in the document's environment, so reading one is not a
+/// read of an undefined object, and the helper's free reads consume the
+/// document's bindings.
+#[test]
+fn test_rmd_object_read_by_sourced_file_not_flagged() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        ("helper.R", "print(x)\n"),
+        (
+            "test.Rmd",
+            "
+```{r}
+x <- 1
+y <- 2
+source(\"helper.R\")
+```
+",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unused_object
+     --> test.Rmd:4:1
+      |
+    4 | y <- 2
+      | - Object `y` is defined but never used.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// An object a sourced file defines is imported, not defined by the document,
+/// so it is never reported here.
+#[test]
+fn test_rmd_object_defined_by_sourced_file_not_flagged() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        ("helper.R", "from_helper <- 1\n"),
+        (
+            "test.Rmd",
+            "
+```{r}
+source(\"helper.R\")
+```
+",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// Both suppression forms apply to the rule.
+#[test]
+fn test_rmd_unused_object_can_be_suppressed() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+#| jarl-ignore-chunk:
+#| - unused_object: kept for illustration
+x <- 1
+```
+
+```{r}
+# jarl-ignore unused_object: kept for illustration
+y <- 2
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// Same as `test_rmd_unused_object_reported` but with a `.qmd` extension.
+#[test]
+fn test_qmd_unused_object_reported() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.qmd",
+        "
+```{r}
+x <- 1
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.qmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unused_object
+     --> test.qmd:3:1
+      |
+    3 | x <- 1
+      | - Object `x` is defined but never used.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// A chunk marked `eval = FALSE` never runs, so nothing it assigns is a
+/// definition and nothing it mentions is a read.
+#[test]
+fn test_rmd_unevaluated_chunk_defines_and_reads_nothing() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+read_only_in_dead_chunk <- 1
+```
+
+```{r, eval = FALSE}
+defined_in_dead_chunk <- 2
+print(read_only_in_dead_chunk)
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unused_object
+     --> test.Rmd:3:1
+      |
+    3 | read_only_in_dead_chunk <- 1
+      | ----------------------- Object `read_only_in_dead_chunk` is defined but never used.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// Quarto's option form is honoured too.
+#[test]
+fn test_rmd_quarto_eval_false_chunk_defines_nothing() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+#| eval: false
+x <- 1
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// An `eval` option whose value is decided at render time is assumed to run:
+/// dropping its reads could invent a diagnostic, keeping them can only miss
+/// one.
+#[test]
+fn test_rmd_dynamic_eval_chunk_is_treated_as_evaluated() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+x <- 1
+```
+
+```{r, eval = run_it}
+print(x)
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// An unevaluated chunk is left out of the use-def analysis, but it is still
+/// code in the document and other rules still apply to it.
+#[test]
+fn test_rmd_unevaluated_chunk_is_still_linted() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r, eval = FALSE}
+any(is.na(x))
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("any_is_na")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.Rmd:3:1
+      |
+    3 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// Chunk options can name objects. Knitr evaluates a chunk's options when it
+/// renders the chunk, so those are reads — including for a chunk whose own
+/// code never runs.
+#[test]
+fn test_rmd_objects_used_in_chunk_options_not_flagged() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r setup}
+run_it <- TRUE
+my_caption <- \"a caption\"
+quarto_flag <- TRUE
+```
+
+```{r plot-one, eval = run_it, fig.cap = my_caption}
+plot(1)
+```
+
+```{r}
+#| eval: !expr quarto_flag
+plot(2)
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// Only the *values* of chunk options are reads. An object whose name happens
+/// to match an option name is still reported.
+#[test]
+fn test_rmd_chunk_option_names_are_not_reads() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+results <- 1
+```
+
+```{r, results = 'asis', echo = FALSE}
+plot(1)
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unused_object
+     --> test.Rmd:3:1
+      |
+    3 | results <- 1
+      | ------- Object `results` is defined but never used.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// Options are evaluated even when the chunk they belong to is not.
+#[test]
+fn test_rmd_options_of_unevaluated_chunk_are_reads() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+my_caption <- \"a caption\"
+```
+
+```{r, eval = FALSE, fig.cap = my_caption}
+plot(1)
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// Rmd/Qmd files must be handled consistently regardless of extension casing.
+#[test]
+fn test_uppercase_rmd_qmd_no_autofix() -> anyhow::Result<()> {
+    let content = "```{r}
+any(is.na(x))
+```
+";
+    let case = CliTest::with_files([("report.RMD", content), ("notes.QMD", content)])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("report.RMD")
+            .arg("notes.QMD")
+            .arg("--fix")
+            .arg("--allow-no-vcs")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> notes.QMD:2:1
+      |
+    2 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+    warning: any_is_na
+     --> report.RMD:2:1
+      |
+    2 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+
+    ----- stderr -----
+    "
+    );
+    assert_eq!(case.read_file("report.RMD")?, content);
+    assert_eq!(case.read_file("notes.QMD")?, content);
+
+    Ok(())
+}
+
+/// A chunk marked `eval = FALSE` never runs, so a `stop()` in it cannot make a
+/// later chunk unreachable.
+#[test]
+fn test_rmd_unevaluated_chunk_does_not_stop_later_chunks() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.qmd",
+        "
+```{r}
+#| eval: false
+stop('hi')
+```
+
+```{r}
+1 + 1
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.qmd")
+            .arg("--select")
+            .arg("unreachable_code")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// A chunk marked `error = TRUE` runs, but knitr prints the condition and
+/// carries on, so a `stop()` in it ends neither that chunk nor the document.
+#[test]
+fn test_rmd_error_tolerant_chunk_does_not_stop_anything() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.qmd",
+        "
+```{r}
+#| eval: true
+#| error: true
+stop('hi')
+2 + 2
+```
+
+```{r}
+1 + 1
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.qmd")
+            .arg("--select")
+            .arg("unreachable_code")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// The header form of the option is read the same way.
+#[test]
+fn test_rmd_header_error_true_does_not_stop_later_chunks() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r, error = TRUE}
+stop('hi')
+```
+
+```{r}
+1 + 1
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unreachable_code")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// A chunk that neither of those options excuses still stops the document, and
+/// an unevaluated chunk sitting in between doesn't hide that.
+#[test]
+fn test_rmd_stopping_chunk_still_reaches_past_an_unevaluated_one() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.qmd",
+        "
+```{r}
+stop('hi')
+```
+
+```{r}
+#| eval: false
+2 + 2
+```
+
+```{r}
+1 + 1
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.qmd")
+            .arg("--select")
+            .arg("unreachable_code")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unreachable_code
+      --> test.qmd:12:1
+       |
+    12 | 1 + 1
+       | ----- This code is unreachable because it appears after a `stop()` statement (or equivalent).
+       |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// A chunk that never runs has no reachable code to speak of, so nothing in it
+/// is reported — not even the line after a `stop()` it would never reach.
+#[test]
+fn test_rmd_unevaluated_chunk_reports_no_unreachable_code() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.qmd",
+        "
+```{r}
+#| eval: false
+stop('hi')
+2 + 2
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.qmd")
+            .arg("--select")
+            .arg("unreachable_code")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// `library_call` doesn't apply to documents: each chunk attaches what it
+/// needs, so scattered `library()` calls are not reported.
+#[test]
+fn test_rmd_library_call_is_skipped() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+library(dplyr)
+x <- 1
+```
+
+```{r}
+library(purrr)
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("library_call")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}

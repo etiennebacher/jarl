@@ -1,8 +1,10 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.23
 ///
 /// ## What it does
@@ -14,7 +16,18 @@ use biome_rowan::AstNode;
 /// This pattern may be hard to read and could be simplified by removing the `!`
 /// operator and inverting the operator (e.g. `<` would become `>=`).
 ///
-/// This rule has a safe fix.
+/// This rule has an unsafe fix because of operator precedence around the
+/// comparison:
+///
+/// ```r
+/// x <- 1
+/// y <- 2
+///
+/// 2 * !(x < y)
+/// #> [1] 0
+/// 2 * x >= y
+/// #> [1] TRUE
+/// ```
 ///
 /// ## Example
 ///
@@ -28,6 +41,7 @@ use biome_rowan::AstNode;
 /// x >= y + 1
 /// x != y + 1
 /// ```
+/// <!-- docs: end -->
 pub fn comparison_negation(ast: &RUnaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let operator = ast.operator()?;
 
@@ -70,22 +84,21 @@ pub fn comparison_negation(ast: &RUnaryExpression) -> anyhow::Result<Option<Diag
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "comparison_negation".to_string(),
+            Rule::ComparisonNegation,
             format!("`!(x {} y)` can be simplified.", operator.text_trimmed()),
             Some(format!("Use `x {} y` instead.", replacement_operator)),
         ),
         range,
-        Fix {
-            content: format!(
+        Fix::new(
+            range,
+            format!(
                 "{} {} {}",
                 left.to_trimmed_text(),
                 replacement_operator,
                 right.to_trimmed_text()
             ),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))

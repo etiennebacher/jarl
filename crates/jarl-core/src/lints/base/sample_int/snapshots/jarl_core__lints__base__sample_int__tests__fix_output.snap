@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-core/src/lints/base/sample_int/mod.rs
-expression: "get_fixed_text(vec![\"sample(1:10, 2)\", \"sample(1L:10L, 2)\",\n\"sample(n = 1:10, 2)\", \"sample(2, n = 1:10)\", \"sample(size = 2, n = 1:10)\",\n\"sample(replace = TRUE, letters)\",], \"sample_int\", None)"
+expression: "get_fixed_text(vec![\"sample(1:10, 2)\", \"sample(1L:10L, 2)\",\n\"sample(x = 1:10, 2)\", \"sample(2, x = 1:10)\", \"sample(size = 2, x = 1:10)\",\n\"sample(replace = TRUE, letters)\",], \"sample_int\", None)"
 ---
 OLD:
 ====
@@ -18,21 +18,21 @@ sample.int(10L, 2)
 
 OLD:
 ====
-sample(n = 1:10, 2)
+sample(x = 1:10, 2)
 NEW:
 ====
 sample.int(10, 2)
 
 OLD:
 ====
-sample(2, n = 1:10)
+sample(2, x = 1:10)
 NEW:
 ====
 sample.int(10, 2)
 
 OLD:
 ====
-sample(size = 2, n = 1:10)
+sample(size = 2, x = 1:10)
 NEW:
 ====
 sample.int(10, size = 2)

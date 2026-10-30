@@ -170,10 +170,17 @@ fn test_output_json() -> anyhow::Result<()> {
             "column": 0
           },
           "fix": {
-            "content": "anyNA(x)",
-            "start": 0,
-            "end": 13,
-            "to_skip": false
+            "edits": [
+              {
+                "range": [
+                  0,
+                  13
+                ],
+                "content": "anyNA(x)"
+              }
+            ],
+            "to_skip": false,
+            "safety": "safe"
           }
         },
         {
@@ -192,10 +199,17 @@ fn test_output_json() -> anyhow::Result<()> {
             "column": 0
           },
           "fix": {
-            "content": "anyDuplicated(x) > 0",
-            "start": 0,
-            "end": 18,
-            "to_skip": false
+            "edits": [
+              {
+                "range": [
+                  0,
+                  18
+                ],
+                "content": "anyDuplicated(x) > 0"
+              }
+            ],
+            "to_skip": false,
+            "safety": "safe"
           }
         }
       ],
@@ -239,10 +253,17 @@ fn test_output_json() -> anyhow::Result<()> {
             "column": 0
           },
           "fix": {
-            "content": "anyNA(x)",
-            "start": 0,
-            "end": 13,
-            "to_skip": false
+            "edits": [
+              {
+                "range": [
+                  0,
+                  13
+                ],
+                "content": "anyNA(x)"
+              }
+            ],
+            "to_skip": false,
+            "safety": "safe"
           }
         },
         {
@@ -261,10 +282,17 @@ fn test_output_json() -> anyhow::Result<()> {
             "column": 0
           },
           "fix": {
-            "content": "anyDuplicated(x) > 0",
-            "start": 0,
-            "end": 18,
-            "to_skip": false
+            "edits": [
+              {
+                "range": [
+                  0,
+                  18
+                ],
+                "content": "anyDuplicated(x) > 0"
+              }
+            ],
+            "to_skip": false,
+            "safety": "safe"
           }
         }
       ],
@@ -555,7 +583,12 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
     1 fixable with the `--fix` option.
 
     ----- stderr -----
-    Error: Failed to parse test2.R due to syntax errors.
+    error: Expected `)` but instead found the end of the file.
+     --> test2.R:1:5
+      |
+    1 | any(
+      |     ^
+      |
     "
     );
 
@@ -580,7 +613,7 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
     1 fixable with the `--fix` option.
 
     ----- stderr -----
-    Error: Failed to parse test2.R due to syntax errors.
+    Error: test2.R:1:5 Expected `)` but instead found the end of the file.
     "
     );
 
@@ -616,17 +649,37 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
             "column": 0
           },
           "fix": {
-            "content": "anyNA(x)",
-            "start": 0,
-            "end": 13,
-            "to_skip": false
+            "edits": [
+              {
+                "range": [
+                  0,
+                  13
+                ],
+                "content": "anyNA(x)"
+              }
+            ],
+            "to_skip": false,
+            "safety": "safe"
           }
         }
       ],
       "errors": [
         {
           "file": "test2.R",
-          "error": "Failed to parse test2.R due to syntax errors."
+          "error": "Failed to parse test2.R due to syntax errors.",
+          "syntax_errors": [
+            {
+              "message": "Expected `)` but instead found the end of the file.",
+              "range": [
+                4,
+                4
+              ],
+              "location": {
+                "row": 1,
+                "column": 4
+              }
+            }
+          ]
         }
       ]
     }
@@ -651,8 +704,440 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
     ::warning title=Jarl (any_is_na),file=test.R,line=1,col=1::test.R:1:1 [any_is_na] `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
 
     ----- stderr -----
+    Error: test2.R:1:5 Expected `)` but instead found the end of the file.
     "
     );
 
+    let sarif = case
+        .command()
+        .arg("check")
+        .arg(".")
+        .arg("--output-format")
+        .arg("sarif")
+        .run()
+        .normalize_os_executable_name();
+
+    assert_eq!(sarif.status.code(), Some(255));
+    assert!(
+        sarif
+            .stderr
+            .contains("Error: test2.R:1:5 Expected `)` but instead found the end of the file.")
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_output_json_fix_safety() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        ("safe.R", "any(is.na(x))"),
+        ("unsafe.R", "!all.equal(x, y)"),
+        ("none.R", "1 + + + 1"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("json")
+            .run()
+            .normalize_os_executable_name(),
+        @r#"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    {
+      "diagnostics": [
+        {
+          "message": {
+            "name": "consecutive_signs",
+            "body": "Consecutive `+` and `-` operators are usually unnecessary and look like a typo.",
+            "suggestion": "Consider removing the unnecessary operators or using parentheses to show that this is intentional."
+          },
+          "filename": "none.R",
+          "range": [
+            2,
+            7
+          ],
+          "location": {
+            "row": 1,
+            "column": 2
+          },
+          "fix": {
+            "edits": [],
+            "to_skip": true,
+            "safety": "none"
+          }
+        },
+        {
+          "message": {
+            "name": "any_is_na",
+            "body": "`any(is.na(...))` is inefficient.",
+            "suggestion": "Use `anyNA(...)` instead."
+          },
+          "filename": "safe.R",
+          "range": [
+            0,
+            13
+          ],
+          "location": {
+            "row": 1,
+            "column": 0
+          },
+          "fix": {
+            "edits": [
+              {
+                "range": [
+                  0,
+                  13
+                ],
+                "content": "anyNA(x)"
+              }
+            ],
+            "to_skip": false,
+            "safety": "safe"
+          }
+        },
+        {
+          "message": {
+            "name": "all_equal",
+            "body": "If `all.equal()` is false, it will return a string and not `FALSE`.",
+            "suggestion": "Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required."
+          },
+          "filename": "unsafe.R",
+          "range": [
+            0,
+            16
+          ],
+          "location": {
+            "row": 1,
+            "column": 0
+          },
+          "fix": {
+            "edits": [
+              {
+                "range": [
+                  0,
+                  16
+                ],
+                "content": "!isTRUE(all.equal(x, y))"
+              }
+            ],
+            "to_skip": false,
+            "safety": "unsafe"
+          }
+        }
+      ],
+      "errors": []
+    }
+    ----- stderr -----
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_output_json_multiple_syntax_errors() -> anyhow::Result<()> {
+    let case = CliTest::with_files([("test.R", "x <- (1 +\ny <- function(,) 1\nz <- [\n")])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("json")
+            .run()
+            .normalize_os_executable_name(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+    {
+      "diagnostics": [],
+      "errors": [
+        {
+          "file": "test.R",
+          "error": "Failed to parse test.R due to syntax errors.",
+          "syntax_errors": [
+            {
+              "message": "Expected a parameter name but instead found ','.",
+              "range": [
+                24,
+                25
+              ],
+              "location": {
+                "row": 2,
+                "column": 14
+              }
+            },
+            {
+              "message": "Expected a parameter name but instead found ')'.",
+              "range": [
+                25,
+                26
+              ],
+              "location": {
+                "row": 2,
+                "column": 15
+              }
+            },
+            {
+              "message": "Expected `)` but instead found `z`.",
+              "range": [
+                29,
+                30
+              ],
+              "location": {
+                "row": 3,
+                "column": 0
+              }
+            },
+            {
+              "message": "Expected an expression but instead found '['.",
+              "range": [
+                34,
+                35
+              ],
+              "location": {
+                "row": 3,
+                "column": 5
+              }
+            },
+            {
+              "message": "Expected `]` but instead found the end of the file.",
+              "range": [
+                35,
+                35
+              ],
+              "location": {
+                "row": 3,
+                "column": 6
+              }
+            }
+          ]
+        }
+      ]
+    }
+    ----- stderr -----
+    "#
+    );
+
+    Ok(())
+}
+
+fn labels_case() -> anyhow::Result<CliTest> {
+    CliTest::with_file("test.R", "x <- 1\nprint(2)\nx <- if (a) 2\n")
+}
+
+/// The GitHub annotation gets the label as an extra line.
+#[test]
+fn test_output_github_labels() -> anyhow::Result<()> {
+    let case = labels_case()?;
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("assignment_on_if_no_else")
+            .arg("--output-format")
+            .arg("github")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    ::warning title=Jarl (assignment_on_if_no_else),file=test.R,line=3,col=1::test.R:3:1 [assignment_on_if_no_else] This assignment can overwrite the previous value with `NULL` when no `if` branch is taken. Add a final `else` branch if `NULL` is the intended fallback, or move the assignment into the `if` branches.%0A`x` was last assigned here (test.R:1:1)
+
+    ----- stderr -----
+    "
+    );
+    Ok(())
+}
+
+/// JSON diagnostics carry their labels, other diagnostics have no `labels` key.
+#[test]
+fn test_output_json_labels() -> anyhow::Result<()> {
+    let case = labels_case()?;
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("assignment_on_if_no_else")
+            .arg("--output-format")
+            .arg("json")
+            .run()
+            .normalize_os_executable_name(),
+        @r#"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    {
+      "diagnostics": [
+        {
+          "message": {
+            "name": "assignment_on_if_no_else",
+            "body": "This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.",
+            "suggestion": "Add a final `else` branch if `NULL` is the intended fallback, or move the assignment into the `if` branches."
+          },
+          "filename": "test.R",
+          "range": [
+            16,
+            29
+          ],
+          "location": {
+            "row": 3,
+            "column": 0
+          },
+          "fix": {
+            "edits": [],
+            "to_skip": true,
+            "safety": "none"
+          },
+          "labels": [
+            {
+              "range": [
+                0,
+                1
+              ],
+              "text": "`x` was last assigned here",
+              "location": {
+                "row": 1,
+                "column": 0
+              }
+            }
+          ]
+        }
+      ],
+      "errors": []
+    }
+    ----- stderr -----
+    "#
+    );
+    Ok(())
+}
+
+/// SARIF results list their labels as `relatedLocations`.
+#[test]
+fn test_output_sarif_labels() -> anyhow::Result<()> {
+    let case = labels_case()?;
+    // The driver version changes between releases, so redact it.
+    insta::with_settings!({filters => vec![
+        (r#""version": "[^"]+",(\s*)"rules""#, r#""version": "[VERSION]",$1"rules""#),
+    ]}, {
+        insta::assert_snapshot!(
+            &mut case
+                .command()
+                .arg("check")
+                .arg(".")
+                .arg("--select")
+                .arg("assignment_on_if_no_else")
+                .arg("--output-format")
+                .arg("sarif")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    {
+      "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+      "version": "2.1.0",
+      "runs": [
+        {
+          "tool": {
+            "driver": {
+              "name": "jarl",
+              "informationUri": "https://github.com/etiennebacher/jarl",
+              "version": "[VERSION]",
+              "rules": [
+                {
+                  "id": "assignment_on_if_no_else",
+                  "shortDescription": {
+                    "text": "This assignment can overwrite the previous value with `NULL` when no `if` branch is taken."
+                  },
+                  "help": {
+                    "text": "This assignment can overwrite the previous value with `NULL` when no `if` branch is taken."
+                  },
+                  "helpUri": "https://jarl.etiennebacher.com/rules/assignment_on_if_no_else",
+                  "defaultConfiguration": {
+                    "level": "warning"
+                  }
+                }
+              ]
+            }
+          },
+          "columnKind": "utf16CodeUnits",
+          "originalUriBaseIds": {
+            "ROOTPATH": {
+              "uri": "file://[TEMP_DIR]/"
+            }
+          },
+          "results": [
+            {
+              "ruleId": "assignment_on_if_no_else",
+              "ruleIndex": 0,
+              "level": "warning",
+              "message": {
+                "text": "This assignment can overwrite the previous value with `NULL` when no `if` branch is taken. Add a final `else` branch if `NULL` is the intended fallback, or move the assignment into the `if` branches."
+              },
+              "locations": [
+                {
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "uri": "test.R",
+                      "uriBaseId": "ROOTPATH"
+                    },
+                    "region": {
+                      "startLine": 3,
+                      "startColumn": 1,
+                      "endLine": 3,
+                      "endColumn": 14
+                    }
+                  }
+                }
+              ],
+              "relatedLocations": [
+                {
+                  "id": 0,
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "uri": "test.R",
+                      "uriBaseId": "ROOTPATH"
+                    },
+                    "region": {
+                      "startLine": 1,
+                      "startColumn": 1,
+                      "endLine": 1,
+                      "endColumn": 2
+                    }
+                  },
+                  "message": {
+                    "text": "`x` was last assigned here"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+    ----- stderr -----
+    "#
+        );
+    });
     Ok(())
 }
