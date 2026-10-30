@@ -1448,3 +1448,52 @@ ignore-roxygen = [\"foo\"]
 
     Ok(())
 }
+
+#[test]
+fn test_roxygen_ignore_roxygen_wrong_type() -> anyhow::Result<()> {
+    let case = CliTest::package_with_files([
+        (
+            "R/test.R",
+            "\
+#' Title
+#' @examples
+#' any(is.na(x))
+foo <- function(x) x
+",
+        ),
+        (
+            "jarl.toml",
+            "\
+[lint]
+ignore-roxygen = true
+",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse /tmp/.tmpK13720/jarl.toml:
+    TOML parse error at line 2, column 18
+      |
+    2 | ignore-roxygen = true
+      |                  ^^^^
+    invalid type: boolean `true`, expected a sequence
+    "
+    );
+
+    Ok(())
+}
+
