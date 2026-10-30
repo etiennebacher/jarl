@@ -27,6 +27,11 @@ mod tests {
         );
         expect_no_lint("file.path('a', 'b', 'c')", "system_file", None);
         expect_no_lint("pkg::system.file(file.path('a'))", "system_file", None);
+        expect_no_lint(
+            "system.file(package =, file.path('R'))",
+            "system_file",
+            None,
+        );
     }
 
     #[test]
