@@ -71,7 +71,7 @@ jobs:
         shell: Rscript {0}
 
       - name: Set up just
-        uses: extractions/setup-just@v3
+        uses: extractions/setup-just@v4
 
       - name: Generate rules documentation
         run: just document --no-quarto
