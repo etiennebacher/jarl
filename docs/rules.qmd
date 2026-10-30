@@ -115,7 +115,7 @@ dat <- as.data.frame(
     c("numeric_leading_zero", "readability", "✅", ""),
     c("nzchar", "performance", "❗", "Disabled by default"),
     c("outdated_suppression", "comments", "✅", ""),
-    c("outer_negation", "performance, readability", "✅", ""),
+    c("outer_negation", "performance, readability", "❗", ""),
     c(
       "pipe_consistency",
       "readability",
