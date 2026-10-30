@@ -518,6 +518,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    NegativeIndex => {
+        name: "negative_index",
+        categories: [Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     NestedPipe => {
         name: "nested_pipe",
         categories: [Read],
