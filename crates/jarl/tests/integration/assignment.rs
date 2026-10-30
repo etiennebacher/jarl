@@ -222,7 +222,7 @@ assignment = "<-"
     ----- stderr -----
     jarl failed
       Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
-    Unknown field `assignment` in `[lint]`. Expected one of: `select`, `extend-select`, `ignore`, `fixable`, `unfixable`, `exclude`, `default-exclude`, `include`, `per-file-ignores`, `check-roxygen`, `fix-roxygen`.
+    Unknown field `assignment` in `[lint]`. Expected one of: `select`, `extend-select`, `ignore`, `fixable`, `unfixable`, `exclude`, `default-exclude`, `include`, `per-file-ignores`, `check-roxygen`, `fix-roxygen`, `ignore-roxygen`.
     "
     );
 

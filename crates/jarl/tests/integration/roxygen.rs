@@ -1304,3 +1304,196 @@ foo <- function() NULL
 
     Ok(())
 }
+
+// ---------------------------------------------------------------------------
+// ignore-roxygen skips rules in examples only
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_roxygen_ignore_roxygen() -> anyhow::Result<()> {
+    let case = CliTest::package_with_files([
+        (
+            "R/test.R",
+            "\
+#' Title
+#' @examples
+#' any(is.na(x))
+#' zz <- 1
+foo <- function(x) any(is.na(x))
+",
+        ),
+        (
+            "jarl.toml",
+            "\
+[lint]
+ignore-roxygen = [\"any_is_na\", \"unused_object\"]
+",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> R/test.R:5:20
+      |
+    5 | foo <- function(x) any(is.na(x))
+      |                    ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_roxygen_ignore_roxygen_group() -> anyhow::Result<()> {
+    let case = CliTest::package_with_files([
+        (
+            "R/test.R",
+            "\
+#' Title
+#' @examples
+#' any(is.na(x))
+foo <- function(x) x
+",
+        ),
+        (
+            "jarl.toml",
+            "\
+[lint]
+ignore-roxygen = [\"PERF\"]
+",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_roxygen_ignore_roxygen_unknown_rule() -> anyhow::Result<()> {
+    let case = CliTest::package_with_files([
+        (
+            "R/test.R",
+            "\
+#' Title
+#' @examples
+#' any(is.na(x))
+foo <- function(x) x
+",
+        ),
+        (
+            "jarl.toml",
+            "\
+[lint]
+ignore-roxygen = [\"foo\"]
+",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Unknown rules in field `ignore-roxygen` in 'jarl.toml': foo
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_roxygen_ignore_roxygen_wrong_type() -> anyhow::Result<()> {
+    let case = CliTest::package_with_files([
+        (
+            "R/test.R",
+            "\
+#' Title
+#' @examples
+#' any(is.na(x))
+foo <- function(x) x
+",
+        ),
+        (
+            "jarl.toml",
+            "\
+[lint]
+ignore-roxygen = true
+",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 2, column 18
+      |
+    2 | ignore-roxygen = true
+      |                  ^^^^
+    invalid type: boolean `true`, expected a sequence
+    "
+    );
+
+    Ok(())
+}

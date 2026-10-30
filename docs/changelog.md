@@ -6,6 +6,7 @@
 
 * New rules:
 
+  * `apply_paste` (#563)
   * `assignment_on_if_no_else` (#605, @christopherkenny)
   * `function_return` (#750)
   * `todo_comment` (#739, @Yousa-Mirage)
@@ -25,6 +26,9 @@
   `extend-operators` to attach custom messages to undesirable operators (#742).
 
 * Jarl suggests more potential names when a rule name is unknown (#777).
+
+* New option `ignore-roxygen` in `jarl.toml` to ignore some rules only in
+  roxygen `@examples` and `@examplesIf` sections (#780).
 
 ### Bug fixes
 

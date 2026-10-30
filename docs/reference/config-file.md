@@ -288,6 +288,19 @@ Default: `false`
 fix-roxygen = false
 ```
 
+### `ignore-roxygen`
+
+This takes a list of rule names or groups that should not be checked in
+`roxygen2` `@examples` and `@examplesIf` sections. These rules are still
+checked in the rest of the file.
+
+Default: `[]`
+
+```toml
+[lint]
+ignore-roxygen = ["unused_object"]
+```
+
 ## Rule-specific arguments
 
 The operation of some rules can be customised with arguments in the
