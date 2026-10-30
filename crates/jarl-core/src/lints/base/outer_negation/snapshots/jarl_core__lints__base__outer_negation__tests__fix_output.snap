@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-core/src/lints/base/outer_negation/mod.rs
-expression: "get_fixed_text(vec![\"any(!x)\", \"all(!f(x, y))\", \"any(!f(all(!x)))\",\n\"all(!f(any(!x)))\", \"base::any(((!x)), na.rm = TRUE)\", \"any((!((x + y))))\",\n\"all(!((x = TRUE)))\", \"f <- function(...) any(!((...)))\",\n\"all('na.rm' = FALSE, result = !f(x, y))\", \"any(!x, `na.rm` = remove_na())\",\n\"any(na = !x)\", \"any(\\n  !x,\\n  na.rm = TRUE\\n)\", \"any(!-x)\", \"all(!+x)\",\n\"!any(!x)\", \"!!any(!x)\", \"any(!FALSE) + 2\", \"2 * all(!TRUE)\", \"any(!x) == y\",\n\"any(!x) |> as.integer()\", \"any(!x)[1]\", \"(any(!x)) + 2\", \"result <- any(!x)\",\n\"f(any(!x))\", \"# Leading comment\\nany(!x)\", \"all(!x) # Trailing comment\",\n\"any(\\n  # Keep this comment.\\n  !x\\n)\",\n\"all(!(x + # Keep this comment too.\\n  y))\",], \"outer_negation\", None)"
+expression: "get_fixed_text(vec![\"any(!x)\", \"all(!f(x, y))\", \"any(!f(all(!x)))\",\n\"all(!f(any(!x)))\", \"base::any(((!x)), na.rm = TRUE)\", \"any((!((x + y))))\",\n\"all(!((x = TRUE)))\", \"f <- function(...) any(!((...)))\",\n\"all('na.rm' = FALSE, result = !f(x, y))\", \"any(!x, `na.rm` = remove_na())\",\n\"any(na = !x)\", \"any(\\n  !x,\\n  na.rm = TRUE\\n)\", \"any(!-x)\", \"all(!+x)\",\n\"!any(!x)\", \"!!any(!x)\", \"!(base::all(!x))\", \"! any(!x, na.rm = TRUE)\",\n\"if (!any(!x)) 1\", \"!any(!x) + 2\", \"any(!FALSE) + 2\", \"2 * all(!TRUE)\",\n\"any(!x) == y\", \"any(!x) |> as.integer()\", \"any(!x)[1]\", \"(any(!x)) + 2\",\n\"result <- any(!x)\", \"f(any(!x))\", \"# Leading comment\\nany(!x)\",\n\"all(!x) # Trailing comment\", \"any(\\n  # Keep this comment.\\n  !x\\n)\",\n\"all(!(x + # Keep this comment too.\\n  y))\",], \"outer_negation\", None)"
 ---
 OLD:
 ====
@@ -111,14 +111,42 @@ OLD:
 !any(!x)
 NEW:
 ====
-!(!all(x))
+all(x)
 
 OLD:
 ====
 !!any(!x)
 NEW:
 ====
-!!(!all(x))
+!all(x)
+
+OLD:
+====
+!(base::all(!x))
+NEW:
+====
+base::any(x)
+
+OLD:
+====
+! any(!x, na.rm = TRUE)
+NEW:
+====
+all(x, na.rm = TRUE)
+
+OLD:
+====
+if (!any(!x)) 1
+NEW:
+====
+if (all(x)) 1
+
+OLD:
+====
+!any(!x) + 2
+NEW:
+====
+!(!all(x)) + 2
 
 OLD:
 ====

@@ -75,6 +75,16 @@ pub fn outer_negation(
         return Ok(None);
     }
 
+    // Check if there is an outer negation into the call, so !any(!x) becomes all(x).
+    let negation = node
+        .parent()
+        .and_then(RUnaryExpression::cast)
+        .filter(|unary| {
+            unary
+                .operator()
+                .is_ok_and(|operator| operator.kind() == RSyntaxKind::BANG)
+        });
+
     // `...` stops positional matching, so only an exact name binds to na.rm.
     // Duplicate na.rm names make get_arg() return None, leaving both arguments
     // in the data count below so the call is skipped.
@@ -125,7 +135,7 @@ pub fn outer_negation(
     }
 
     // Group the new negation when this call is an operand, so e.g.
-    // any(!x) + 2 becomes (!all(x)) + 2, and !any(!x) avoids creating !!all(x).
+    // any(!x) + 2 becomes (!all(x)) + 2.
     let needs_parentheses = match ast.syntax().parent().and_then(AnyRExpression::cast) {
         Some(AnyRExpression::RBinaryExpression(binary)) => !matches!(
             binary.operator()?.kind(),
@@ -145,28 +155,44 @@ pub fn outer_negation(
         _ => false,
     };
 
-    let range = ast.syntax().text_trimmed_range();
+    let call_range = ast.syntax().text_trimmed_range();
+    let (outer, old_bang, new_bang) = match &negation {
+        Some(negation) => (negation.syntax(), "!", ""),
+        None => (ast.syntax(), "", "!"),
+    };
+    let range = outer.text_trimmed_range();
     // Edit just the callee and negated expression to retain argument names,
     // order, formatting, and the original namespace qualifier.
     let mut edits = vec![
-        Edit::insertion(
-            range.start(),
-            if needs_parentheses { "(!" } else { "!" }.to_string(),
-        ),
         Edit::replacement(name_range, replacement_function.to_string()),
         Edit::replacement(data_range, operand.to_trimmed_string()),
     ];
-    if needs_parentheses {
+    if negation.is_some() {
+        // Drop the outer `!` and any parentheses around the call.
+        edits.push(Edit::deletion(TextRange::new(
+            range.start(),
+            call_range.start(),
+        )));
+        edits.push(Edit::deletion(TextRange::new(
+            call_range.end(),
+            range.end(),
+        )));
+    } else if needs_parentheses {
+        edits.push(Edit::insertion(range.start(), "(!".to_string()));
         edits.push(Edit::insertion(range.end(), ")".to_string()));
+    } else {
+        edits.push(Edit::insertion(range.start(), "!".to_string()));
     }
 
     Ok(Some(Diagnostic::new(
         ViolationData::new(
             Rule::OuterNegation,
-            format!("`{fn_name}(!...)` may be hard to read."),
-            Some(format!("Use `!{replacement_function}(...)` instead.")),
+            format!("`{old_bang}{fn_name}(!...)` may be hard to read."),
+            Some(format!(
+                "Use `{new_bang}{replacement_function}(...)` instead."
+            )),
         ),
         range,
-        Fix::from_edits(edits, node_contains_comments(ast.syntax())),
+        Fix::from_edits(edits, node_contains_comments(outer)),
     )))
 }

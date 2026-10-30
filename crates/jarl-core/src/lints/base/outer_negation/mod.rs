@@ -103,12 +103,12 @@ mod tests {
         ");
         assert_snapshot!(snapshot_lint("!any(!x)"), @"
         warning: outer_negation
-         --> <test>:1:2
+         --> <test>:1:1
           |
         1 | !any(!x)
-          |  ------- `any(!...)` may be hard to read.
+          | -------- `!any(!...)` may be hard to read.
           |
-          = help: Use `!all(...)` instead.
+          = help: Use `all(...)` instead.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("any(!-x)"), @"
@@ -158,6 +158,10 @@ mod tests {
                     "all(!+x)",
                     "!any(!x)",
                     "!!any(!x)",
+                    "!(base::all(!x))",
+                    "! any(!x, na.rm = TRUE)",
+                    "if (!any(!x)) 1",
+                    "!any(!x) + 2",
                     "any(!FALSE) + 2",
                     "2 * all(!TRUE)",
                     "any(!x) == y",
