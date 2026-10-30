@@ -7,7 +7,8 @@ use biome_rowan::AstSeparatedList;
 
 const FORMALS_APPLY: Formals = &["X", "MARGIN", "FUN"];
 
-/// Version added: 0.6.0
+/// <!-- docs: start -->
+/// Version added: 0.8.0
 ///
 /// ## What it does
 ///
@@ -40,6 +41,7 @@ const FORMALS_APPLY: Formals = &["X", "MARGIN", "FUN"];
 /// ## References
 ///
 /// See `?do.call` and `?paste`
+/// <!-- docs: end -->
 pub fn apply_paste(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     if fn_name != "apply" {
         return Ok(None);
