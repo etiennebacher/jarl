@@ -1,0 +1,77 @@
+---
+source: crates/jarl-core/src/lints/base/pipe_call/mod.rs
+expression: "get_fixed_text(vec![\"x %>% sum %>% mean() %>% print\", \"x %T>% print\",\n\"x %<>% sort\", \"x %!>% summary\", \"x %>% `+`\", \"x %>% `some function`\",\n\"x %>% caf\\u{e9}\", \"x %>% .\",\n\"# leading\\nx %>% # before function\\n  sum # trailing\",\n\"f(x %>% sum, y %>% mean)\",], \"pipe_call\", None,)"
+---
+OLD:
+====
+x %>% sum %>% mean() %>% print
+NEW:
+====
+x %>% sum() %>% mean() %>% print()
+
+OLD:
+====
+x %T>% print
+NEW:
+====
+x %T>% print()
+
+OLD:
+====
+x %<>% sort
+NEW:
+====
+x %<>% sort()
+
+OLD:
+====
+x %!>% summary
+NEW:
+====
+x %!>% summary()
+
+OLD:
+====
+x %>% `+`
+NEW:
+====
+x %>% `+`()
+
+OLD:
+====
+x %>% `some function`
+NEW:
+====
+x %>% `some function`()
+
+OLD:
+====
+x %>% café
+NEW:
+====
+x %>% café()
+
+OLD:
+====
+x %>% .
+NEW:
+====
+x %>% .()
+
+OLD:
+====
+# leading
+x %>% # before function
+  sum # trailing
+NEW:
+====
+# leading
+x %>% # before function
+  sum() # trailing
+
+OLD:
+====
+f(x %>% sum, y %>% mean)
+NEW:
+====
+f(x %>% sum(), y %>% mean())
