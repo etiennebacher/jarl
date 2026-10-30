@@ -17,6 +17,10 @@ In addition, using the `!` operator outside the function call is more
 efficient since it only has to invert one value instead of all values inside
 the function call.
 
+This rule has an automated fix marked unsafe because `any()` and `all()` coerce the 
+input to logical with a warning while `!` would error, e.g. `any(!"a")` is an error but
+`!all("a")` returns `NA` with a warning.
+
 ## Example
 
 ```r

@@ -140,7 +140,7 @@ mod tests {
     fn test_outer_negation_fix() {
         assert_snapshot!(
             "fix_output",
-            get_fixed_text(
+            get_unsafe_fixed_text(
                 vec![
                     "any(!x)",
                     "all(!f(x, y))",
@@ -175,8 +175,7 @@ mod tests {
                     "any(\n  # Keep this comment.\n  !x\n)",
                     "all(!(x + # Keep this comment too.\n  y))",
                 ],
-                "outer_negation",
-                None
+                "outer_negation"
             )
         );
     }

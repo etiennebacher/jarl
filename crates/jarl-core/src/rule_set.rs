@@ -543,7 +543,7 @@ declare_rules! {
         name: "outer_negation",
         categories: [Perf, Read],
         default: Enabled,
-        fix: Safe,
+        fix: Unsafe,
         min_r_version: None,
     },
     PipeConsistency => {
