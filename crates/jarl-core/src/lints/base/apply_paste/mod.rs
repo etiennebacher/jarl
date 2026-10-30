@@ -17,6 +17,17 @@ mod tests {
         expect_no_lint("apply(x, 1, paste)", "apply_paste", None);
         // Margin is not 1
         expect_no_lint("apply(x, 2, paste, collapse = \"_\")", "apply_paste", None);
+        // `apply()` from another package or a method
+        expect_no_lint(
+            "pkg::apply(x, 1, paste, collapse = \"_\")",
+            "apply_paste",
+            None,
+        );
+        expect_no_lint(
+            "obj$apply(x, 1, paste, collapse = \"_\")",
+            "apply_paste",
+            None,
+        );
         // `collapse = NULL` doesn't collapse rows
         expect_no_lint("apply(x, 1, paste, collapse = NULL)", "apply_paste", None);
         // Extra argument forwarded to `paste` that we can't translate
@@ -42,7 +53,7 @@ mod tests {
         1 | apply(test[, c("x", "y")], 1, paste, collapse = "_")
           | ---------------------------------------------------- `apply()` with `paste()` is inefficient.
           |
-          = help: Use `do.call(paste, c(x, sep = ...))` instead.
+          = help: If `x` is a data.frame, use `do.call(paste, c(x, sep = ...))` instead.
         Found 1 error.
         "#
         );
@@ -55,7 +66,7 @@ mod tests {
         1 | apply(x, 1L, paste, collapse = "_")
           | ----------------------------------- `apply()` with `paste()` is inefficient.
           |
-          = help: Use `do.call(paste, c(x, sep = ...))` instead.
+          = help: If `x` is a data.frame, use `do.call(paste, c(x, sep = ...))` instead.
         Found 1 error.
         "#
         );
@@ -68,7 +79,7 @@ mod tests {
         1 | apply(x, MARGIN = 1, FUN = paste, collapse = "_")
           | ------------------------------------------------- `apply()` with `paste()` is inefficient.
           |
-          = help: Use `do.call(paste, c(x, sep = ...))` instead.
+          = help: If `x` is a data.frame, use `do.call(paste, c(x, sep = ...))` instead.
         Found 1 error.
         "#
         );
@@ -81,7 +92,7 @@ mod tests {
         1 | base::apply(x, 1, base::paste, collapse = "_")
           | ---------------------------------------------- `apply()` with `paste()` is inefficient.
           |
-          = help: Use `do.call(paste, c(x, sep = ...))` instead.
+          = help: If `x` is a data.frame, use `do.call(paste, c(x, sep = ...))` instead.
         Found 1 error.
         "#
         );

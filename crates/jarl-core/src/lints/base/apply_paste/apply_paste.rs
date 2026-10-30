@@ -54,8 +54,12 @@ const FORMALS_APPLY: Formals = &["X", "MARGIN", "FUN"];
 ///
 /// See `?do.call` and `?paste`
 /// <!-- docs: end -->
-pub fn apply_paste(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
-    if fn_name != "apply" {
+pub fn apply_paste(
+    ast: &RCall,
+    fn_name: &str,
+    ns_prefix: Option<&str>,
+) -> anyhow::Result<Option<Diagnostic>> {
+    if fn_name != "apply" || ns_prefix.is_some_and(|ns| ns != "base::") {
         return Ok(None);
     }
 
@@ -104,7 +108,10 @@ pub fn apply_paste(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnost
         ViolationData::new(
             Rule::ApplyPaste,
             "`apply()` with `paste()` is inefficient.".to_string(),
-            Some("Use `do.call(paste, c(x, sep = ...))` instead.".to_string()),
+            Some(
+                "If `x` is a data.frame, use `do.call(paste, c(x, sep = ...))` instead."
+                    .to_string(),
+            ),
         ),
         range,
         Fix::new(range, fix, node_contains_comments(ast.syntax())),

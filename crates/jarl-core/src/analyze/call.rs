@@ -70,7 +70,7 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
         checker.report_diagnostic(any_is_na(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::ApplyPaste) {
-        checker.report_diagnostic(apply_paste(r_expr, fn_name)?);
+        checker.report_diagnostic(apply_paste(r_expr, fn_name, ns_prefix)?);
     }
     if checker.is_rule_enabled(Rule::ClassEquals) {
         checker.report_diagnostic(class_identical(r_expr, fn_name)?);
