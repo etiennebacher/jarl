@@ -71,33 +71,54 @@ pub fn parse_jarl_toml(path: &Path) -> Result<TomlOptions, ParseTomlError> {
     let toml =
         fs::read_to_string(path).map_err(|err| ParseTomlError::Read(path.to_path_buf(), err))?;
 
+    config_table(&toml, path)?;
+
+    toml::from_str(&toml).map_err(|err| ParseTomlError::Deserialize(path.to_path_buf(), err))
+}
+
+/// Parse configuration text into a table, applying the checks a `jarl.toml` on disk gets.
+///
+/// `label` is what error messages name: the file's path, or `--config` when the text is an
+/// inline snippet given on the command line.
+pub fn config_table(source: &str, label: &Path) -> Result<toml::Table, ParseTomlError> {
     // Rule options are sub-tables (`[lint.assignment]`), so a `[lint]` key set
     // to anything else can only be an unknown option. Catch those before
     // deserializing, otherwise a known rule name (`assignment = "<-"`) reports
     // a type mismatch instead of the "Unknown field" message every other
     // unknown option gets. A malformed file is left to the deserializer, which
     // reports the syntax error with its position.
-    if let Ok(table) = toml.parse::<toml::Table>()
-        && let Some(field) = unknown_lint_field(&table)
-    {
+    let table = source
+        .parse::<toml::Table>()
+        .map_err(|err| ParseTomlError::Deserialize(label.to_path_buf(), err))?;
+
+    if let Some(field) = unknown_lint_field(&table) {
         return Err(ParseTomlError::Invalid(
-            path.to_path_buf(),
+            label.to_path_buf(),
             unknown_lint_field_message(field),
         ));
     }
 
-    let options = toml::from_str(&toml)
-        .map_err(|err| ParseTomlError::Deserialize(path.to_path_buf(), err))?;
-
     // We need to run this here because then serde loses the information on
     // whether a key was quoted.
-    if let Ok(document) = toml.parse::<toml_edit::DocumentMut>()
+    if let Ok(document) = source.parse::<toml_edit::DocumentMut>()
         && let Some(message) = unquoted_key(&document)
     {
-        return Err(ParseTomlError::Invalid(path.to_path_buf(), message));
+        return Err(ParseTomlError::Invalid(label.to_path_buf(), message));
     }
 
-    Ok(options)
+    Ok(table)
+}
+
+/// Deserialize configuration that was already merged from several sources.
+///
+/// Positions in an error message refer to the configuration as it reads after merging, so
+/// the message names the sources as a whole (`--config`, or the file given last) rather than
+/// a line in the file the value came from.
+pub fn options_from_table(table: toml::Table, label: &Path) -> Result<TomlOptions, ParseTomlError> {
+    let source = toml::to_string(&table)
+        .map_err(|err| ParseTomlError::Invalid(label.to_path_buf(), err.to_string()))?;
+
+    toml::from_str(&source).map_err(|err| ParseTomlError::Deserialize(label.to_path_buf(), err))
 }
 
 /// `[lint.<rule>]` options holding inline tables whose keys must be quoted,

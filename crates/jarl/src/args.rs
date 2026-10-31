@@ -187,6 +187,14 @@ pub struct CheckCommand {
     pub min_r_version: Option<String>,
     #[arg(
         long,
+        value_name = "PATH_OR_TOML",
+        help_heading = "Other options",
+        help = "Configuration file to use instead of discovering the nearest `jarl.toml`, or an inline TOML snippet. Can be repeated: later values take precedence.",
+        long_help = "Configuration file to use instead of discovering the nearest `jarl.toml`, or an inline TOML snippet such as `--config \"lint.ignore = ['any_is_na']\"`. Takes precedence over any `jarl.toml` found above or below the checked paths.\n\nCan be repeated: the values are merged in order, so a later one overrides an earlier one, and a list is replaced rather than extended. A value that names an existing file is read as one; otherwise, if it parses as TOML it is a snippet."
+    )]
+    pub config: Vec<String>,
+    #[arg(
+        long,
         value_enum,
         default_value_t = OutputFormat::default(),
         help_heading = "Other options",
