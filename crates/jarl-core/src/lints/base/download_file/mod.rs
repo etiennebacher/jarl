@@ -44,6 +44,7 @@ mod tests {
             r#"download.file(r"(https://example.org/data.zip)", y)"#,
             r#"download.file("https://example.org/data\x2ezip", y)"#,
             "download.file('https://example.org/data%2E%7Aip', y)",
+            "download.file('https://example.org/data%FF.zip', y)",
         ] {
             expect_no_lint(code, "download_file", None);
         }
@@ -173,6 +174,17 @@ mod tests {
           |
         1 | download.file('https://example.org/data.pdf', y)
           | ------------------------------------------------ `download.file()` without explicit `mode` can cause portability issues on Windows.
+          |
+          = help: Use mode = 'wb' instead.
+        Found 1 error.
+        ");
+        // Non-UTF-8 URL bytes do not prevent checking the suffix.
+        assert_snapshot!(snapshot_lint("download.file('https://example.org/data%FF.pdf', y)"), @"
+        warning: download_file
+         --> <test>:1:1
+          |
+        1 | download.file('https://example.org/data%FF.pdf', y)
+          | --------------------------------------------------- `download.file()` without explicit `mode` can cause portability issues on Windows.
           |
           = help: Use mode = 'wb' instead.
         Found 1 error.
