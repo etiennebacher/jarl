@@ -19,7 +19,7 @@ const WINDOWS_BINARY_SUFFIXES: &[&str] = &[
 ///
 /// ## What it does
 ///
-/// Checks for missing or text-mode `mode` arguments in `download.file()`, and
+/// Checks for missing or non-binary `mode` arguments in `download.file()`, and
 /// for `mode` arguments ignored by `method = "curl"` or `method = "wget"`.
 ///
 /// ## Why is this bad?
@@ -72,6 +72,10 @@ pub fn download_file(
         .and_then(literal_string);
     let mode = get_arg(ast, FORMALS_DOWNLOAD_FILE, "mode").and_then(|arg| arg.value());
 
+    let binary_mode_message = (
+        "`download.file()` without an explicit binary `mode` can cause portability issues on Windows.",
+        "Use mode = 'wb' or mode = 'ab' instead.",
+    );
     let (msg, suggestion) = if matches!(method.as_deref(), Some("curl" | "wget")) {
         // External download commands never use mode, even when its value is dynamic.
         if mode.is_none() {
@@ -82,17 +86,9 @@ pub fn download_file(
             "Remove the mode argument.",
         )
     } else if let Some(mode) = mode {
-        // If `mode` is provided, check if its value is "w" or "a".
         match literal_string(mode).as_deref() {
-            Some("w") => (
-                "`download.file()` with `mode = 'w'` can cause portability issues on Windows.",
-                "Use mode = 'wb' instead.",
-            ),
-            Some("a") => (
-                "`download.file()` with `mode = 'a'` can cause portability issues on Windows.",
-                "Use mode = 'ab' instead.",
-            ),
-            _ => return Ok(None),
+            Some("wb" | "ab") | None => return Ok(None),
+            Some(_) => binary_mode_message,
         }
     } else {
         // R checks the decoded URL suffix only when mode is missing.
@@ -108,10 +104,7 @@ pub fn download_file(
                 return Ok(None);
             }
         }
-        (
-            "`download.file()` without explicit `mode` can cause portability issues on Windows.",
-            "Use mode = 'wb' instead.",
-        )
+        binary_mode_message
     };
 
     Ok(Some(Diagnostic::new(
@@ -125,70 +118,14 @@ pub fn download_file(
     )))
 }
 
-// Extract a statically known string value for the method, mode, and URL checks.
-// Return None when the expression is not a string literal or cannot be decoded.
+// Extract the literal text used to check the method, mode, and URL arguments.
 fn literal_string(mut expr: AnyRExpression) -> Option<String> {
+    // Parentheses do not change the literal's value.
     while let AnyRExpression::RParenthesizedExpression(paren) = expr {
         expr = paren.body().ok()?;
     }
 
-    // Require a string literal and remove its ordinary or raw-string delimiters.
+    // Remove ordinary or raw-string delimiters.
     let string = expr.as_any_r_value()?.as_r_string_value()?;
-    let content = string.inner_string_text().ok()?;
-
-    // Raw strings preserve backslashes. Ordinary strings without escapes also
-    // already contain the value to compare.
-    if string.value().ok()?.kind() == RSyntaxKind::R_RAW_STRING_LITERAL
-        || !content.text().contains('\\')
-    {
-        return Some(content.to_string());
-    }
-
-    // Decode escapes in ordinary strings so spellings such as "\x77" match "w".
-    let mut decoded = String::with_capacity(content.text().len());
-    let mut chars = content.text().chars().peekable();
-    while let Some(c) = chars.next() {
-        if c != '\\' {
-            decoded.push(c);
-            continue;
-        }
-        let escaped = match chars.next()? {
-            'a' => '\u{7}',
-            'b' => '\u{8}',
-            'f' => '\u{c}',
-            'n' => '\n',
-            'r' => '\r',
-            't' => '\t',
-            'v' => '\u{b}',
-            c @ ('\\' | '\'' | '"' | '\n') => c,
-            c @ ('0'..='7' | 'x' | 'u' | 'U') => {
-                // Each numeric escape has its own base and maximum digit count.
-                let (radix, limit, mut digits) = match c {
-                    'x' => (16, 2, String::new()),
-                    'u' => (16, 4, String::new()),
-                    'U' => (16, 8, String::new()),
-                    _ => (8, 3, c.to_string()),
-                };
-                // Unicode escapes also allow braces, as in \u{0077}.
-                let braced = matches!(c, 'u' | 'U') && chars.next_if_eq(&'{').is_some();
-                while digits.len() < limit {
-                    let Some(digit) = chars.next_if(|c| c.is_digit(radix)) else {
-                        break;
-                    };
-                    digits.push(digit);
-                }
-                if braced && chars.next()? != '}' {
-                    return None;
-                }
-                char::from_u32(u32::from_str_radix(&digits, radix).ok()?)?
-            }
-            _ => return None,
-        };
-        // R strings cannot contain a NUL byte.
-        if escaped == '\0' {
-            return None;
-        }
-        decoded.push(escaped);
-    }
-    Some(decoded)
+    Some(string.inner_string_text().ok()?.to_string())
 }

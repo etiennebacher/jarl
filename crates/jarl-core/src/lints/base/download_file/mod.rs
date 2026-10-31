@@ -20,17 +20,10 @@ mod tests {
             "download.file(x, y, mode = chosen_mode)",
             "download.file(x, y, mode = (('wb')))",
             r#"download.file(x, y, mode = r"(wb)")"#,
-            r#"download.file(x, y, mode = "\x77b")"#,
-            r#"download.file(x, y, mode = "\141b")"#,
-            r#"download.file(x, y, method = "\u0063url")"#,
-            r#"download.file(x, y, method = "\U{00000063}url")"#,
-            r#"download.file(x, y, mode = r"(\x77)")"#,
-            r#"download.file(x, y, mode = "\\x77")"#,
             "download.file(x, y, method = 'curl')",
             "download.file(x, y, method = 'wget')",
             "download.file(x, y, method = (('curl')))",
             r#"download.file(x, y, method = r"(wget)")"#,
-            r#"download.file(x, y, method = "\x63url")"#,
             "download.file(x, y, method = 'curl', mode =)",
             "other::download.file(x, y)",
             "other::download.file(x, y, mode = 'w')",
@@ -42,7 +35,6 @@ mod tests {
             "download.file('https://example.org/data.zip', y, mode =)",
             "download.file((('https://example.org/data.zip')), y)",
             r#"download.file(r"(https://example.org/data.zip)", y)"#,
-            r#"download.file("https://example.org/data\x2ezip", y)"#,
             "download.file('https://example.org/data%2E%7Aip', y)",
             "download.file('https://example.org/data%FF.zip', y)",
         ] {
@@ -69,9 +61,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | download.file(x, y)
-          | ------------------- `download.file()` without explicit `mode` can cause portability issues on Windows.
+          | ------------------- `download.file()` without an explicit binary `mode` can cause portability issues on Windows.
           |
-          = help: Use mode = 'wb' instead.
+          = help: Use mode = 'wb' or mode = 'ab' instead.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("utils::download.file(x, y)"), @"
@@ -79,20 +71,20 @@ mod tests {
          --> <test>:1:1
           |
         1 | utils::download.file(x, y)
-          | -------------------------- `download.file()` without explicit `mode` can cause portability issues on Windows.
+          | -------------------------- `download.file()` without an explicit binary `mode` can cause portability issues on Windows.
           |
-          = help: Use mode = 'wb' instead.
+          = help: Use mode = 'wb' or mode = 'ab' instead.
         Found 1 error.
         ");
-        // Text modes are checked by value, including raw strings, escapes, and parentheses.
+        // Literal modes are checked through raw strings and parentheses.
         assert_snapshot!(snapshot_lint("download.file(x, y, mode = 'a')"), @"
         warning: download_file
          --> <test>:1:1
           |
         1 | download.file(x, y, mode = 'a')
-          | ------------------------------- `download.file()` with `mode = 'a'` can cause portability issues on Windows.
+          | ------------------------------- `download.file()` without an explicit binary `mode` can cause portability issues on Windows.
           |
-          = help: Use mode = 'ab' instead.
+          = help: Use mode = 'wb' or mode = 'ab' instead.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint(r#"download.file(x, y, mode = "w")"#), @r#"
@@ -100,9 +92,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | download.file(x, y, mode = "w")
-          | ------------------------------- `download.file()` with `mode = 'w'` can cause portability issues on Windows.
+          | ------------------------------- `download.file()` without an explicit binary `mode` can cause portability issues on Windows.
           |
-          = help: Use mode = 'wb' instead.
+          = help: Use mode = 'wb' or mode = 'ab' instead.
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint(r#"download.file(x, y, mode = ((r"(w)")))"#), @r#"
@@ -110,29 +102,20 @@ mod tests {
          --> <test>:1:1
           |
         1 | download.file(x, y, mode = ((r"(w)")))
-          | -------------------------------------- `download.file()` with `mode = 'w'` can cause portability issues on Windows.
+          | -------------------------------------- `download.file()` without an explicit binary `mode` can cause portability issues on Windows.
           |
-          = help: Use mode = 'wb' instead.
+          = help: Use mode = 'wb' or mode = 'ab' instead.
         Found 1 error.
         "#);
-        assert_snapshot!(snapshot_lint(r#"download.file(x, y, mode = "\x77")"#), @r#"
+        // Escaped mode spellings are reported without decoding their runtime value.
+        assert_snapshot!(snapshot_lint(r#"download.file(x, y, mode = "\167")"#), @r#"
         warning: download_file
          --> <test>:1:1
           |
-        1 | download.file(x, y, mode = "\x77")
-          | ---------------------------------- `download.file()` with `mode = 'w'` can cause portability issues on Windows.
+        1 | download.file(x, y, mode = "\167")
+          | ---------------------------------- `download.file()` without an explicit binary `mode` can cause portability issues on Windows.
           |
-          = help: Use mode = 'wb' instead.
-        Found 1 error.
-        "#);
-        assert_snapshot!(snapshot_lint(r#"download.file(x, y, mode = "\141")"#), @r#"
-        warning: download_file
-         --> <test>:1:1
-          |
-        1 | download.file(x, y, mode = "\141")
-          | ---------------------------------- `download.file()` with `mode = 'a'` can cause portability issues on Windows.
-          |
-          = help: Use mode = 'ab' instead.
+          = help: Use mode = 'wb' or mode = 'ab' instead.
         Found 1 error.
         "#);
         // Positional and mixed named/positional arguments use R argument matching.
@@ -141,9 +124,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | download.file(x, y, z, FALSE, 'a')
-          | ---------------------------------- `download.file()` with `mode = 'a'` can cause portability issues on Windows.
+          | ---------------------------------- `download.file()` without an explicit binary `mode` can cause portability issues on Windows.
           |
-          = help: Use mode = 'ab' instead.
+          = help: Use mode = 'wb' or mode = 'ab' instead.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("download.file(x, y, FALSE, method = 'libcurl', 'w')"), @"
@@ -151,9 +134,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | download.file(x, y, FALSE, method = 'libcurl', 'w')
-          | --------------------------------------------------- `download.file()` with `mode = 'w'` can cause portability issues on Windows.
+          | --------------------------------------------------- `download.file()` without an explicit binary `mode` can cause portability issues on Windows.
           |
-          = help: Use mode = 'wb' instead.
+          = help: Use mode = 'wb' or mode = 'ab' instead.
         Found 1 error.
         ");
         // Explicit text mode overrides automatic binary-mode detection.
@@ -162,9 +145,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | download.file('https://example.org/data.zip', y, mode = 'w')
-          | ------------------------------------------------------------ `download.file()` with `mode = 'w'` can cause portability issues on Windows.
+          | ------------------------------------------------------------ `download.file()` without an explicit binary `mode` can cause portability issues on Windows.
           |
-          = help: Use mode = 'wb' instead.
+          = help: Use mode = 'wb' or mode = 'ab' instead.
         Found 1 error.
         ");
         // PDF URLs still require an explicit binary mode.
@@ -173,9 +156,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | download.file('https://example.org/data.pdf', y)
-          | ------------------------------------------------ `download.file()` without explicit `mode` can cause portability issues on Windows.
+          | ------------------------------------------------ `download.file()` without an explicit binary `mode` can cause portability issues on Windows.
           |
-          = help: Use mode = 'wb' instead.
+          = help: Use mode = 'wb' or mode = 'ab' instead.
         Found 1 error.
         ");
         // Non-UTF-8 URL bytes do not prevent checking the suffix.
@@ -184,9 +167,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | download.file('https://example.org/data%FF.pdf', y)
-          | --------------------------------------------------- `download.file()` without explicit `mode` can cause portability issues on Windows.
+          | --------------------------------------------------- `download.file()` without an explicit binary `mode` can cause portability issues on Windows.
           |
-          = help: Use mode = 'wb' instead.
+          = help: Use mode = 'wb' or mode = 'ab' instead.
         Found 1 error.
         ");
         // The suffix must match the end of the decoded URL, with the documented case.
@@ -195,9 +178,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | download.file('https://example.org/data.ZIP', y)
-          | ------------------------------------------------ `download.file()` without explicit `mode` can cause portability issues on Windows.
+          | ------------------------------------------------ `download.file()` without an explicit binary `mode` can cause portability issues on Windows.
           |
-          = help: Use mode = 'wb' instead.
+          = help: Use mode = 'wb' or mode = 'ab' instead.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("download.file('https://example.org/data.zip?token=1', y)"), @"
@@ -205,9 +188,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | download.file('https://example.org/data.zip?token=1', y)
-          | -------------------------------------------------------- `download.file()` without explicit `mode` can cause portability issues on Windows.
+          | -------------------------------------------------------- `download.file()` without an explicit binary `mode` can cause portability issues on Windows.
           |
-          = help: Use mode = 'wb' instead.
+          = help: Use mode = 'wb' or mode = 'ab' instead.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("download.file('https://example.org/data.zip.bak', y)"), @"
@@ -215,9 +198,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | download.file('https://example.org/data.zip.bak', y)
-          | ---------------------------------------------------- `download.file()` without explicit `mode` can cause portability issues on Windows.
+          | ---------------------------------------------------- `download.file()` without an explicit binary `mode` can cause portability issues on Windows.
           |
-          = help: Use mode = 'wb' instead.
+          = help: Use mode = 'wb' or mode = 'ab' instead.
         Found 1 error.
         ");
         // Only the URL matters, not the destination filename.
@@ -226,9 +209,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | download.file(x, 'data.zip')
-          | ---------------------------- `download.file()` without explicit `mode` can cause portability issues on Windows.
+          | ---------------------------- `download.file()` without an explicit binary `mode` can cause portability issues on Windows.
           |
-          = help: Use mode = 'wb' instead.
+          = help: Use mode = 'wb' or mode = 'ab' instead.
         Found 1 error.
         ");
         // An empty mode argument uses the default, just like an omitted one.
@@ -237,9 +220,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | download.file(x, y, mode =)
-          | --------------------------- `download.file()` without explicit `mode` can cause portability issues on Windows.
+          | --------------------------- `download.file()` without an explicit binary `mode` can cause portability issues on Windows.
           |
-          = help: Use mode = 'wb' instead.
+          = help: Use mode = 'wb' or mode = 'ab' instead.
         Found 1 error.
         ");
         // libcurl honors mode; it is distinct from the external curl command.
@@ -248,9 +231,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | download.file(x, y, method = 'libcurl')
-          | --------------------------------------- `download.file()` without explicit `mode` can cause portability issues on Windows.
+          | --------------------------------------- `download.file()` without an explicit binary `mode` can cause portability issues on Windows.
           |
-          = help: Use mode = 'wb' instead.
+          = help: Use mode = 'wb' or mode = 'ab' instead.
         Found 1 error.
         ");
     }
@@ -289,12 +272,12 @@ mod tests {
           = help: Remove the mode argument.
         Found 1 error.
         ");
-        // The method is also read through parentheses and string escapes.
-        assert_snapshot!(snapshot_lint(r#"download.file(x, y, method = (("\x63url")), mode = "w")"#), @r#"
+        // The method is also read through parentheses and raw-string delimiters.
+        assert_snapshot!(snapshot_lint(r#"download.file(x, y, method = ((r"(curl)")), mode = "w")"#), @r#"
         warning: download_file
          --> <test>:1:1
           |
-        1 | download.file(x, y, method = (("\x63url")), mode = "w")
+        1 | download.file(x, y, method = ((r"(curl)")), mode = "w")
           | ------------------------------------------------------- `download.file()` ignores `mode` with `method = 'curl'` or `method = 'wget'`.
           |
           = help: Remove the mode argument.

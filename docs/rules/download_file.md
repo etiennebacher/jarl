@@ -5,7 +5,7 @@
 
 ## What it does
 
-Checks for missing or text-mode `mode` arguments in `download.file()`, and
+Checks for missing or non-binary `mode` arguments in `download.file()`, and
 for `mode` arguments ignored by `method = "curl"` or `method = "wget"`.
 
 ## Why is this bad?
