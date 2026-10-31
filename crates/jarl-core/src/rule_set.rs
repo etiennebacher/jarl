@@ -370,6 +370,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    EmptyList => {
+        name: "apply_null",
+        categories: [Perf],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     EqualsNa => {
         name: "equals_na",
         categories: [Corr],

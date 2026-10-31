@@ -1,0 +1,4 @@
+{"run_id":"1793469144-411463000","line":38,"new":{"module_name":"jarl_core__lints__base__apply_null__tests","snapshot_name":"lint_apply_null","metadata":{"source":"crates/jarl-core/src/lints/base/apply_null/mod.rs","assertion_line":38,"expression":"snapshot_lint(code)"},"snapshot":"warning: apply_null\n --> <test>:1:1\n  |\n1 | lapply(x, function(x) NULL)\n  | --------------------------- This call iterates over its input to create a list of `NULL` values.\n  |\n  = help: Use `vector(\"list\", length(x))` to allocate the list directly.\nFound 1 error."},"old":{"module_name":"jarl_core__lints__base__apply_null__tests","metadata":{},"snapshot":""}}
+{"run_id":"1793469167-162532000","line":44,"new":null,"old":null}
+{"run_id":"1793469254-494066000","line":44,"new":null,"old":null}
+{"run_id":"1793470014-309969000","line":44,"new":null,"old":null}

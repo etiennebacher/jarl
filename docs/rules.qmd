@@ -76,6 +76,7 @@ dat <- as.data.frame(
     c("duplicated_function_definition", "correctness", "❌", ""),
     c("empty_assignment", "readability", "❌", ""),
     c("empty_file", "suspicious", "❌", ""),
+    c("apply_null", "performance", "❌", ""),
     c("equals_na", "correctness", "✅", ""),
     c("equals_nan", "correctness", "✅", ""),
     c("equals_null", "correctness", "✅", ""),
