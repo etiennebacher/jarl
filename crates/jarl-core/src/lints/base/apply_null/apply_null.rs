@@ -71,7 +71,8 @@ pub fn apply_null(
 
     let body_is_null = if let Some(braced) = body.as_r_braced_statements() {
         let expressions = braced.expressions();
-        expressions.len() == 1 && expressions.first().is_some_and(returns_null)
+        expressions.is_empty()
+            || (expressions.len() == 1 && expressions.first().is_some_and(returns_null))
     } else {
         returns_null(&body)
     };
