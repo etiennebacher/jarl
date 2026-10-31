@@ -383,7 +383,7 @@ fn test_unknown_rule_suggests_rules_containing_input() -> anyhow::Result<()> {
 
     ----- stderr -----
     error: unknown rule `null`.
-      Did you mean: `equals_null`, `expect_null`?
+      Did you mean: `apply_null`, `equals_null`, `expect_null`?
     Run `jarl check --help` for how to select rules.
     "
     );

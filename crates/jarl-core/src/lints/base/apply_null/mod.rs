@@ -34,6 +34,9 @@ mod tests {
             "base::sapply(x, function(x) NULL)",
             "lapply(X = x, FUN = function(...) NULL)",
             "lapply(x, function(x) { NULL })",
+            "lapply(x, function(x) return(NULL))",
+            "lapply(x, function(x) { return(NULL) })",
+            "sapply(x, function(x) return())",
         ] {
             assert!(
                 snapshot_lint(code).contains("warning: apply_null"),

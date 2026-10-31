@@ -84,7 +84,7 @@ pub fn apply_null(
 }
 
 fn returns_null(expr: &AnyRExpression) -> bool {
-    if expr.syntax().text_trimmed().to_string() == "NULL" {
+    if expr.syntax().text_trimmed() == "NULL" {
         return true;
     }
 
@@ -104,13 +104,13 @@ fn returns_null(expr: &AnyRExpression) -> bool {
     let Ok(arguments) = call.arguments() else {
         return false;
     };
-    match arguments.items().as_slice() {
-        [] => true,
-        [argument] => argument
-            .as_ref()
+    let mut items = arguments.items().into_iter();
+    match (items.next(), items.next()) {
+        (None, None) => true,
+        (Some(argument), None) => argument
             .ok()
             .and_then(|argument| argument.value())
-            .is_some_and(|value| value.syntax().text_trimmed().to_string() == "NULL"),
+            .is_some_and(|value| value.syntax().text_trimmed() == "NULL"),
         _ => false,
     }
 }
