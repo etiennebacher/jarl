@@ -71,12 +71,9 @@ pub fn apply_null(
 
     let body_is_null = if let Some(braced) = body.as_r_braced_statements() {
         let expressions = braced.expressions();
-        expressions.len() == 1
-            && expressions
-                .first()
-                .is_some_and(|expr| expr.syntax().text_trimmed().to_string() == "NULL")
+        expressions.len() == 1 && expressions.first().is_some_and(returns_null)
     } else {
-        body.syntax().text_trimmed().to_string() == "NULL"
+        returns_null(&body)
     };
     if !body_is_null {
         return Ok(None);
@@ -84,4 +81,36 @@ pub fn apply_null(
 
     let range = ast.syntax().text_trimmed_range();
     Ok(Some(Diagnostic::new(EmptyList, range, Fix::empty())))
+}
+
+fn returns_null(expr: &AnyRExpression) -> bool {
+    if expr.syntax().text_trimmed().to_string() == "NULL" {
+        return true;
+    }
+
+    let Some(call) = expr.as_r_call() else {
+        return false;
+    };
+    let Ok(function) = call.function() else {
+        return false;
+    };
+    if !function.as_r_identifier().is_some_and(|id| {
+        id.name_token()
+            .is_ok_and(|token| token.text_trimmed() == "return")
+    }) {
+        return false;
+    }
+
+    let Ok(arguments) = call.arguments() else {
+        return false;
+    };
+    match arguments.items().as_slice() {
+        [] => true,
+        [argument] => argument
+            .as_ref()
+            .ok()
+            .and_then(|argument| argument.value())
+            .is_some_and(|value| value.syntax().text_trimmed().to_string() == "NULL"),
+        _ => false,
+    }
 }
