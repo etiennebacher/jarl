@@ -9,25 +9,14 @@ use biome_rowan::AstNode;
 ///
 /// ## What it does
 ///
-/// Checks for patterns similar to `!(... < ...)`.
+/// Checks for negated comparisons, such as `!(x < y)` or `!x < y`.
 ///
 /// ## Why is this bad?
 ///
 /// This pattern may be hard to read and could be simplified by removing the `!`
 /// operator and inverting the operator (e.g. `<` would become `>=`).
-///
-/// This rule has an unsafe fix because of operator precedence around the
-/// comparison:
-///
-/// ```r
-/// x <- 1
-/// y <- 2
-///
-/// 2 * !(x < y)
-/// #> [1] 0
-/// 2 * x >= y
-/// #> [1] TRUE
-/// ```
+/// The fix preserves parentheses where needed to keep operator precedence.
+/// Tidy-evaluation patterns using `!!` or `!!!` are ignored.
 ///
 /// ## Example
 ///
@@ -49,57 +38,65 @@ pub fn comparison_negation(ast: &RUnaryExpression) -> anyhow::Result<Option<Diag
         return Ok(None);
     }
 
-    let argument = ast.argument()?;
-
-    let paren_expr = unwrap_or_return_none!(argument.as_r_parenthesized_expression());
-
-    let body = paren_expr.body()?;
-    let binary_expression = unwrap_or_return_none!(body.as_r_binary_expression());
-    let operator = binary_expression.operator()?;
-    let operator_kind = operator.kind();
-    let left = binary_expression.left()?;
-    let right = binary_expression.right()?;
-
-    if operator_kind != RSyntaxKind::GREATER_THAN
-        && operator_kind != RSyntaxKind::GREATER_THAN_OR_EQUAL_TO
-        && operator_kind != RSyntaxKind::LESS_THAN
-        && operator_kind != RSyntaxKind::LESS_THAN_OR_EQUAL_TO
-        && operator_kind != RSyntaxKind::EQUAL2
-        && operator_kind != RSyntaxKind::NOT_EQUAL
+    // A bang directly inside another bang may be part of tidy evaluation's
+    // !! or !!!. Leave the entire injection expression alone.
+    if let Some(parent) = ast.syntax().parent().and_then(RUnaryExpression::cast)
+        && parent.operator()?.kind() == RSyntaxKind::BANG
     {
         return Ok(None);
     }
 
-    let replacement_operator = match operator_kind {
+    let mut argument = ast.argument()?;
+    while let AnyRExpression::RParenthesizedExpression(paren) = argument {
+        argument = paren.body()?;
+    }
+    let comparison = unwrap_or_return_none!(argument.as_r_binary_expression());
+    let replacement_operator = match comparison.operator()?.kind() {
         RSyntaxKind::GREATER_THAN => "<=",
         RSyntaxKind::GREATER_THAN_OR_EQUAL_TO => "<",
         RSyntaxKind::LESS_THAN => ">=",
         RSyntaxKind::LESS_THAN_OR_EQUAL_TO => ">",
         RSyntaxKind::EQUAL2 => "!=",
         RSyntaxKind::NOT_EQUAL => "==",
-        // Safety: returned early if not one of the operators in this statement.
-        _ => unreachable!(),
+        _ => return Ok(None),
     };
 
-    let range = ast.syntax().text_trimmed_range();
-    let diagnostic = Diagnostic::new(
-        ViolationData::new(
-            Rule::ComparisonNegation,
-            format!("`!(x {} y)` can be simplified.", operator.text_trimmed()),
-            Some(format!("Use `x {} y` instead.", replacement_operator)),
-        ),
-        range,
-        Fix::new(
-            range,
-            format!(
-                "{} {} {}",
-                left.to_trimmed_text(),
-                replacement_operator,
-                right.to_trimmed_text()
-            ),
-            node_contains_comments(ast.syntax()),
-        ),
+    let mut replacement = format!(
+        "{} {} {}",
+        comparison.left()?.to_trimmed_text(),
+        replacement_operator,
+        comparison.right()?.to_trimmed_text()
     );
 
-    Ok(Some(diagnostic))
+    // Comparisons bind more tightly than assignment, logical, and formula
+    // operators. Group the replacement in other operand positions; an existing
+    // parenthesized expression already supplies the necessary grouping.
+    let needs_parentheses = match ast.syntax().parent().and_then(AnyRExpression::cast) {
+        Some(AnyRExpression::RBinaryExpression(binary)) => !matches!(
+            binary.operator()?.text_trimmed(),
+            "<-" | "<<-" | "->" | "->>" | "=" | "&" | "&&" | "|" | "||" | "~"
+        ),
+        Some(
+            AnyRExpression::RUnaryExpression(_)
+            | AnyRExpression::RExtractExpression(_)
+            | AnyRExpression::RSubset(_)
+            | AnyRExpression::RSubset2(_)
+            | AnyRExpression::RCall(_),
+        ) => true,
+        _ => false,
+    };
+    if needs_parentheses {
+        replacement = format!("({replacement})");
+    }
+
+    let range = ast.syntax().text_trimmed_range();
+    Ok(Some(Diagnostic::new(
+        ViolationData::new(
+            Rule::ComparisonNegation,
+            "This negated comparison can be simplified.".to_string(),
+            Some(format!("Use `{replacement}` instead.")),
+        ),
+        range,
+        Fix::new(range, replacement, node_contains_comments(ast.syntax())),
+    )))
 }
