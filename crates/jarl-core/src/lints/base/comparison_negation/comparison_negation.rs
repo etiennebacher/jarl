@@ -15,8 +15,8 @@ use biome_rowan::AstNode;
 ///
 /// This pattern may be hard to read and could be simplified by removing the `!`
 /// operator and inverting the operator (e.g. `<` would become `>=`).
+///
 /// The fix preserves parentheses where needed to keep operator precedence.
-/// Tidy-evaluation patterns using `!!` or `!!!` are ignored.
 ///
 /// ## Example
 ///
@@ -50,6 +50,7 @@ pub fn comparison_negation(ast: &RUnaryExpression) -> anyhow::Result<Option<Diag
     while let AnyRExpression::RParenthesizedExpression(paren) = argument {
         argument = paren.body()?;
     }
+
     let comparison = unwrap_or_return_none!(argument.as_r_binary_expression());
     let replacement_operator = match comparison.operator()?.kind() {
         RSyntaxKind::GREATER_THAN => "<=",
@@ -70,19 +71,14 @@ pub fn comparison_negation(ast: &RUnaryExpression) -> anyhow::Result<Option<Diag
 
     // Comparisons bind more tightly than assignment, logical, and formula
     // operators. Group the replacement in other operand positions; an existing
-    // parenthesized expression already supplies the necessary grouping.
+    // parenthesized expression already supplies the necessary grouping, including
+    // when the negation is called, indexed, or used with `$` or `@`.
     let needs_parentheses = match ast.syntax().parent().and_then(AnyRExpression::cast) {
         Some(AnyRExpression::RBinaryExpression(binary)) => !matches!(
             binary.operator()?.text_trimmed(),
             "<-" | "<<-" | "->" | "->>" | "=" | "&" | "&&" | "|" | "||" | "~"
         ),
-        Some(
-            AnyRExpression::RUnaryExpression(_)
-            | AnyRExpression::RExtractExpression(_)
-            | AnyRExpression::RSubset(_)
-            | AnyRExpression::RSubset2(_)
-            | AnyRExpression::RCall(_),
-        ) => true,
+        Some(AnyRExpression::RUnaryExpression(_)) => true,
         _ => false,
     };
     if needs_parentheses {

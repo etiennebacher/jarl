@@ -165,6 +165,9 @@ mod tests {
                     "!length(x) > 0",
                     // Preserve grouping around arithmetic, unary, and comparison operands.
                     "2 * !(1 < 2)",
+                    "2 ^ !(x < y)",
+                    "1:!(x < y)",
+                    "TRUE %in% !(x < y)",
                     "-!(1 < 2)",
                     "TRUE == !(1 < 2)",
                     "!(x < y) == FALSE",
@@ -172,6 +175,7 @@ mod tests {
                     "2 * (!(x < y))",
                     "if (TRUE && !(bar > foo)) 1",
                     "result <- !(x < y)",
+                    "z ~ !(x < y)",
                     // Parentheses separate these bangs; this is ordinary double negation.
                     "!(!(x < y))",
                     "!(总数 < 阈值)",
