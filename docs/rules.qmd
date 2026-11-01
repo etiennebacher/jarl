@@ -64,7 +64,7 @@ dat <- as.data.frame(
     c("blanket_suppression", "comments", "❌", ""),
     c("class_equals", "suspicious", "❗", ""),
     c("coalesce", "readability", "✅", "R >= 4.4"),
-    c("comparison_negation", "readability", "❗", ""),
+    c("comparison_negation", "readability", "✅", ""),
     c("condition_call", "readability", "❗", "Disabled by default"),
     c("condition_message", "readability", "✅", "Disabled by default"),
     c("consecutive_signs", "readability, suspicious", "❌", ""),
