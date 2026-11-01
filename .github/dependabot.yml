@@ -40,9 +40,11 @@ updates:
       prefix: build
       prefix-development: chore(rust)
     groups:
+      # Major updates are intentionally ungrouped so each gets its own PR
       rust:
-        patterns:
-          - '*'
+        update-types:
+          - minor
+          - patch
 
   # VS Code / Positron extension
   - package-ecosystem: npm
@@ -64,6 +66,8 @@ updates:
       prefix: build
       prefix-development: chore(vscode)
     groups:
+      # Major updates are intentionally ungrouped so each gets its own PR
       vscode:
-        patterns:
-          - '*'
+        update-types:
+          - minor
+          - patch
