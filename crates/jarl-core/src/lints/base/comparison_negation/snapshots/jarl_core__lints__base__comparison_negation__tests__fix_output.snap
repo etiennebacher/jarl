@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-core/src/lints/base/comparison_negation/mod.rs
-expression: "get_fixed_text(vec![\"!(x >= y)\", \"!(x > y)\", \"!(x <= y)\", \"!(x < y)\",\n\"!(x == y)\", \"!(x != y)\", \"!(foo(x + 1) != foo(bar(if (x == 1) 2 else 3)))\",\n\"if (TRUE && !(bar > foo)) 1\"], \"comparison_negation\", None)"
+expression: "get_fixed_text(vec![\"!(x >= y)\", \"!(x > y)\", \"!(x <= y)\", \"!(x < y)\",\n\"!(x == y)\", \"!(x != y)\", \"!(foo(x + 1) != foo(bar(if (x == 1) 2 else 3)))\",\n\"!(((sum(x) < limit)))\", \"!length(x) > 0\", \"2 * !(1 < 2)\", \"-!(1 < 2)\",\n\"TRUE == !(1 < 2)\", \"!(x < y) == FALSE\", \"2 * (!(x < y))\",\n\"if (TRUE && !(bar > foo)) 1\", \"result <- !(x < y)\", \"!(!(x < y))\",\n\"!(总数 < 阈值)\", \"# leading comment\\n!(x >= y)\",\n\"!(x\\n # keep this comment\\n >= y)\", \"!(x >= y) # trailing comment\",],\n\"comparison_negation\", None,)"
 ---
 OLD:
 ====
@@ -53,7 +53,104 @@ foo(x + 1) == foo(bar(if (x == 1) 2 else 3))
 
 OLD:
 ====
+!(((sum(x) < limit)))
+NEW:
+====
+sum(x) >= limit
+
+OLD:
+====
+!length(x) > 0
+NEW:
+====
+length(x) <= 0
+
+OLD:
+====
+2 * !(1 < 2)
+NEW:
+====
+2 * (1 >= 2)
+
+OLD:
+====
+-!(1 < 2)
+NEW:
+====
+-(1 >= 2)
+
+OLD:
+====
+TRUE == !(1 < 2)
+NEW:
+====
+TRUE == (1 >= 2)
+
+OLD:
+====
+!(x < y) == FALSE
+NEW:
+====
+(x < y) != FALSE
+
+OLD:
+====
+2 * (!(x < y))
+NEW:
+====
+2 * (x >= y)
+
+OLD:
+====
 if (TRUE && !(bar > foo)) 1
 NEW:
 ====
 if (TRUE && bar <= foo) 1
+
+OLD:
+====
+result <- !(x < y)
+NEW:
+====
+result <- x >= y
+
+OLD:
+====
+!(!(x < y))
+NEW:
+====
+x < y
+
+OLD:
+====
+!(总数 < 阈值)
+NEW:
+====
+总数 >= 阈值
+
+OLD:
+====
+# leading comment
+!(x >= y)
+NEW:
+====
+# leading comment
+x < y
+
+OLD:
+====
+!(x
+ # keep this comment
+ >= y)
+NEW:
+====
+!(x
+ # keep this comment
+ >= y)
+
+OLD:
+====
+!(x >= y) # trailing comment
+NEW:
+====
+x < y # trailing comment
