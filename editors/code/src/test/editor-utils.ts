@@ -57,50 +57,6 @@ export async function withFileEditor(
 	}
 }
 
-export async function withUntitledEditor(
-	content: string,
-	language: string,
-	run: (editor: vscode.TextEditor, doc: vscode.TextDocument) => Promise<void>,
-): Promise<void> {
-	const doc = await vscode.workspace.openTextDocument({
-		language,
-		content,
-	});
-
-	try {
-		const editor = await vscode.window.showTextDocument(doc);
-		await run(editor, doc);
-	} finally {
-		await vscode.commands.executeCommand(
-			"workbench.action.closeActiveEditor",
-		);
-	}
-}
-
-export const onDocumentChange = (
-	doc: vscode.TextDocument,
-): Promise<vscode.TextDocument> => {
-	return new Promise<vscode.TextDocument>((resolve) => {
-		const sub = vscode.workspace.onDidChangeTextDocument((e) => {
-			if (e.document !== doc) {
-				return;
-			}
-			sub.dispose();
-			resolve(e.document);
-		});
-	});
-};
-
-export const type = async (
-	document: vscode.TextDocument,
-	text: string,
-): Promise<vscode.TextDocument> => {
-	const onChange = onDocumentChange(document);
-	await vscode.commands.executeCommand("type", { text });
-	await onChange;
-	return document;
-};
-
 /**
  * Resolves with the diagnostics of `uri` once they satisfy `predicate`
  */

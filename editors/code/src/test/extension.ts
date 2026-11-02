@@ -23,10 +23,6 @@ export function extension() {
 	return extension;
 }
 
-export function api() {
-	return extension().exports;
-}
-
 export function internalApi() {
 	return extension().exports.__private;
 }
