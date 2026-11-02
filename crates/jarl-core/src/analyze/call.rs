@@ -82,7 +82,7 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
         checker.report_diagnostic(condition_message(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::DownloadFile) {
-        checker.report_diagnostic(download_file(r_expr, fn_name)?);
+        checker.report_diagnostic(download_file(r_expr, fn_name, ns_prefix)?);
     }
     if checker.is_rule_enabled(Rule::DuplicatedArguments) {
         checker.report_diagnostic(duplicated_arguments(r_expr, checker)?);

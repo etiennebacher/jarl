@@ -21,6 +21,7 @@ oak_index_vec = { git = "https://github.com/etiennebacher/ark", branch = "bump-a
 oak_package_metadata = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
 oak_scan = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
 oak_semantic = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
+percent-encoding = "2.3"
 url = "2.5"
 anyhow = "1.0.94"
 biome_diagnostics = { git = "https://github.com/lionel-/biome", rev = "a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9" }
