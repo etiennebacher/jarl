@@ -153,7 +153,7 @@
 		"eslint": "^10.13.0",
 		"prettier": "^3.9.10",
 		"ts-loader": "^9.6.2",
-		"typescript": "^5.6.3",
+		"typescript": "^7.0.2",
 		"webpack": "^5.112.0",
 		"webpack-cli": "^7.2.3"
 	}
