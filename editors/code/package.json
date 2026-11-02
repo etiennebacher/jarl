@@ -136,7 +136,7 @@
 		"fs-extra": "^11.4.1",
 		"p-queue": "npm:@esm2cjs/p-queue@^7.3.0",
 		"vscode-languageclient": "^9.0.1",
-		"which": "^4.0.0"
+		"which": "^7.0.0"
 	},
 	"devDependencies": {
 		"@types/adm-zip": "^0.5.6",
