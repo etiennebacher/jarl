@@ -26,9 +26,10 @@ export function rndName() {
 export function createRandomFile(
 	contents = "",
 	fileExtension = "txt",
+	dir = os.tmpdir(),
 ): Thenable<vscode.Uri> {
 	return new Promise((resolve, reject) => {
-		const tmpFile = join(os.tmpdir(), rndName() + "." + fileExtension);
+		const tmpFile = join(dir, rndName() + "." + fileExtension);
 		fs.writeFile(tmpFile, contents, (error) => {
 			if (error) {
 				return reject(error);
@@ -49,68 +50,53 @@ export async function withFileEditor(
 		const editor = await vscode.window.showTextDocument(doc);
 		await run(editor, doc);
 	} finally {
+		// Reverting avoids the "save changes?" dialog on dirty editors
 		await vscode.commands.executeCommand(
-			"workbench.action.closeActiveEditor",
+			"workbench.action.revertAndCloseActiveEditor",
 		);
 	}
 }
 
-export async function withUntitledEditor(
-	content: string,
-	language: string,
-	run: (editor: vscode.TextEditor, doc: vscode.TextDocument) => Promise<void>,
-): Promise<void> {
-	const doc = await vscode.workspace.openTextDocument({
-		language,
-		content,
-	});
-
-	try {
-		const editor = await vscode.window.showTextDocument(doc);
-		await run(editor, doc);
-	} finally {
-		await vscode.commands.executeCommand(
-			"workbench.action.closeActiveEditor",
-		);
-	}
-}
-
-export const onDocumentChange = (
-	doc: vscode.TextDocument,
-): Promise<vscode.TextDocument> => {
-	return new Promise<vscode.TextDocument>((resolve) => {
-		const sub = vscode.workspace.onDidChangeTextDocument((e) => {
-			if (e.document !== doc) {
-				return;
+/**
+ * Resolves with the diagnostics of `uri` once they satisfy `predicate`
+ */
+export function waitForDiagnostics(
+	uri: vscode.Uri,
+	predicate: (diagnostics: vscode.Diagnostic[]) => boolean,
+	timeout = 10000,
+): Promise<vscode.Diagnostic[]> {
+	return new Promise((resolve, reject) => {
+		const check = () => {
+			const diagnostics = vscode.languages.getDiagnostics(uri);
+			if (predicate(diagnostics)) {
+				sub.dispose();
+				clearTimeout(timer);
+				resolve(diagnostics);
 			}
-			sub.dispose();
-			resolve(e.document);
+		};
+
+		const sub = vscode.languages.onDidChangeDiagnostics((e) => {
+			if (e.uris.some((u) => u.toString() === uri.toString())) {
+				check();
+			}
 		});
-	});
-};
 
-export const type = async (
-	document: vscode.TextDocument,
-	text: string,
-): Promise<vscode.TextDocument> => {
-	const onChange = onDocumentChange(document);
-	await vscode.commands.executeCommand("type", { text });
-	await onChange;
-	return document;
-};
+		const timer = setTimeout(() => {
+			sub.dispose();
+			const codes = vscode.languages
+				.getDiagnostics(uri)
+				.map((d) => d.code);
+			reject(
+				new Error(
+					`Timed out waiting for diagnostics of ${uri.fsPath}, got: ${JSON.stringify(codes)}`,
+				),
+			);
+		}, timeout);
 
-export async function stripWhitespace(
-	editor: vscode.TextEditor,
-	doc: vscode.TextDocument,
-) {
-	const stripped = doc.getText().replace(/ +/g, "");
-	await editor.edit((editBuilder) => {
-		editBuilder.replace(
-			new vscode.Range(
-				doc.positionAt(0),
-				doc.positionAt(doc.getText().length),
-			),
-			stripped,
-		);
+		check();
 	});
+}
+
+export function hasRule(diagnostics: vscode.Diagnostic[], rule: string) {
+	return diagnostics.some((d) => d.code === rule);
 }

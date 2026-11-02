@@ -1,0 +1,70 @@
+name: Test VS Code Extension
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/test-vscode.yml
+      - "editors/code/**"
+      - Cargo.toml
+      - Cargo.lock
+      - crates/**/src/**
+      - crates/**/Cargo.toml
+  pull_request:
+    paths:
+      - .github/workflows/test-vscode.yml
+      - "editors/code/**"
+      - Cargo.toml
+      - Cargo.lock
+      - crates/**/src/**
+      - crates/**/Cargo.toml
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test-extension:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
+        with:
+          cache: false
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+
+      # No binary is bundled in `editors/code/bundled`, so the extension falls
+      # back to the `jarl` found on the PATH
+      - name: Build jarl binary
+        run: |
+          cargo build --package jarl
+          echo "$GITHUB_WORKSPACE/target/debug" >> "$GITHUB_PATH"
+
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: latest
+
+      # VS Code needs a display, provided by a virtual framebuffer
+      - name: Install X Virtual Framebuffer
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+
+      - name: Run tests
+        run: |
+          cd editors/code
+          npm ci
+          xvfb-run -a npm test
