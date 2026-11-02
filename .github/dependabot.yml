@@ -65,6 +65,10 @@ updates:
       # Matches the Node version shipped with VS Code
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
+      # typescript-eslint doesn't support TS 7 yet:
+      # https://github.com/typescript-eslint/typescript-eslint/issues/10940
+      - dependency-name: 'typescript'
+        versions: ['>= 7']
     commit-message:
       prefix: build
       prefix-development: chore(vscode)
