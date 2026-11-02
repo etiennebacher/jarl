@@ -149,7 +149,7 @@
 		"@typescript-eslint/parser": "^8.7.0",
 		"@vscode/test-cli": "^0.0.10",
 		"@vscode/test-electron": "^2.4.1",
-		"@vscode/vsce": "^3.6.2",
+		"@vscode/vsce": "^4.0.0",
 		"eslint": "^9.13.0",
 		"prettier": "^3.9.10",
 		"ts-loader": "^9.6.2",
