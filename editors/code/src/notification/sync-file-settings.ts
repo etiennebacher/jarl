@@ -39,7 +39,6 @@ export class FileSettingsState {
 	}
 
 	public handleSettingsNotification(params: SyncFileSettingsParams) {
-		// Reset map of settings
 		this.settings.clear();
 
 		for (const fileSettings of params.file_settings) {
@@ -47,9 +46,7 @@ export class FileSettingsState {
 			this.settings.set(path, fileSettings.format);
 		}
 
-		// Apply right away to the active text editor. We also have a handler
-		// for the case where the active editor changes so it always has
-		// up-to-date settings.
+		// Other editors pick up settings when they become active
 		if (vscode.window.activeTextEditor) {
 			this.apply(vscode.window.activeTextEditor);
 		}
@@ -66,19 +63,12 @@ export class FileSettingsState {
 			let tabSize;
 
 			if (insertSpaces) {
-				// If inserting spaces, keep tab size in sync
 				tabSize = indentSize;
 			} else {
-				// If inserting tabs, allow them to diverge so user can
-				// configure the visual aspect of tabs without affecting the
-				// formatting (we'll use `indentSize` to decide the width of a
-				// tab and figure out where does code overflow the line width).
-				//
-				// Favor the `tabSize` from the user configuration, but use the
-				// editor value as fallback. The editor value might have been
-				// set by us if the user set indent style to spaces before.
-				// In general we consider the editor values to be ephemeral as
-				// we take over them when synchronisation is enabled.
+				// With tabs, `tabSize` is purely visual and may differ from
+				// `indentSize`, which drives formatting and line width. Prefer
+				// the user's configured `tabSize`: the editor value may be one
+				// we set earlier and is treated as ephemeral.
 				const config = vscode.workspace.getConfiguration(undefined, {
 					uri,
 					languageId: "r",

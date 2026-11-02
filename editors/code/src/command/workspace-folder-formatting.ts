@@ -9,36 +9,15 @@ import {
 } from "../workspace";
 
 /**
- * Format a workspace folder
+ * Format a workspace folder with the CLI
  *
- * # Tab saving
+ * Dirty tabs are saved first because the CLI only sees what is on disk. They
+ * stay open: VS Code keeps the LSP client and server in sync with on-disk
+ * changes as long as files were saved beforehand.
  *
- * Because we use the embedded Air CLI to perform the formatting, we force all
- * relevant tabs to be saved before proceeding. The Air CLI can't know about any
- * in-memory changes that may have occurred in "dirty" editors. Forcing them to
- * save causes any changes to be written to disk first, syncing VS Code with the
- * CLI.
- *
- * We don't force the tabs to be closed. We've seen that VS Code seems to sync
- * the LSP client and server well when performing a git branch switch (as long
- * as all files are saved beforehand), so we are hopeful it should also behave
- * well when we format with the CLI.
- *
- * # Forward propagation of settings
- *
- * If no `air.toml` is tied to a document, then typically in the LSP document
- * settings are forward propagated from the client to the server, and those are
- * used during formatting when that document is open. If an `air.toml` does
- * exist, those settings override document settings.
- *
- * Because we go through the Air CLI here, forward propagated document settings
- * are ignored, so even if you don't have an `air.toml`, you will get Air's
- * default indentation settings.
- *
- * We can't simply require an `air.toml` at the workspace folder root to avoid
- * confusion here, because you may instead have an `air.toml` at
- * `{root}/R/air.toml` that would handle any R files in your project. Instead,
- * we hope this isn't common enough to come up much in practice.
+ * The CLI ignores document settings forwarded by the client, so without an
+ * `air.toml` the default indentation applies. Requiring one at the root isn't
+ * an option since it may legitimately live deeper, e.g. `{root}/R/air.toml`.
  */
 export async function workspaceFolderFormatting(
 	workspaceFolder: vscode.WorkspaceFolder,
@@ -51,15 +30,13 @@ export async function workspaceFolderFormatting(
 
 	const workspaceFolderPath = workspaceFolder.uri.fsPath;
 
-	// i.e., `air format {workspaceFolderPath} --no-color`
 	const args = ["format", workspaceFolderPath, "--no-color"];
 
-	// This should not matter since the path is explicitly supplied, but better to be safe
+	// Redundant with the explicit path, but keeps relative lookups predictable
 	const options = {
 		cwd: workspaceFolderPath,
 	};
 
-	// Resolves when the spawned process closes or errors
 	const result = await runCommand(binaryPath, args, options);
 
 	let anyErrors = false;

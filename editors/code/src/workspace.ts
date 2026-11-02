@@ -17,18 +17,14 @@ export async function getRootWorkspaceFolder(): Promise<vscode.WorkspaceFolder> 
 	const workspaces: readonly vscode.WorkspaceFolder[] = getWorkspaceFolders();
 
 	if (workspaces.length === 0) {
-		// No workspaces open, use current working directory
 		return {
 			uri: vscode.Uri.file(process.cwd()),
 			name: path.basename(process.cwd()),
 			index: 0,
 		};
 	} else if (workspaces.length === 1) {
-		// One workspace open, return it
 		return workspaces[0];
 	} else {
-		// Multiple workspaces open, use the one with the shortest path,
-		// i.e. the most "root" one
 		let rootWorkspace = workspaces[0];
 		let root = undefined;
 
@@ -84,8 +80,7 @@ export async function selectWorkspaceFolder(): Promise<
 		return workspaceFolders[0];
 	}
 
-	// Let the user select a workspace folder if >1 are open, may be
-	// `undefined` if user bails from quick pick!
+	// `undefined` if the user dismisses the quick pick
 	const workspaceFolder =
 		await selectWorkspaceFolderFromQuickPick(workspaceFolders);
 
@@ -95,7 +90,6 @@ export async function selectWorkspaceFolder(): Promise<
 async function selectWorkspaceFolderFromQuickPick(
 	workspaceFolders: readonly vscode.WorkspaceFolder[],
 ): Promise<vscode.WorkspaceFolder | undefined> {
-	// Show the workspace names
 	const workspaceFolderNames = workspaceFolders.map(
 		(workspaceFolder) => workspaceFolder.name,
 	);
@@ -109,11 +103,9 @@ async function selectWorkspaceFolderFromQuickPick(
 	);
 
 	if (!workspaceFolderName) {
-		// User bailed from the quick pick
 		return undefined;
 	}
 
-	// Match selected name back to the workspace folder
 	for (let workspaceFolder of workspaceFolders) {
 		if (workspaceFolder.name === workspaceFolderName) {
 			return workspaceFolder;
@@ -140,11 +132,9 @@ export async function saveAllDirtyWorkspaceTextDocuments(
 	const textDocuments = dirtyWorkspaceTextDocuments(workspaceFolder);
 
 	if (textDocuments.length === 0) {
-		// Nothing to save!
 		return true;
 	}
 
-	// Ask the user if we can save them
 	const answer = await vscode.window.showInformationMessage(
 		`All editors within the ${workspaceFolder.name} workspace folder must be saved first. Proceed with saving these editors?`,
 		{ modal: true },
@@ -153,11 +143,9 @@ export async function saveAllDirtyWorkspaceTextDocuments(
 	);
 
 	if (answer !== "Yes") {
-		// User said `"No"` or bailed from the menu
 		return false;
 	}
 
-	// Save all documents, and ensure that all successfully saved
 	const savedPromises = textDocuments.map((textDocument) =>
 		textDocument.save(),
 	);
@@ -170,22 +158,20 @@ function dirtyWorkspaceTextDocuments(
 ): vscode.TextDocument[] {
 	return vscode.workspace.textDocuments.filter((document) => {
 		if (document.isClosed) {
-			// Not actually synchonized. This document will be refreshed when the document is reopened.
+			// Not synchronized; refreshed from disk when reopened
 			return false;
 		}
 
 		if (!document.isDirty) {
-			// Nothing to do
 			return false;
 		}
 
 		if (document.isUntitled) {
-			// These aren't part of the workspace folder
+			// Not part of any workspace folder
 			return false;
 		}
 
 		if (!document.uri.fsPath.startsWith(workspaceFolder.uri.fsPath)) {
-			// The document must live "under" the chosen workspace folder for us to care about it
 			return false;
 		}
 

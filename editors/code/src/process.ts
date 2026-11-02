@@ -29,7 +29,7 @@ export function isError(
  *
  * Collects stdout and stderr emitted along the way.
  *
- * @returns Returns a promise that results when the process exits or errors
+ * @returns A promise that resolves when the process exits or errors
  */
 export async function runCommand(
 	command: string,

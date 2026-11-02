@@ -70,7 +70,6 @@ async function createAirToml(
 		return;
 	}
 
-	// Create an empty `air.toml`
 	const content = new TextEncoder().encode("");
 	await vscode.workspace.fs.writeFile(airTomlUri, content);
 }
@@ -78,10 +77,8 @@ async function createAirToml(
 /**
  * Create `extensions.json` with Air recommended
  *
- * Unlike `settings.json`, there is no API for interacting with an
- * `extensions.json` file. To keep things simple, we never try and update an
- * existing one, we only create one if the user didn't have one already. We
- * don't really want to get into the json parsing business just for this.
+ * Unlike `settings.json`, VS Code has no API for `extensions.json`, so an
+ * existing one is left untouched rather than parsed and rewritten.
  */
 async function createExtensionsJson(
 	workspaceFolder: vscode.WorkspaceFolder,
@@ -90,8 +87,6 @@ async function createExtensionsJson(
 	const extensionsUri = vscode.Uri.joinPath(vscodeUri, "extensions.json");
 
 	if (await fileExists(extensionsUri)) {
-		// Just bail if the user already has `extensions.json`, we don't
-		// try to update an existing one
 		return;
 	}
 
@@ -115,22 +110,10 @@ async function createExtensionsJson(
 }
 
 /**
- * This seems to be the only way to update language specific settings for a
- * particular workspace folder in a way that:
- *
- * - Doesn't destroy existing `[r]` or `[quarto]` settings that we aren't
- *   updating (like `config.update("[r]", value)` naively does)
- * - Doesn't pull extra inherited global settings (like `config.get()` would do)
- *
- * The trick is to `inspect()` all of the `[r]` configuration specific to just
- * the `workspaceFolder` and bulk update it, retaining all old settings but
- * overriding the ones we care about updating.
- *
- * This does unfortunately drop comments in the `[r]` and `[quarto]` sections,
- * but we can't do better.
- *
- * It would be great if you could do `update("[r].editor.formatOnSave")` to
- * precisely target a single value of a single language, but you cannot.
+ * VS Code can't update a single key of a language section (e.g.
+ * `[r].editor.formatOnSave`). A plain `update("[r]", value)` wipes the other
+ * keys and `get()` pulls in inherited global values, so we merge into the
+ * folder-scoped value from `inspect()`. Comments in these sections are lost.
  */
 async function updateSettingsJson(
 	workspaceFolder: vscode.WorkspaceFolder,
@@ -172,8 +155,7 @@ async function updateRbuildignore(
 	);
 
 	if (!(await fileExists(rbuildignoreUri))) {
-		// Do nothing if the user doesn't have one, i.e. an R project
-		// or the rare R package without an `.Rbuildignore`
+		// Not an R package (or a rare one without `.Rbuildignore`)
 		return;
 	}
 
@@ -184,9 +166,7 @@ async function updateRbuildignore(
 	const lines = content.split(newline);
 
 	if (lines.at(-1) === "") {
-		// Drop final line if it's empty, i.e. we split on newlines and the
-		// file ended with a newline. This avoids writing a blank line between
-		// the existing content and our new lines.
+		// Trailing newline: avoid a blank line before the appended patterns
 		lines.pop();
 	}
 

@@ -117,7 +117,6 @@ export class Lsp {
 			args: ["server"],
 		};
 
-		// Simplified middleware - remove complex configuration handling for now
 		let middleware: Middleware = {};
 
 		let clientOptions: lc.LanguageClientOptions = {
@@ -143,7 +142,7 @@ export class Lsp {
 			clientOptions,
 		);
 
-		// Commenting out notifications for now to fix initialization issues
+		// Disabled: registering this handler breaks client initialization.
 		// client.onNotification(SYNC_FILE_SETTINGS, (settings) => {
 		// 	this.onSettingsNotificationEmitter.fire(settings);
 		// });
