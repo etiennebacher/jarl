@@ -834,3 +834,102 @@ pub fn excluded_by_settings(path: &Path, settings: &Settings, root: &Path) -> bo
 
     false
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Reported under `--config` itself, because a snippet has no path to point at.
+    fn inline(source: &str) -> ExplicitConfig {
+        ExplicitConfig {
+            inputs: vec![ConfigInput::Inline(source.to_string())],
+        }
+    }
+
+    #[test]
+    fn label_names_the_flag_for_an_inline_snippet_and_for_no_input() {
+        assert_eq!(
+            inline("[lint]\n").label(),
+            PathBuf::from(INLINE_CONFIG_LABEL)
+        );
+        assert_eq!(
+            ExplicitConfig::default().label(),
+            PathBuf::from(INLINE_CONFIG_LABEL)
+        );
+    }
+
+    #[test]
+    fn label_names_the_file_when_the_last_input_is_one() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("jarl.toml");
+        let config = ExplicitConfig {
+            inputs: vec![
+                ConfigInput::Inline("[lint]\n".to_string()),
+                ConfigInput::File(path.clone()),
+            ],
+        };
+
+        assert_eq!(config.label(), air_fs::normalize_path(&path));
+    }
+
+    #[test]
+    fn table_reports_a_missing_file() {
+        let config = ExplicitConfig {
+            inputs: vec![ConfigInput::File(PathBuf::from("nope-does-not-exist.toml"))],
+        };
+
+        let err = config.table().unwrap_err().to_string();
+
+        assert!(
+            err.contains("Configuration file not found"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn table_reports_a_directory() {
+        let dir = tempfile::tempdir().unwrap();
+        let config = ExplicitConfig {
+            inputs: vec![ConfigInput::File(dir.path().to_path_buf())],
+        };
+
+        let err = config.table().unwrap_err().to_string();
+
+        assert!(err.contains("expects a file"), "unexpected error: {err}");
+    }
+
+    #[test]
+    fn table_reports_a_broken_inline_snippet_under_the_flag() {
+        let err = inline("[lint\n").table().unwrap_err().to_string();
+
+        assert!(err.contains(INLINE_CONFIG_LABEL), "unexpected error: {err}");
+    }
+
+    #[test]
+    fn table_reports_a_broken_file_under_its_path() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("broken.toml");
+        std::fs::write(&path, "[lint\n").unwrap();
+        let config = ExplicitConfig { inputs: vec![ConfigInput::File(path.clone())] };
+
+        let err = config.table().unwrap_err().to_string();
+
+        assert!(
+            err.contains(&path.display().to_string()),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn explicit_roots_falls_back_to_the_nearest_existing_ancestor() {
+        let dir = tempfile::tempdir().unwrap();
+        let missing = dir.path().join("renv").join("not-there");
+        let root = dir.path().join("config");
+
+        // Without a cwd the path is taken as given, and it does not exist, so the root is the
+        // deepest ancestor that does.
+        let roots = explicit_config_roots(&[&missing], &root, None);
+
+        assert_eq!(roots, vec![root, dir.path().to_path_buf()]);
+    }
+}
