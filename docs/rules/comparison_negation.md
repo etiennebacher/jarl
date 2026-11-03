@@ -12,7 +12,8 @@ Checks for negated comparisons, such as `!(x < y)` or `!x < y`.
 This pattern may be hard to read and could be simplified by removing the `!`
 operator and inverting the operator (e.g. `<` would become `>=`).
 
-The fix preserves parentheses where needed to keep operator precedence.
+This rule has an automated fix that preserves parentheses where needed to keep
+operator precedence.
 
 ## Example
 
