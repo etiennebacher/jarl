@@ -86,7 +86,7 @@ pub trait AstNodeExt: AstNode<Language = RLanguage> {
         false
     }
 
-    /// Returns true if parent is `!!`
+    /// Returns true if parent is exactly `!!`
     fn parent_is_bang_bang(&self) -> bool {
         let Some(parent) = self.syntax().parent().and_then(RUnaryExpression::cast) else {
             return false;
@@ -94,6 +94,19 @@ pub trait AstNodeExt: AstNode<Language = RLanguage> {
         let Some(grandparent) = parent.syntax().parent().and_then(RUnaryExpression::cast) else {
             return false;
         };
+        // Return false if greatgrandparent is also a unary bang (!!!)
+        if grandparent
+            .syntax()
+            .parent()
+            .and_then(RUnaryExpression::cast)
+            .is_some_and(|outer| {
+                outer
+                    .operator()
+                    .is_ok_and(|operator| operator.kind() == RSyntaxKind::BANG)
+            })
+        {
+            return false;
+        }
 
         parent
             .operator()
@@ -103,7 +116,7 @@ pub trait AstNodeExt: AstNode<Language = RLanguage> {
                 .is_ok_and(|operator| operator.kind() == RSyntaxKind::BANG)
     }
 
-    /// Returns true if parent is `!!!`
+    /// Returns true if parent is exactly `!!!`
     fn parent_is_bang_bang_bang(&self) -> bool {
         let Some(parent) = self.syntax().parent().and_then(RUnaryExpression::cast) else {
             return false;
@@ -118,6 +131,19 @@ pub trait AstNodeExt: AstNode<Language = RLanguage> {
         else {
             return false;
         };
+        // Return false if the fourth operator is also a bang (!!!!)
+        if greatgrandparent
+            .syntax()
+            .parent()
+            .and_then(RUnaryExpression::cast)
+            .is_some_and(|outer| {
+                outer
+                    .operator()
+                    .is_ok_and(|operator| operator.kind() == RSyntaxKind::BANG)
+            })
+        {
+            return false;
+        }
 
         parent
             .operator()
@@ -262,8 +288,11 @@ mod tests {
     fn test_parent_is_bang_bang() {
         assert!(find("!!x", "x").parent_is_bang_bang());
         assert!(find("f(!!x)", "x").parent_is_bang_bang());
+        assert!(find("-!!x", "x").parent_is_bang_bang());
 
         assert!(!find("!x", "x").parent_is_bang_bang());
+        assert!(!find("!!!x", "x").parent_is_bang_bang());
+        assert!(!find("!!!!x", "x").parent_is_bang_bang());
         assert!(!find("-!x", "x").parent_is_bang_bang());
         assert!(!find("!-x", "x").parent_is_bang_bang());
         assert!(!find("x", "x").parent_is_bang_bang());
@@ -276,8 +305,10 @@ mod tests {
     fn test_parent_is_bang_bang_bang() {
         assert!(find("!!!x", "x").parent_is_bang_bang_bang());
         assert!(find("f(!!!x)", "x").parent_is_bang_bang_bang());
+        assert!(find("-!!!x", "x").parent_is_bang_bang_bang());
 
         assert!(!find("!!x", "x").parent_is_bang_bang_bang());
+        assert!(!find("!!!!x", "x").parent_is_bang_bang_bang());
         assert!(!find("!x", "x").parent_is_bang_bang_bang());
         assert!(!find("--!x", "x").parent_is_bang_bang_bang());
         assert!(!find("-!!x", "x").parent_is_bang_bang_bang());
