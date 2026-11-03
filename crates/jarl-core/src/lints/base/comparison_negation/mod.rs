@@ -20,6 +20,7 @@ mod tests {
             "!passes.test[stage == 1]",
             "!!target == 1 ~ 'target'",
             "!!x < y",
+            "!!(x < y)",
             "!!!(x == y)",
             "rlang::expr(!!(x < y))",
             "rlang::expr(list(!!!((x < y))))",

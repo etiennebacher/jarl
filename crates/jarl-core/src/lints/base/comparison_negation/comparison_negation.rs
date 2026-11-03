@@ -1,6 +1,7 @@
 use crate::diagnostic::*;
 use crate::rule_set::Rule;
 use crate::utils::node_contains_comments;
+use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -39,15 +40,12 @@ pub fn comparison_negation(ast: &RUnaryExpression) -> anyhow::Result<Option<Diag
         return Ok(None);
     }
 
-    // A bang directly inside another bang may be part of tidy evaluation's
-    // !! or !!!. Leave the entire injection expression alone.
-    if let Some(parent) = ast.syntax().parent().and_then(RUnaryExpression::cast)
-        && parent.operator()?.kind() == RSyntaxKind::BANG
-    {
+    // Skip `!!` and `!!!`, which are tidy-evaluation operators.
+    let mut argument = ast.argument()?;
+    if argument.parent_is_bang_bang() || argument.parent_is_bang_bang_bang() {
         return Ok(None);
     }
 
-    let mut argument = ast.argument()?;
     while let AnyRExpression::RParenthesizedExpression(paren) = argument {
         argument = paren.body()?;
     }
