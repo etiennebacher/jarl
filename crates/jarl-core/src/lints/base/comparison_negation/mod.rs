@@ -42,7 +42,7 @@ mod tests {
         1 | !(x >= y)
           | --------- This negated comparison can be simplified.
           |
-          = help: Use `x < y` instead.
+          = help: Use `x < y` instead of `!(x >= y)`.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("!(x > y)"), @"
@@ -52,7 +52,7 @@ mod tests {
         1 | !(x > y)
           | -------- This negated comparison can be simplified.
           |
-          = help: Use `x <= y` instead.
+          = help: Use `x <= y` instead of `!(x > y)`.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("!(x <= y)"), @"
@@ -62,7 +62,7 @@ mod tests {
         1 | !(x <= y)
           | --------- This negated comparison can be simplified.
           |
-          = help: Use `x > y` instead.
+          = help: Use `x > y` instead of `!(x <= y)`.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("!(x < y)"), @"
@@ -72,7 +72,7 @@ mod tests {
         1 | !(x < y)
           | -------- This negated comparison can be simplified.
           |
-          = help: Use `x >= y` instead.
+          = help: Use `x >= y` instead of `!(x < y)`.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("!(x == y)"), @"
@@ -82,7 +82,7 @@ mod tests {
         1 | !(x == y)
           | --------- This negated comparison can be simplified.
           |
-          = help: Use `x != y` instead.
+          = help: Use `x != y` instead of `!(x == y)`.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("!(x != y)"), @"
@@ -92,7 +92,7 @@ mod tests {
         1 | !(x != y)
           | --------- This negated comparison can be simplified.
           |
-          = help: Use `x == y` instead.
+          = help: Use `x == y` instead of `!(x != y)`.
         Found 1 error.
         ");
         // Extra parentheses and complex operands appear accurately in the suggestion.
@@ -103,7 +103,7 @@ mod tests {
         1 | !(((sum(x) < limit)))
           | --------------------- This negated comparison can be simplified.
           |
-          = help: Use `sum(x) >= limit` instead.
+          = help: Use `x >= y` instead of `!(x < y)`.
         Found 1 error.
         ");
         // Comparisons bind more tightly than logical negation, even without parentheses.
@@ -114,7 +114,7 @@ mod tests {
         1 | !length(x) > 0
           | -------------- This negated comparison can be simplified.
           |
-          = help: Use `length(x) <= 0` instead.
+          = help: Use `x <= y` instead of `!(x > y)`.
         Found 1 error.
         ");
         // The suggested replacement preserves grouping in the surrounding expression.
@@ -125,7 +125,7 @@ mod tests {
         1 | 2 * !(1 < 2)
           |     -------- This negated comparison can be simplified.
           |
-          = help: Use `(1 >= 2)` instead.
+          = help: Use `x >= y` instead of `!(x < y)`.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("TRUE == !(1 < 2)"), @"
@@ -135,7 +135,7 @@ mod tests {
         1 | TRUE == !(1 < 2)
           |         -------- This negated comparison can be simplified.
           |
-          = help: Use `(1 >= 2)` instead.
+          = help: Use `x >= y` instead of `!(x < y)`.
         Found 1 error.
         ");
         // Comments inside the expression still allow a diagnostic.
@@ -148,7 +148,7 @@ mod tests {
         3 | |  >= y)
           | |______- This negated comparison can be simplified.
           |
-          = help: Use `x < y` instead.
+          = help: Use `x < y` instead of `!(x >= y)`.
         Found 1 error.
         ");
     }

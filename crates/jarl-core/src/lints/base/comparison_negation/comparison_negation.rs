@@ -51,7 +51,8 @@ pub fn comparison_negation(ast: &RUnaryExpression) -> anyhow::Result<Option<Diag
     }
 
     let comparison = unwrap_or_return_none!(argument.as_r_binary_expression());
-    let replacement_operator = match comparison.operator()?.kind() {
+    let comparison_operator = comparison.operator()?;
+    let replacement_operator = match comparison_operator.kind() {
         RSyntaxKind::GREATER_THAN => "<=",
         RSyntaxKind::GREATER_THAN_OR_EQUAL_TO => "<",
         RSyntaxKind::LESS_THAN => ">=",
@@ -89,7 +90,10 @@ pub fn comparison_negation(ast: &RUnaryExpression) -> anyhow::Result<Option<Diag
         ViolationData::new(
             Rule::ComparisonNegation,
             "This negated comparison can be simplified.".to_string(),
-            Some(format!("Use `{replacement}` instead.")),
+            Some(format!(
+                "Use `x {replacement_operator} y` instead of `!(x {} y)`.",
+                comparison_operator.text_trimmed()
+            )),
         ),
         range,
         Fix::new(range, replacement, node_contains_comments(ast.syntax())),
