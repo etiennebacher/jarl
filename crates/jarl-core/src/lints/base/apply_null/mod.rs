@@ -5,23 +5,20 @@ mod tests {
     use crate::{declare_ns, utils_test::*};
     use insta::assert_snapshot;
 
-    // Needed to resolve bare `map()` calls without requiring an R runtime.
+    // Needed to get a package cache working without requiring an R runtime.
     declare_ns! {
         "purrr" => ["map"],
         "maps" => ["map"],
     }
 
     fn snapshot_lint(code: &str) -> String {
-        format_diagnostics(code, "apply_null", None)
-    }
-
-    fn snapshot_lint_with_cache(code: &str) -> String {
         format_diagnostics_with_cache(code, "apply_null", None, &NS)
     }
 
     #[test]
     fn test_no_lint_apply_null() {
         for code in [
+            // Function doesn't (only) return `NULL`
             "lapply(x, function(x) x)",
             "sapply(x, function(x) x)",
             "lapply(x, function(x) { message(x); NULL })",
@@ -31,15 +28,19 @@ mod tests {
             "lapply(x, function(x) foo(NULL))",
             "lapply(x, function(x) return(x))",
             "lapply(x, function(x) return(NULL, x))",
-            "map(x, function(x) NULL)",
-            "map(x, ~NULL)",
             "purrr::map(x, function(x) x)",
             "purrr::map(x, ~x)",
             "purrr::map(x, ~ { message(.x); NULL })",
+            // Bare `map()` without `library(purrr)`
+            "map(x, function(x) NULL)",
+            "map(x, ~NULL)",
+            // Not one of the targeted functions
             "purrr::map_chr(x, function(x) NULL)",
             "other::map(x, function(x) NULL)",
-            "lapply(x, ~NULL)",
             "other::lapply(x, function(x) NULL)",
+            // Formulas are only lambdas in `purrr::map()`
+            "lapply(x, ~NULL)",
+            // No anonymous function to inspect
             "lapply(x)",
             "lapply(x, identity)",
         ] {
@@ -47,12 +48,14 @@ mod tests {
         }
 
         // Bare `map()` that can't be attributed to purrr alone
-        for code in [
-            "library(maps); map(x, function(x) NULL)",
-            "library(purrr); library(maps); map(x, function(x) NULL)",
-        ] {
-            assert_eq!(snapshot_lint_with_cache(code), "All checks passed!");
-        }
+        assert_snapshot!(
+            snapshot_lint("library(maps); map(x, function(x) NULL)"),
+            @"All checks passed!"
+        );
+        assert_snapshot!(
+            snapshot_lint("library(purrr); library(maps); map(x, function(x) NULL)"),
+            @"All checks passed!"
+        );
     }
 
     #[test]
@@ -227,7 +230,7 @@ mod tests {
           = help: Use `vector("list", length(x))` to allocate the list directly.
         Found 1 error.
         "#);
-        assert_snapshot!(snapshot_lint_with_cache("library(purrr); map(x, ~NULL)"), @r#"
+        assert_snapshot!(snapshot_lint("library(purrr); map(x, ~NULL)"), @r#"
         warning: apply_null
          --> <test>:1:17
           |
