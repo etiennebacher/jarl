@@ -20,7 +20,8 @@ export const EXTENSION_ROOT_DIR =
 /**
  * Name of the `jarl` binary based on the current platform.
  */
-export const JARL_BINARY_NAME = process.platform === "win32" ? "jarl.exe" : "jarl";
+export const JARL_BINARY_NAME =
+	process.platform === "win32" ? "jarl.exe" : "jarl";
 
 /**
  * Path to the `jarl` executable that is bundled with the extension.
