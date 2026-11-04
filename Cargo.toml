@@ -1,27 +1,20 @@
 [workspace]
-members = ["crates/*", "editors/zed", "xtask/codegen"]
 resolver = "3"
+members = ["crates/*", "editors/zed", "xtask/codegen"]
 
 [workspace.package]
 authors = ["Etienne Bacher"]
 edition = "2024"
-license-file = "LICENSE.md"
-repository = "https://github.com/etiennebacher/jarl/"
 readme = "README.md"
+repository = "https://github.com/etiennebacher/jarl/"
+license-file = "LICENSE.md"
 
 [workspace.dependencies]
+aether_path = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
 air_fs = { package = "fs", git = "https://github.com/posit-dev/air" }
 air_r_parser = { git = "https://github.com/posit-dev/air" }
 air_r_syntax = { git = "https://github.com/posit-dev/air" }
 air_workspace = { package = "workspace", git = "https://github.com/posit-dev/air" }
-aether_path = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
-oak_core = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
-oak_db = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
-oak_index_vec = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
-oak_package_metadata = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
-oak_scan = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
-oak_semantic = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
-url = "2.5"
 anyhow = "1.0.94"
 biome_diagnostics = { git = "https://github.com/lionel-/biome", rev = "a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9" }
 biome_formatter = { git = "https://github.com/lionel-/biome", rev = "a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9" }
@@ -29,12 +22,18 @@ biome_rowan = { git = "https://github.com/lionel-/biome", rev = "a1296ea6ba363d8
 clap = { version = "4.6.0", features = ["derive"] }
 clap_complete = { version = "4.5.66", features = ["unstable-dynamic"] }
 colored = "3.1.1"
-ignore = "0.4.23"
-insta = { version = "1.47.2", features = ["yaml", "filters"] }
 etcetera = "0.11.0"
+ignore = "0.4.23"
+insta = { version = "1.47.2", features = ["filters", "yaml"] }
 jarl-core = { path = "crates/jarl-core" }
 jarl-lsp = { path = "crates/jarl-lsp" }
 jarl-semantic = { path = "crates/jarl-semantic" }
+oak_core = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
+oak_db = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
+oak_index_vec = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
+oak_package_metadata = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
+oak_scan = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
+oak_semantic = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
 rayon = "1.12.0"
 regex = { version = "1.13.1", default-features = false, features = ["std"] }
 rustc-hash = "2.1.1"
@@ -44,20 +43,13 @@ serde_json = { version = "1.0.143", features = ["preserve_order"] }
 strsim = "0.11"
 tempfile = "3.27.0"
 # Same as in Air to reduce compile time
-toml = "0.8.23"
+toml = "1.1.8"
 toml_edit = "0.25.15"
 tracing = "0.1.41"
+url = "2.5"
 
 [profile.release]
 lto = true
-
-# The profile that 'dist' will build with. Tuned for binary size.
-[profile.dist]
-inherits = "release"
-lto = true
-codegen-units = 1
-opt-level = "s"
-strip = "symbols"
 
 [profile.benchmark]
 inherits = "release"
@@ -69,3 +61,10 @@ lto = "thin"
 inherits = "release"
 lto = false
 
+# The profile that 'dist' will build with. Tuned for binary size.
+[profile.dist]
+inherits = "release"
+opt-level = "s"
+strip = "symbols"
+lto = true
+codegen-units = 1
