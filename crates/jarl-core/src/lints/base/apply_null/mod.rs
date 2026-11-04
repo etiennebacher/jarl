@@ -32,37 +32,115 @@ mod tests {
 
     #[test]
     fn test_lint_apply_null() {
-        for code in [
-            "lapply(x, function(x) NULL)",
-            "sapply(x, function(x) NULL)",
-            "base::lapply(x, function(x) NULL)",
-            "base::sapply(x, function(x) NULL)",
-            "lapply(X = x, FUN = function(...) NULL)",
-            "lapply(x, function(x) { NULL })",
-            "lapply(x, function(x) return(NULL))",
-            "lapply(x, function(x) { return(NULL) })",
-            "sapply(x, function(x) return())",
-            "sapply(x, function(...) return(value = NULL))",
-            "lapply(x, function(x) {})",
-        ] {
-            assert!(
-                snapshot_lint(code).contains("warning: apply_null"),
-                "expected {code:?} to trigger apply_null"
-            );
-        }
-
-        assert_snapshot!(
-            snapshot_lint("lapply(x, function(x) NULL)"),
-            @r###"
+        assert_snapshot!(snapshot_lint("lapply(x, function(x) NULL)"), @r#"
         warning: apply_null
          --> <test>:1:1
           |
         1 | lapply(x, function(x) NULL)
-          | --------------------------- This call iterates over its input to create a list of `NULL` values.
+          | --------------------------- This way of creating an empty list can be inefficient.
           |
           = help: Use `vector("list", length(x))` to allocate the list directly.
         Found 1 error.
-        "###
-        );
+        "#);
+        assert_snapshot!(snapshot_lint("sapply(x, function(x) NULL)"), @r#"
+        warning: apply_null
+         --> <test>:1:1
+          |
+        1 | sapply(x, function(x) NULL)
+          | --------------------------- This way of creating an empty list can be inefficient.
+          |
+          = help: Use `vector("list", length(x))` to allocate the list directly.
+        Found 1 error.
+        "#);
+        assert_snapshot!(snapshot_lint("base::lapply(x, function(x) NULL)"), @r#"
+        warning: apply_null
+         --> <test>:1:1
+          |
+        1 | base::lapply(x, function(x) NULL)
+          | --------------------------------- This way of creating an empty list can be inefficient.
+          |
+          = help: Use `vector("list", length(x))` to allocate the list directly.
+        Found 1 error.
+        "#);
+        assert_snapshot!(snapshot_lint("base::sapply(x, function(x) NULL)"), @r#"
+        warning: apply_null
+         --> <test>:1:1
+          |
+        1 | base::sapply(x, function(x) NULL)
+          | --------------------------------- This way of creating an empty list can be inefficient.
+          |
+          = help: Use `vector("list", length(x))` to allocate the list directly.
+        Found 1 error.
+        "#);
+        assert_snapshot!(snapshot_lint("lapply(X = x, FUN = function(...) NULL)"), @r#"
+        warning: apply_null
+         --> <test>:1:1
+          |
+        1 | lapply(X = x, FUN = function(...) NULL)
+          | --------------------------------------- This way of creating an empty list can be inefficient.
+          |
+          = help: Use `vector("list", length(x))` to allocate the list directly.
+        Found 1 error.
+        "#);
+        assert_snapshot!(snapshot_lint("lapply(x, function(x) { NULL })"), @r#"
+        warning: apply_null
+         --> <test>:1:1
+          |
+        1 | lapply(x, function(x) { NULL })
+          | ------------------------------- This way of creating an empty list can be inefficient.
+          |
+          = help: Use `vector("list", length(x))` to allocate the list directly.
+        Found 1 error.
+        "#);
+        assert_snapshot!(snapshot_lint("lapply(x, function(x) return(NULL))"), @r#"
+        warning: apply_null
+         --> <test>:1:1
+          |
+        1 | lapply(x, function(x) return(NULL))
+          | ----------------------------------- This way of creating an empty list can be inefficient.
+          |
+          = help: Use `vector("list", length(x))` to allocate the list directly.
+        Found 1 error.
+        "#);
+        assert_snapshot!(snapshot_lint("lapply(x, function(x) { return(NULL) })"), @r#"
+        warning: apply_null
+         --> <test>:1:1
+          |
+        1 | lapply(x, function(x) { return(NULL) })
+          | --------------------------------------- This way of creating an empty list can be inefficient.
+          |
+          = help: Use `vector("list", length(x))` to allocate the list directly.
+        Found 1 error.
+        "#);
+        assert_snapshot!(snapshot_lint("sapply(x, function(x) return())"), @r#"
+        warning: apply_null
+         --> <test>:1:1
+          |
+        1 | sapply(x, function(x) return())
+          | ------------------------------- This way of creating an empty list can be inefficient.
+          |
+          = help: Use `vector("list", length(x))` to allocate the list directly.
+        Found 1 error.
+        "#);
+        assert_snapshot!(snapshot_lint("sapply(x, function(...) return(value = NULL))"), @r#"
+        warning: apply_null
+         --> <test>:1:1
+          |
+        1 | sapply(x, function(...) return(value = NULL))
+          | --------------------------------------------- This way of creating an empty list can be inefficient.
+          |
+          = help: Use `vector("list", length(x))` to allocate the list directly.
+        Found 1 error.
+        "#);
+        assert_snapshot!(snapshot_lint("lapply(x, function(x) {})"), @r#"
+        warning: apply_null
+         --> <test>:1:1
+          |
+        1 | lapply(x, function(x) {})
+          | ------------------------- This way of creating an empty list can be inefficient.
+          |
+          = help: Use `vector("list", length(x))` to allocate the list directly.
+        Found 1 error.
+        "#);
     }
 }
