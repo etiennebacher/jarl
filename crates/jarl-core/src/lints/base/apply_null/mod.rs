@@ -2,11 +2,21 @@ pub(crate) mod apply_null;
 
 #[cfg(test)]
 mod tests {
-    use crate::utils_test::*;
+    use crate::{declare_ns, utils_test::*};
     use insta::assert_snapshot;
+
+    // Needed to resolve bare `map()` calls without requiring an R runtime.
+    declare_ns! {
+        "purrr" => ["map"],
+        "maps" => ["map"],
+    }
 
     fn snapshot_lint(code: &str) -> String {
         format_diagnostics(code, "apply_null", None)
+    }
+
+    fn snapshot_lint_with_cache(code: &str) -> String {
+        format_diagnostics_with_cache(code, "apply_null", None, &NS)
     }
 
     #[test]
@@ -22,11 +32,26 @@ mod tests {
             "lapply(x, function(x) return(x))",
             "lapply(x, function(x) return(NULL, x))",
             "map(x, function(x) NULL)",
+            "map(x, ~NULL)",
+            "purrr::map(x, function(x) x)",
+            "purrr::map(x, ~x)",
+            "purrr::map(x, ~ { message(.x); NULL })",
+            "purrr::map_chr(x, function(x) NULL)",
+            "other::map(x, function(x) NULL)",
+            "lapply(x, ~NULL)",
             "other::lapply(x, function(x) NULL)",
             "lapply(x)",
             "lapply(x, identity)",
         ] {
             expect_no_lint(code, "apply_null", None);
+        }
+
+        // Bare `map()` that can't be attributed to purrr alone
+        for code in [
+            "library(maps); map(x, function(x) NULL)",
+            "library(purrr); library(maps); map(x, function(x) NULL)",
+        ] {
+            assert_eq!(snapshot_lint_with_cache(code), "All checks passed!");
         }
     }
 
@@ -138,6 +163,76 @@ mod tests {
           |
         1 | lapply(x, function(x) {})
           | ------------------------- This way of creating an empty list can be inefficient.
+          |
+          = help: Use `vector("list", length(x))` to allocate the list directly.
+        Found 1 error.
+        "#);
+        assert_snapshot!(snapshot_lint("purrr::map(x, function(x) NULL)"), @r#"
+        warning: apply_null
+         --> <test>:1:1
+          |
+        1 | purrr::map(x, function(x) NULL)
+          | ------------------------------- This way of creating an empty list can be inefficient.
+          |
+          = help: Use `vector("list", length(x))` to allocate the list directly.
+        Found 1 error.
+        "#);
+        assert_snapshot!(snapshot_lint("purrr::map(x, \\(x) NULL)"), @r#"
+        warning: apply_null
+         --> <test>:1:1
+          |
+        1 | purrr::map(x, \(x) NULL)
+          | ------------------------ This way of creating an empty list can be inefficient.
+          |
+          = help: Use `vector("list", length(x))` to allocate the list directly.
+        Found 1 error.
+        "#);
+        assert_snapshot!(snapshot_lint("purrr::map(x, ~NULL)"), @r#"
+        warning: apply_null
+         --> <test>:1:1
+          |
+        1 | purrr::map(x, ~NULL)
+          | -------------------- This way of creating an empty list can be inefficient.
+          |
+          = help: Use `vector("list", length(x))` to allocate the list directly.
+        Found 1 error.
+        "#);
+        assert_snapshot!(snapshot_lint("purrr::map(x, ~ { NULL })"), @r#"
+        warning: apply_null
+         --> <test>:1:1
+          |
+        1 | purrr::map(x, ~ { NULL })
+          | ------------------------- This way of creating an empty list can be inefficient.
+          |
+          = help: Use `vector("list", length(x))` to allocate the list directly.
+        Found 1 error.
+        "#);
+        assert_snapshot!(snapshot_lint("purrr::map(.x = x, .f = function(x) return(NULL))"), @r#"
+        warning: apply_null
+         --> <test>:1:1
+          |
+        1 | purrr::map(.x = x, .f = function(x) return(NULL))
+          | ------------------------------------------------- This way of creating an empty list can be inefficient.
+          |
+          = help: Use `vector("list", length(x))` to allocate the list directly.
+        Found 1 error.
+        "#);
+        assert_snapshot!(snapshot_lint("purrr::map(x, function(x) {})"), @r#"
+        warning: apply_null
+         --> <test>:1:1
+          |
+        1 | purrr::map(x, function(x) {})
+          | ----------------------------- This way of creating an empty list can be inefficient.
+          |
+          = help: Use `vector("list", length(x))` to allocate the list directly.
+        Found 1 error.
+        "#);
+        assert_snapshot!(snapshot_lint_with_cache("library(purrr); map(x, ~NULL)"), @r#"
+        warning: apply_null
+         --> <test>:1:17
+          |
+        1 | library(purrr); map(x, ~NULL)
+          |                 ------------- This way of creating an empty list can be inefficient.
           |
           = help: Use `vector("list", length(x))` to allocate the list directly.
         Found 1 error.

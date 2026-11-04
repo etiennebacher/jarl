@@ -86,7 +86,7 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
         checker.report_diagnostic(download_file(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::EmptyList) {
-        checker.report_diagnostic(apply_null(r_expr, fn_name, ns_prefix)?);
+        checker.report_diagnostic(apply_null(r_expr, fn_name, ns_prefix, checker)?);
     }
     if checker.is_rule_enabled(Rule::DuplicatedArguments) {
         checker.report_diagnostic(duplicated_arguments(r_expr, checker)?);

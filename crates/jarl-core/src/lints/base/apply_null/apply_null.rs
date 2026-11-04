@@ -1,3 +1,4 @@
+use crate::checker::{Checker, PackageOrigin};
 use crate::diagnostic::*;
 use crate::rule_set::Rule;
 use crate::utils::{Formals, StatementsExt, get_arg};
@@ -6,6 +7,7 @@ use biome_rowan::AstNode;
 
 const FORMALS_LAPPLY: Formals = &["X", "FUN"];
 const FORMALS_SAPPLY: Formals = &["X", "FUN"];
+const FORMALS_MAP: Formals = &[".x", ".f"];
 
 pub struct EmptyList;
 
@@ -14,8 +16,11 @@ pub struct EmptyList;
 ///
 /// ## What it does
 ///
-/// Checks for `sapply()` and `lapply()` calls where the anonymous function
-/// returns only `NULL`.
+/// Checks for `sapply()`, `lapply()` and `purrr::map()` calls where the
+/// anonymous function returns only `NULL`.
+///
+/// Calls to `map()` without the `purrr::` prefix are only reported when
+/// `map()` can be attributed to purrr (e.g. after `library(purrr)`).
 ///
 /// ## Why is this bad?
 ///
@@ -26,6 +31,8 @@ pub struct EmptyList;
 ///
 /// ```r
 /// lapply(x, function(x) NULL)
+/// purrr::map(x, \(x) NULL)
+/// purrr::map(x, ~NULL)
 /// ```
 ///
 /// Use instead:
@@ -51,30 +58,34 @@ pub fn apply_null(
     ast: &RCall,
     fn_name: &str,
     ns_prefix: Option<&str>,
+    checker: &Checker,
 ) -> anyhow::Result<Option<Diagnostic>> {
-    if !matches!(fn_name, "lapply" | "sapply") || !matches!(ns_prefix, None | Some("base::")) {
-        return Ok(None);
-    }
+    let (formals, fun_arg) = match (fn_name, ns_prefix) {
+        ("lapply", None | Some("base::")) => (FORMALS_LAPPLY, "FUN"),
+        ("sapply", None | Some("base::")) => (FORMALS_SAPPLY, "FUN"),
+        ("map", Some("purrr::")) => (FORMALS_MAP, ".f"),
+        ("map", None) if matches!(checker.resolve_package("map"), PackageOrigin::Resolved(pkg) if pkg == "purrr") => {
+            (FORMALS_MAP, ".f")
+        }
+        _ => return Ok(None),
+    };
 
-    let formals = if fn_name == "lapply" {
-        FORMALS_LAPPLY
-    } else {
-        FORMALS_SAPPLY
-    };
-    let Some(fun) = get_arg(ast, formals, "FUN").and_then(|arg| arg.value()) else {
+    let Some(fun) = get_arg(ast, formals, fun_arg).and_then(|arg| arg.value()) else {
         return Ok(None);
     };
-    let Some(function) = fun.as_r_function_definition() else {
-        return Ok(None);
-    };
-    let body = function.body()?;
 
-    let body_is_null = if let Some(braced) = body.as_r_braced_statements() {
-        let expressions = braced.expressions();
-        expressions.is_empty()
-            || (expressions.len() == 1 && expressions.first().is_some_and(returns_null))
+    let body_is_null = if let Some(function) = fun.as_r_function_definition() {
+        body_returns_null(&function.body()?)
+    } else if fn_name == "map" {
+        // purrr also accepts formula lambdas, e.g. `~NULL`.
+        fun.as_r_unary_expression().is_some_and(|formula| {
+            formula
+                .operator()
+                .is_ok_and(|op| op.kind() == RSyntaxKind::TILDE)
+                && formula.argument().is_ok_and(|arg| body_returns_null(&arg))
+        })
     } else {
-        returns_null(&body)
+        false
     };
     if !body_is_null {
         return Ok(None);
@@ -82,6 +93,18 @@ pub fn apply_null(
 
     let range = ast.syntax().text_trimmed_range();
     Ok(Some(Diagnostic::new(EmptyList, range, Fix::empty())))
+}
+
+/// Whether a function body only returns `NULL`: `NULL`, `return()`,
+/// `return(NULL)`, an empty `{}`, or one of those wrapped in `{ }`.
+fn body_returns_null(body: &AnyRExpression) -> bool {
+    if let Some(braced) = body.as_r_braced_statements() {
+        let expressions = braced.expressions();
+        expressions.is_empty()
+            || (expressions.len() == 1 && expressions.first().is_some_and(returns_null))
+    } else {
+        returns_null(body)
+    }
 }
 
 fn returns_null(expr: &AnyRExpression) -> bool {
