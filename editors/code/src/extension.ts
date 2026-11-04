@@ -1,7 +1,8 @@
 import * as vscode from "vscode";
+
+import { registerCommands } from "./commands";
 import { Ctx } from "./context";
 import { Lsp } from "./lsp";
-import { registerCommands } from "./commands";
 
 let ctx: Ctx;
 

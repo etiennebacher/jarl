@@ -1,6 +1,6 @@
-import * as vscode from "vscode";
 import * as assert from "assert";
 import { suite, suiteSetup, test } from "mocha";
+import * as vscode from "vscode";
 
 import { hasRule, waitForDiagnostics } from "./editor-utils";
 import { waitLsp, withFile, withToml } from "./extension";
@@ -13,21 +13,27 @@ suite("Diagnostics Test Suite", () => {
 	suiteSetup(waitLsp);
 
 	test("Report violations with rule name, source and range", async () => {
-		await withFile("x <- c(1, NA)\nany(is.na(x))\n", "R", async (_, doc) => {
-			const diagnostics = await waitForDiagnostics(doc.uri, (d) =>
-				hasRule(d, "any_is_na"),
-			);
+		await withFile(
+			"x <- c(1, NA)\nany(is.na(x))\n",
+			"R",
+			async (_, doc) => {
+				const diagnostics = await waitForDiagnostics(doc.uri, (d) =>
+					hasRule(d, "any_is_na"),
+				);
 
-			assert.strictEqual(diagnostics.length, 1);
-			const [diagnostic] = diagnostics;
-			assert.strictEqual(diagnostic.source, "Jarl");
-			assert.strictEqual(
-				diagnostic.severity,
-				vscode.DiagnosticSeverity.Warning,
-			);
-			assert.ok(diagnostic.range.isEqual(new vscode.Range(1, 0, 1, 13)));
-			assert.match(diagnostic.message, /anyNA/);
-		});
+				assert.strictEqual(diagnostics.length, 1);
+				const [diagnostic] = diagnostics;
+				assert.strictEqual(diagnostic.source, "Jarl");
+				assert.strictEqual(
+					diagnostic.severity,
+					vscode.DiagnosticSeverity.Warning,
+				);
+				assert.ok(
+					diagnostic.range.isEqual(new vscode.Range(1, 0, 1, 13)),
+				);
+				assert.match(diagnostic.message, /anyNA/);
+			},
+		);
 	});
 
 	test("Update diagnostics when the document is saved", async () => {

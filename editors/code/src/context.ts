@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+
 import { Lsp } from "./lsp";
 
 // Parts of this file are adapted from

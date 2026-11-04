@@ -1,9 +1,10 @@
+import PQueue from "p-queue";
 import * as vscode from "vscode";
 import * as lc from "vscode-languageclient/node";
-import { default as PQueue } from "p-queue";
-import { getInitializationOptions, getWorkspaceSettings } from "./settings";
-import { registerLogger } from "./output";
+
 import { resolveJarlBinaryPath } from "./binary";
+import { registerLogger } from "./output";
+import { getInitializationOptions, getWorkspaceSettings } from "./settings";
 import { getRootWorkspaceFolder } from "./workspace";
 
 // All session management operations are put on a queue. They can't run
@@ -20,7 +21,7 @@ export class Lsp {
 
 	// We use the same output channel for all LSP instances (e.g. a new instance
 	// after a restart) to avoid having multiple channels in the Output viewpane.
-	private channel: vscode.OutputChannel;
+	private channel: vscode.LogOutputChannel;
 
 	private state = State.Stopped;
 	private stateQueue: PQueue;
@@ -28,6 +29,7 @@ export class Lsp {
 	constructor(context: vscode.ExtensionContext) {
 		this.channel = vscode.window.createOutputChannel(
 			"Jarl Language Server",
+			{ log: true },
 		);
 		context.subscriptions.push(this.channel, registerLogger(this.channel));
 
