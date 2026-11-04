@@ -20,7 +20,7 @@ pub struct EmptyList;
 /// ## Why is this bad?
 ///
 /// These calls iterate over the input only to create a list of `NULL` values.
-/// Allocating the list directly is more efficient.
+/// Creating an empty list of a given length with `vector()` is more efficient.
 ///
 /// ## Example
 ///
@@ -40,7 +40,7 @@ impl Violation for EmptyList {
         Rule::EmptyList
     }
     fn body(&self) -> String {
-        "This call iterates over its input to create a list of `NULL` values.".to_string()
+        "This way of creating an empty list can be inefficient.".to_string()
     }
     fn suggestion(&self) -> Option<String> {
         Some("Use `vector(\"list\", length(x))` to allocate the list directly.".to_string())
