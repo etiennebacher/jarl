@@ -304,7 +304,7 @@ declare_rules! {
         name: "comparison_negation",
         categories: [Read],
         default: Enabled,
-        fix: Unsafe,
+        fix: Safe,
         min_r_version: None,
     },
     ConditionCall => {

@@ -32,6 +32,10 @@
 
 ### Bug fixes
 
+* Fix `comparison_negation` precedence and tidy-evaluation handling, detect nested
+  parentheses and unparenthesized comparisons, and provide safe fixes (#787,
+  @Yousa-Mirage).
+
 * Fix `outer_negation` handling of operator precedence, pipes, and `na.rm`,
   and detect parenthesized and namespace-qualified calls. Its fix is now 
   unsafe because it can change warnings and errors for inputs that are not 
