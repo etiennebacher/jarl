@@ -40,9 +40,11 @@ updates:
       prefix: build
       prefix-development: chore(rust)
     groups:
+      # Major updates are intentionally ungrouped so each gets its own PR
       rust:
-        patterns:
-          - '*'
+        update-types:
+          - minor
+          - patch
 
   # VS Code / Positron extension
   - package-ecosystem: npm
@@ -57,13 +59,22 @@ updates:
       # Must not be newer than `engines.vscode` in package.json, otherwise
       # `vsce package` fails
       - dependency-name: '@types/vscode'
+      # Versions >= 3.2 are empty deprecation stubs, which leaves `p-queue`
+      # (aliased to @esm2cjs/p-queue, no CJS typings) without a declaration
+      - dependency-name: '@types/p-queue'
       # Matches the Node version shipped with VS Code
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
+      # typescript-eslint doesn't support TS 7 yet:
+      # https://github.com/typescript-eslint/typescript-eslint/issues/10940
+      - dependency-name: 'typescript'
+        versions: ['>= 7']
     commit-message:
       prefix: build
       prefix-development: chore(vscode)
     groups:
+      # Major updates are intentionally ungrouped so each gets its own PR
       vscode:
-        patterns:
-          - '*'
+        update-types:
+          - minor
+          - patch
