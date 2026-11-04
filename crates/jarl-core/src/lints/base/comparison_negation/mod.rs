@@ -27,6 +27,10 @@ mod tests {
         ] {
             expect_no_lint(code, "comparison_negation", None);
         }
+
+        // Ensure that we capture a (very unlikely) scenario where operator precedence
+        // changes in Air.
+        expect_no_lint("2 * !(1 < 2) + 1", "comparison_negation", None);
     }
 
     #[test]
