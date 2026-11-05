@@ -22,7 +22,6 @@ purrr::map(x, ~NULL)
 ```
 
 Use instead:
-
 ```r
 vector("list", length(x))
 ```
