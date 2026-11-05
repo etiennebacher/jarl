@@ -59,7 +59,7 @@ impl Violation for EmptyList {
     }
 }
 
-pub fn apply_null(
+pub fn null_list(
     ast: &RCall,
     fn_name: &str,
     ns_prefix: Option<&str>,

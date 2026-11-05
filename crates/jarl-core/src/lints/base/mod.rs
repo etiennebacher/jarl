@@ -1,7 +1,6 @@
 pub(crate) mod all_equal;
 pub(crate) mod any_duplicated;
 pub(crate) mod any_is_na;
-pub(crate) mod apply_null;
 pub(crate) mod apply_paste;
 pub(crate) mod assignment;
 pub(crate) mod assignment_on_if_no_else;
@@ -41,6 +40,7 @@ pub(crate) mod matrix_apply;
 pub(crate) mod missing_argument;
 pub(crate) mod nested_pipe;
 pub(crate) mod notin;
+pub(crate) mod null_list;
 pub(crate) mod numeric_leading_zero;
 pub(crate) mod nzchar;
 pub(crate) mod outer_negation;

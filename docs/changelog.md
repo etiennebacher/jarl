@@ -4,55 +4,53 @@
 
 ### New features
 
-* New rules:
+- New rules:
+  - `apply_paste` (#563)
+  - `assignment_on_if_no_else` (#605, @christopherkenny)
+  - `null_list` (#785, @JosephBARBIERDARNAL)
+  - `function_return` (#750)
+  - `todo_comment` (#739, @Yousa-Mirage)
 
-  * `apply_paste` (#563)
-  * `assignment_on_if_no_else` (#605, @christopherkenny)
-  * `apply_null` (#785, @JosephBARBIERDARNAL)
-  * `function_return` (#750)
-  * `todo_comment` (#739, @Yousa-Mirage)
-
-* Improved rules:
-
-  * The `seq2` rule now also reports `seq_len(length(...))` and suggests `seq_along(...)`
+- Improved rules:
+  - The `seq2` rule now also reports `seq_len(length(...))` and suggests `seq_along(...)`
     (#761, @JosephBARBIERDARNAL).
-  * `outer_negation` now reports cases with `!` both inside and outside the call (#779,
+  - `outer_negation` now reports cases with `!` both inside and outside the call (#779,
     @Yousa-Mirage).
 
-* Jarl handles parsing errors better, which may lead to more code being analysed
+- Jarl handles parsing errors better, which may lead to more code being analysed
   in files with parsing errors (#762). Thanks to Davis Vaughan for his work
   upstream in Air and Aether.
 
-* `undesirable_operator` now accepts inline tables in `operators` and
+- `undesirable_operator` now accepts inline tables in `operators` and
   `extend-operators` to attach custom messages to undesirable operators (#742).
 
-* Jarl suggests more potential names when a rule name is unknown (#777).
+- Jarl suggests more potential names when a rule name is unknown (#777).
 
-* New option `ignore-roxygen` in `jarl.toml` to ignore some rules only in
+- New option `ignore-roxygen` in `jarl.toml` to ignore some rules only in
   roxygen `@examples` and `@examplesIf` sections (#780).
 
 ### Bug fixes
 
-* Fix `comparison_negation` precedence and tidy-evaluation handling, detect nested
+- Fix `comparison_negation` precedence and tidy-evaluation handling, detect nested
   parentheses and unparenthesized comparisons, and provide safe fixes (#787,
   @Yousa-Mirage).
 
-* Fix `outer_negation` handling of operator precedence, pipes, and `na.rm`,
-  and detect parenthesized and namespace-qualified calls. Its fix is now 
-  unsafe because it can change warnings and errors for inputs that are not 
+- Fix `outer_negation` handling of operator precedence, pipes, and `na.rm`,
+  and detect parenthesized and namespace-qualified calls. Its fix is now
+  unsafe because it can change warnings and errors for inputs that are not
   logical (#779, @Yousa-Mirage).
 
-* `for_loop_index` now detects reused variables in nested expressions,
+- `for_loop_index` now detects reused variables in nested expressions,
   including function definitions and variable subscripts, while ignoring
   argument labels and fixed field names (#752, @Yousa-Mirage).
 
-* Fix `system_file` diagnostics and safe fixes for nested `file.path()` calls,
+- Fix `system_file` diagnostics and safe fixes for nested `file.path()` calls,
   preserving arguments and namespaces (#781, @Yousa-Mirage).
 
-* Prevent `unused_object` from reporting objects exported by `exportPattern()`
+- Prevent `unused_object` from reporting objects exported by `exportPattern()`
   (#711, @Yousa-Mirage).
 
-* Fix detection of backtick-quoted indices in `for_loop_dup_index`
+- Fix detection of backtick-quoted indices in `for_loop_dup_index`
   (#753, @Yousa-Mirage).
 
 ## 0.7.1
@@ -71,14 +69,14 @@ Therefore, I release 0.7.1 so that all releases with 0.7.1 match, no matter wher
 
 ### Breaking changes
 
-* The command-line argument `--assignment` and the `jarl.toml` argument `assignment`
+- The command-line argument `--assignment` and the `jarl.toml` argument `assignment`
   (both deprecated since 0.5.0) are removed. Use the rule-specific option
   `[lint.assignment]` in `jarl.toml` instead (#663, #758).
 
-* The rule `browser` (deprecated since 0.5.0) is removed. Use the rule
+- The rule `browser` (deprecated since 0.5.0) is removed. Use the rule
   `undesirable_function` instead (#757).
 
-* A fix can now edit several places of a file at once, so in the `json` output
+- A fix can now edit several places of a file at once, so in the `json` output
   format the `fix` object contains a list of edits instead of a single
   `content`/`range` pair (#700):
 
@@ -88,106 +86,104 @@ Therefore, I release 0.7.1 so that all releases with 0.7.1 match, no matter wher
 
 ### Deprecations
 
-* The `internal_function` rule is deprecated and disabled by default. Use
+- The `internal_function` rule is deprecated and disabled by default. Use
   `undesirable_operator` instead (#657).
 
 ### New and improved rules
 
-* New rules:
+- New rules:
+  - `consecutive_signs` (#745, @Yousa-Mirage)
+  - `cyclomatic_complexity` (#731)
+  - `library_call` (#701)
+  - `undesirable_operator` (#657, @christopherkenny)
+  - `yoda_condition` (#733, @Yousa-Mirage)
 
-  * `consecutive_signs` (#745, @Yousa-Mirage)
-  * `cyclomatic_complexity` (#731)
-  * `library_call` (#701)
-  * `undesirable_operator` (#657, @christopherkenny)
-  * `yoda_condition` (#733, @Yousa-Mirage)
-
-* Improved rules:
-
-  * `expect_length` no longer reports cases where `length()` is in the `expected`
+- Improved rules:
+  - `expect_length` no longer reports cases where `length()` is in the `expected`
     argument, e.g. `expect_equal(nrow(x), length(y))` (#684).
 
-  * `nzchar` now also reports comparisons of `nchar(x)` with zero, such as
+  - `nzchar` now also reports comparisons of `nchar(x)` with zero, such as
     `nchar(x) == 0`, and its fixes preserve missing values with
     `keepNA = TRUE` (#705, @Yousa-Mirage).
 
-  * The `expect_type` rule no longer lints `expect_true(is.null(x))`, which was
+  - The `expect_type` rule no longer lints `expect_true(is.null(x))`, which was
     already reported by the `expect_null` rule (#680, @Yousa-Mirage).
 
 ### Other improvements
 
-* `jarl check --stdin-file-path <PATH>` lints code read from stdin, using `<PATH>`
+- `jarl check --stdin-file-path <PATH>` lints code read from stdin, using `<PATH>`
   for config discovery, package detection, `exclude` patterns and diagnostics (#749).
 
-* The config file can be named `.jarl.toml` as well as `jarl.toml`. Both names
+- The config file can be named `.jarl.toml` as well as `jarl.toml`. Both names
   are equivalent, and a directory containing both is now an error instead of
   silently using `jarl.toml` (#717).
 
-* Only use placeholder text in messages and suggestions (#722).
+- Only use placeholder text in messages and suggestions (#722).
 
-* The LSP now also publishes diagnostics when opening a file (#685).
+- The LSP now also publishes diagnostics when opening a file (#685).
 
-* The CLI now prints a message suggesting `fix-roxygen = true` when some fixes
+- The CLI now prints a message suggesting `fix-roxygen = true` when some fixes
   cannot be applied because the violation is in part of `@examples` (#702).
 
-* The JSON output now contains information on the fix ("safe", "unsafe", or "none")
+- The JSON output now contains information on the fix ("safe", "unsafe", or "none")
   (#747) and reports more information on syntax errors (`message`, `range`, `location`)
   (#748).
 
 ### Bug fixes
 
-* Fix `string_boundary` false positives for mismatched substring widths and
+- Fix `string_boundary` false positives for mismatched substring widths and
   reordered named arguments, and mark its fixes as unsafe (#698, @Yousa-Mirage).
 
-* Prevent `unused_function` and `unused_object` from falsely reporting non-ASCII
+- Prevent `unused_function` and `unused_object` from falsely reporting non-ASCII
   names (#706, @Yousa-Mirage).
 
-* Recognize parenthesized `TRUE` conditions in `repeat` and preserve loop body
+- Recognize parenthesized `TRUE` conditions in `repeat` and preserve loop body
   comments when applying fixes (#754, @Yousa-Mirage).
 
-* Handle uppercase `.RMD`/`.QMD` extensions (and any other letter-case variant)
+- Handle uppercase `.RMD`/`.QMD` extensions (and any other letter-case variant)
   files consistently (#709, @Yousa-Mirage).
 
-* Prevent the `nzchar` rule from treating quote characters as empty strings and
+- Prevent the `nzchar` rule from treating quote characters as empty strings and
   support empty raw string literals (#696, @Yousa-Mirage).
 
-* Jarl now properly checks the components of selector, extraction, and namespace
+- Jarl now properly checks the components of selector, extraction, and namespace
   AST nodes (`[[`, `@`, `$`, `::`, `:::`) (#697, @Yousa-Mirage).
 
-* The `github` and `sarif` output formats now report parsing errors to stderr
+- The `github` and `sarif` output formats now report parsing errors to stderr
   instead of silently dropping them (#695, @Yousa-Mirage).
 
-* Prevent the `sample_int` rule from panicking on calls with missing arguments
+- Prevent the `sample_int` rule from panicking on calls with missing arguments
   (#687, @Yousa-Mirage).
 
-* Prevent the `outer_negation` rule from rewriting unary `+` and `-` expressions
+- Prevent the `outer_negation` rule from rewriting unary `+` and `-` expressions
   as logical negations (#688, @Yousa-Mirage).
 
-* Prevent fixes for `any_is_na`, `any_duplicated`, and `condition_message`
+- Prevent fixes for `any_is_na`, `any_duplicated`, and `condition_message`
   from dropping extra unnamed arguments (#677, @Yousa-Mirage).
 
-* The `lengths` rule no longer crashes on calls where `X` is missing from the
+- The `lengths` rule no longer crashes on calls where `X` is missing from the
   syntax tree, e.g. `sapply(FUN = length)` or `x |> sapply(FUN = length)`. The
   autofix now also produces `lengths(x)` instead of the invalid
   `lengths(X = x)` when `X` is passed by name (#671, @Yousa-Mirage).
 
-* Fix language server suppression quickfix positions for non-ASCII text and
+- Fix language server suppression quickfix positions for non-ASCII text and
   Rmd/Qmd chunk insertion positions (#676, #708, @Yousa-Mirage).
 
-* Prevent `unused_function` and `unused_object` from falsely reporting non-ASCII
+- Prevent `unused_function` and `unused_object` from falsely reporting non-ASCII
   names (#706, @Yousa-Mirage).
 
-* Ensure that `--fix` works with multi-byte characters (#672, @Yousa-Mirage).
+- Ensure that `--fix` works with multi-byte characters (#672, @Yousa-Mirage).
 
-* Avoid invalid `literal_coercion` fixes for strings containing quotes
+- Avoid invalid `literal_coercion` fixes for strings containing quotes
   (#678, @Yousa-Mirage).
 
-* The `pipe_consistency` rule no longer emits invalid fixes when converting
+- The `pipe_consistency` rule no longer emits invalid fixes when converting
   `magrittr` pipes with a non-call RHS, such as `x %>% sum` (#683, @Yousa-Mirage).
 
-* Prevent incorrect `dplyr_filter_out` fixes caused by matching `is.na()` guard
+- Prevent incorrect `dplyr_filter_out` fixes caused by matching `is.na()` guard
   arguments as substrings of other identifiers (#681, @Yousa-Mirage).
 
-* In R Markdown and Quarto documents, `unreachable_code` no longer reports code
+- In R Markdown and Quarto documents, `unreachable_code` no longer reports code
   in chunks following a chunk that would stop evaluation but is either unevaluated or
   has `error: true` (#724).
 
@@ -198,153 +194,146 @@ Therefore, I release 0.7.1 so that all releases with 0.7.1 match, no matter wher
 
 ### Breaking changes
 
-* The JSON output produced with `--output-format json` has changed. In `fix`, the
+- The JSON output produced with `--output-format json` has changed. In `fix`, the
   fields `start` and `end` are replaced by a field `range` that contains the
   two values (#650).
 
 ### New and improved rules
 
-* New rules:
+- New rules:
+  - `condition_call` (#503)
+  - `condition_message` (#545)
+  - `empty_file` (#477, @JosephBARBIERDARNAL)
+  - `expect_s4_class` (#553, @Yousa-Mirage)
+  - `glue` (#484, @novica)
+  - `if_not_else` (#551)
+  - `literal_coercion` (#504)
+  - `missing_argument` (#506)
+  - `nested_pipe` (#516)
+  - `notin` (#459, @Yousa-Mirage)
+  - `pipe_consistency` (#482)
+  - `pipe_return` (#502)
+  - `rep_times_ignored` (#556, @Yousa-Mirage)
+  - `stopifnot_all` (#547, @Yousa-Mirage)
+  - `strings_as_factors` (#546, @Yousa-Mirage)
+  - `unnecessary_parentheses` (#510, @JosephBARBIERDARNAL)
+  - `unused_object` (#589)
 
-  * `condition_call` (#503)
-  * `condition_message` (#545)
-  * `empty_file` (#477, @JosephBARBIERDARNAL)
-  * `expect_s4_class` (#553, @Yousa-Mirage)
-  * `glue` (#484, @novica)
-  * `if_not_else` (#551)
-  * `literal_coercion` (#504)
-  * `missing_argument` (#506)
-  * `nested_pipe` (#516)
-  * `notin` (#459, @Yousa-Mirage)
-  * `pipe_consistency` (#482)
-  * `pipe_return` (#502)
-  * `rep_times_ignored` (#556, @Yousa-Mirage)
-  * `stopifnot_all` (#547, @Yousa-Mirage)
-  * `strings_as_factors` (#546, @Yousa-Mirage)
-  * `unnecessary_parentheses` (#510, @JosephBARBIERDARNAL)
-  * `unused_object` (#589)
-
-* Improved rules:
-
-  * `any_is_na` now also reports `NA %notin% x` cases (#470, @Yousa-Mirage)
-  * `equals_na` now also reports `x %notin% NA` cases (#469, @Yousa-Mirage)
-  * `expect_s3_class` now also reports `expect_true(is.<class>(x))`,
+- Improved rules:
+  - `any_is_na` now also reports `NA %notin% x` cases (#470, @Yousa-Mirage)
+  - `equals_na` now also reports `x %notin% NA` cases (#469, @Yousa-Mirage)
+  - `expect_s3_class` now also reports `expect_true(is.<class>(x))`,
     `expect_true(inherits(x, class))`, and dynamic class expressions. Dynamic
     class expressions are reported without an automatic fix (#555, @Yousa-Mirage).
-  * Four more functions skipped by default from `implicit_assignment`: `expect_silent()`
+  - Four more functions skipped by default from `implicit_assignment`: `expect_silent()`
     (from `testthat`), `expect_defunct()` and `expect_deprecated()` (from `lifecycle`),
     and `try()` (#543, @maelle, #654).
-  * `outdated_suppression` now has a safe fix that removes the unused
+  - `outdated_suppression` now has a safe fix that removes the unused
     suppression comment (or comments if `# jarl-ignore-start` and `# jarl-ignore-end`
     are used) (#638).
-  * `which_grepl` now supports named `which(x = ...)` arguments and native pipe
+  - `which_grepl` now supports named `which(x = ...)` arguments and native pipe
     chains such as `x |> grepl(pattern = ...) |> which()`. Calls with additional
     `which()` arguments are reported without an automatic fix (#560, @Yousa-Mirage).
 
-
 ### CLI improvements
 
-* The CLI now gives suggestions when some rule names don't exist (#501).
+- The CLI now gives suggestions when some rule names don't exist (#501).
 
-* New CLI argument `--exclude` to exclude files or directories from the checks,
+- New CLI argument `--exclude` to exclude files or directories from the checks,
   mirroring the `exclude` argument in `jarl.toml` (#520).
 
-* Passing `--statistics` in the CLI now indicates which violations have an automatic
+- Passing `--statistics` in the CLI now indicates which violations have an automatic
   unsafe fix (#554).
 
-* Jarl now reports rule violations in files that contain syntax errors and provides
+- Jarl now reports rule violations in files that contain syntax errors and provides
   clearer messages for syntax errors (#538, #569).
 
-* New `--output-format sarif` to export to [SARIF](https://github.com/microsoft/sarif-tutorials)
+- New `--output-format sarif` to export to [SARIF](https://github.com/microsoft/sarif-tutorials)
   (#508, @dieghernan).
 
-* Clearer output for `jarl check --help` (#521).
+- Clearer output for `jarl check --help` (#521).
 
-* New command `jarl rule <rule_name>` to print a rule's documentation in the
+- New command `jarl rule <rule_name>` to print a rule's documentation in the
   terminal, for example `jarl rule any_is_na` (#566).
 
-* Jarl now provides shell completions for `bash`, `zsh`, `fish`, `powershell`,
+- Jarl now provides shell completions for `bash`, `zsh`, `fish`, `powershell`,
   and `elvish`. See [Shell completions](howto/shell-completions.md) for more
   information (#567).
 
-
 ### TOML improvements
 
-* New argument `[lint.per-file-ignores]` in `jarl.toml` to deactivate rules on
+- New argument `[lint.per-file-ignores]` in `jarl.toml` to deactivate rules on
   specific files (#500).
 
-* New argument `skipped-functions` for the `true_false_symbol` rule in `jarl.toml`
+- New argument `skipped-functions` for the `true_false_symbol` rule in `jarl.toml`
   to list functions whose arguments are allowed to contain the `T` and `F`
   symbols (#542).
 
-* `undesirable_function` now accepts inline tables in `functions` and
+- `undesirable_function` now accepts inline tables in `functions` and
   `extend-functions` to attach custom suggestions to undesirable functions
   (#726).
 
-
 ### Other improvements
 
-* Several new ways to install Jarl:
-
+- Several new ways to install Jarl:
   - it is available on PyPI under the name `jarl-linter`, enabling its
     installation via `uv`, `pipx`, and other tools (#466).
   - it is available on `conda-forge`, enabling its installation via `mise` and
     `pixi` (@salim-b).
   - it is available on Homebrew, enabling its installation via `brew`.
 
-* Fixed outdated paths in the contributing guide (#658, @christopherkenny).
-
+- Fixed outdated paths in the contributing guide (#658, @christopherkenny).
 
 ### Bug fixes
 
-* `--statistics` now reports syntax errors and returns a non-zero status when
+- `--statistics` now reports syntax errors and returns a non-zero status when
   parsing fails (#577, @Yousa-Mirage).
 
-* `--fix-only` now implies `--fix` and no longer applies unsafe fixes by default
+- `--fix-only` now implies `--fix` and no longer applies unsafe fixes by default
   (#579, @Yousa-Mirage).
 
-* Jarl now checks rule violations inside expressions on the left-hand side of
+- Jarl now checks rule violations inside expressions on the left-hand side of
   `[`, `[[`, `$`, and `@` (#581, @Yousa-Mirage).
 
-* `true_false_symbol` no longer reports `T` and `F` when they are used as
+- `true_false_symbol` no longer reports `T` and `F` when they are used as
   objects in subset expressions, such as `T[1:2]` (#582, @Yousa-Mirage).
 
-* `implicit_assignment` no longer flags chained assignments like
+- `implicit_assignment` no longer flags chained assignments like
   `if (TRUE) a <- b <- 1`, aligning with `lintr` behavior (#480, @atsyplenkov).
 
-* Automatic fixes now skip rewrites when comments are inside the rewritten
+- Automatic fixes now skip rewrites when comments are inside the rewritten
   expression, while still allowing leading and trailing comments (#461, @Yousa-Mirage).
 
-* Suppression comments in `@examples` and `@examplesIf` now work correctly (#443).
+- Suppression comments in `@examples` and `@examplesIf` now work correctly (#443).
 
-* Fix alignment of diagnostic in console when source uses tabs (#445, #559).
+- Fix alignment of diagnostic in console when source uses tabs (#445, #559).
 
-* Files that have "Generated by"  in their first comment are ignored by Jarl (#486).
+- Files that have "Generated by" in their first comment are ignored by Jarl (#486).
 
-* Fixed `unreachable_code` that was not running on braced expressions (#512).
+- Fixed `unreachable_code` that was not running on braced expressions (#512).
 
-* Fixed false positives in `assignment` rule. Jarl could recommend replacing `<-`
+- Fixed false positives in `assignment` rule. Jarl could recommend replacing `<-`
   by `=` in places where this would change the meaning of the code (#515).
 
-* `implicit_assignment` now includes `alist()`, `expect_no_condition()`,
+- `implicit_assignment` now includes `alist()`, `expect_no_condition()`,
   `expect_no_warning()`, `expect_no_error()`, `expect_no_message()`, and
   `expect_no_match()` in the list of functions skipped by default (#527, #639).
 
-* Jarl no longer fails to parse `...()` (#584, @Yousa-Mirage).
+- Jarl no longer fails to parse `...()` (#584, @Yousa-Mirage).
 
-* `redundant_equals` now skips cases that use `rlang`'s `!!` and `!!!` operators
+- `redundant_equals` now skips cases that use `rlang`'s `!!` and `!!!` operators
   (#625).
 
-* The fix for `comparison_negation` is now considered "unsafe" because it can
+- The fix for `comparison_negation` is now considered "unsafe" because it can
   produce different output depending on operator precedence around the
   comparison (#632).
 
-* Fix the detection of `Depends: R (>= x.y.z)` in some cases (#641).
+- Fix the detection of `Depends: R (>= x.y.z)` in some cases (#641).
 
-* Replace panic by a proper error if `jarl.toml` is unreadable, for instance
+- Replace panic by a proper error if `jarl.toml` is unreadable, for instance
   because of a permission error (#645).
 
-* Ensure the LSP has the same file selections and exclusions capabilities as the
+- Ensure the LSP has the same file selections and exclusions capabilities as the
   CLI (#647).
 
 ## 0.5.0
@@ -354,22 +343,25 @@ Therefore, I release 0.7.1 so that all releases with 0.7.1 match, no matter wher
 
 ### Deprecations
 
-* The command-line argument `--assignment` and the `jarl.toml` argument `assignment`
+- The command-line argument `--assignment` and the `jarl.toml` argument `assignment`
   are both deprecated. Instead, you should use the following code in `jarl.toml`:
+
   ```
   [lint.assignment]
   operator = "<-" # or "="
   ```
+
   More info on these rule-specific options in `jarl.toml` in the "Features"
   section below (#334).
 
-* The rule `"browser"` is deprecated. Calls to `browser()` are now detected with
+- The rule `"browser"` is deprecated. Calls to `browser()` are now detected with
   the rule `"undesirable_function"` (#336).
 
 ### Features
 
-* `jarl.toml` now accepts rule-specific options in subsections `[lint.<rule_name>]`,
+- `jarl.toml` now accepts rule-specific options in subsections `[lint.<rule_name>]`,
   such as:
+
   ```
   [lint]
   ...
@@ -379,31 +371,32 @@ Therefore, I release 0.7.1 so that all releases with 0.7.1 match, no matter wher
   [lint.duplicated_arguments]
   extend-skipped-functions = ["my_function", "list"]
   ```
+
   These options are listed in the [Configuration page](https://jarl.etiennebacher.com/reference/config-file) (#333).
 
-* Jarl now also analyzes piped functions, e.g. the following code is reported by
+- Jarl now also analyzes piped functions, e.g. the following code is reported by
   the `any_is_na` rule:
+
   ```r
   is.na(x) |> any()
 
   x |> is.na() |> any()
   ```
+
   (#338).
 
-* Jarl now checks R code in more places:
-
+- Jarl now checks R code in more places:
   - chunks in Quarto and R Markdown documents.
     More information in the ["R Markdown and Quarto"](https://jarl.etiennebacher.com/howto/rmarkdown-quarto) section (#50).
   - `@examples` and `@examplesIf` sections in `roxygen2` comments (#385).
 
-* Added support for multiple `jarl.toml`, i.e. each file now uses the nearest
+- Added support for multiple `jarl.toml`, i.e. each file now uses the nearest
   `jarl.toml`. For example, Jarl can check a folder where several subfolders have
   their own `jarl.toml` (before, this would error). (#353)
 
-* New option `include` in `jarl.toml`, to complement `exclude` (#349).
+- New option `include` in `jarl.toml`, to complement `exclude` (#349).
 
-* New rules:
-
+- New rules:
   - `dplyr_filter_out` (#393)
   - `dplyr_group_by_ungroup` (#395)
   - `duplicated_function_definition` (#358)
@@ -415,26 +408,26 @@ Therefore, I release 0.7.1 so that all releases with 0.7.1 match, no matter wher
   - `undesirable_function` (replaces `browser`) (#336)
   - `unused_function` (#362)
 
-* The output in terminal with output format `full` or `concise` is now organized
+- The output in terminal with output format `full` or `concise` is now organized
   in multiple sections (summary, warnings, notes) (#366).
 
-* Hovering a diagnostic now shows the rule name (#377).
+- Hovering a diagnostic now shows the rule name (#377).
 
-* Jarl can be used with `pre-commit` and `prek`, see [Pre-commit tools](https://jarl.etiennebacher.com/howto/precommit) (#379).
+- Jarl can be used with `pre-commit` and `prek`, see [Pre-commit tools](https://jarl.etiennebacher.com/howto/precommit) (#379).
 
-* The CLI now errors early when some incompatible arguments are used (#437).
+- The CLI now errors early when some incompatible arguments are used (#437).
 
 ### Bug fixes
 
-* `fixed_regex` could loop infinitely trying to add `fixed = TRUE`. This is
+- `fixed_regex` could loop infinitely trying to add `fixed = TRUE`. This is
   fixed (#388).
 
-* Some fixes to ensure that automatic fixes don't introduce new violations or
+- Some fixes to ensure that automatic fixes don't introduce new violations or
   new parsing errors (#389).
 
-* Suppression comments now work better when inserted in piped chains (#397).
+- Suppression comments now work better when inserted in piped chains (#397).
 
-* Fix a wrong parsing error when using `next()` or `break()` (#417).
+- Fix a wrong parsing error when using `next()` or `break()` (#417).
 
 ## 0.4.0
 
@@ -443,14 +436,13 @@ Therefore, I release 0.7.1 so that all releases with 0.7.1 match, no matter wher
 
 ### Breaking changes
 
-- The support for comments to hide violations (aka *suppression comments*, aka
+- The support for comments to hide violations (aka _suppression comments_, aka
   `# nolint` comments in `lintr`) has been entirely reworked (#218). It is no
   longer compatible with `lintr`'s comments. Instead, Jarl now uses `# jarl-ignore`
   comments and follows different rules regarding the syntax and location of those
   comments. Detailed documentation is available in the section
   ["Suppression comments"](https://jarl.etiennebacher.com/howto/suppression-comments)
   on the website. As part of this rewrite, the following rules have been added:
-
   - `blanket_suppression` (#243)
   - `misnamed_suppression` (#309)
   - `misplaced_file_suppression` (#305)
@@ -521,6 +513,7 @@ Therefore, I release 0.7.1 so that all releases with 0.7.1 match, no matter wher
   ```r
   switch(x, `"` = "double", `'` = "single")
   ```
+
   (#288).
 
 ### Documentation

@@ -1,4 +1,4 @@
-pub(crate) mod apply_null;
+pub(crate) mod null_list;
 
 #[cfg(test)]
 mod tests {
@@ -12,11 +12,11 @@ mod tests {
     }
 
     fn snapshot_lint(code: &str) -> String {
-        format_diagnostics_with_cache(code, "apply_null", None, &NS)
+        format_diagnostics_with_cache(code, "null_list", None, &NS)
     }
 
     #[test]
-    fn test_no_lint_apply_null() {
+    fn test_no_lint_null_list() {
         for code in [
             // Function doesn't (only) return `NULL`
             "lapply(x, function(x) x)",
@@ -44,7 +44,7 @@ mod tests {
             "lapply(x)",
             "lapply(x, identity)",
         ] {
-            expect_no_lint(code, "apply_null", None);
+            expect_no_lint(code, "null_list", None);
         }
 
         // Bare `map()` that can't be attributed to purrr alone
@@ -63,9 +63,9 @@ mod tests {
     }
 
     #[test]
-    fn test_lint_apply_null() {
+    fn test_lint_null_list() {
         assert_snapshot!(snapshot_lint("lapply(x, function(x) NULL)"), @r#"
-        warning: apply_null
+        warning: null_list
          --> <test>:1:1
           |
         1 | lapply(x, function(x) NULL)
@@ -75,7 +75,7 @@ mod tests {
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("sapply(x, function(x) NULL)"), @r#"
-        warning: apply_null
+        warning: null_list
          --> <test>:1:1
           |
         1 | sapply(x, function(x) NULL)
@@ -85,7 +85,7 @@ mod tests {
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("base::lapply(x, function(x) NULL)"), @r#"
-        warning: apply_null
+        warning: null_list
          --> <test>:1:1
           |
         1 | base::lapply(x, function(x) NULL)
@@ -95,7 +95,7 @@ mod tests {
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("base::sapply(x, function(x) NULL)"), @r#"
-        warning: apply_null
+        warning: null_list
          --> <test>:1:1
           |
         1 | base::sapply(x, function(x) NULL)
@@ -105,7 +105,7 @@ mod tests {
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("lapply(X = x, FUN = function(...) NULL)"), @r#"
-        warning: apply_null
+        warning: null_list
          --> <test>:1:1
           |
         1 | lapply(X = x, FUN = function(...) NULL)
@@ -115,7 +115,7 @@ mod tests {
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("lapply(x, function(x) { NULL })"), @r#"
-        warning: apply_null
+        warning: null_list
          --> <test>:1:1
           |
         1 | lapply(x, function(x) { NULL })
@@ -125,7 +125,7 @@ mod tests {
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("lapply(x, function(x) return(NULL))"), @r#"
-        warning: apply_null
+        warning: null_list
          --> <test>:1:1
           |
         1 | lapply(x, function(x) return(NULL))
@@ -135,7 +135,7 @@ mod tests {
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("lapply(x, function(x) { return(NULL) })"), @r#"
-        warning: apply_null
+        warning: null_list
          --> <test>:1:1
           |
         1 | lapply(x, function(x) { return(NULL) })
@@ -145,7 +145,7 @@ mod tests {
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("sapply(x, function(x) return())"), @r#"
-        warning: apply_null
+        warning: null_list
          --> <test>:1:1
           |
         1 | sapply(x, function(x) return())
@@ -155,7 +155,7 @@ mod tests {
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("sapply(x, function(...) return(value = NULL))"), @r#"
-        warning: apply_null
+        warning: null_list
          --> <test>:1:1
           |
         1 | sapply(x, function(...) return(value = NULL))
@@ -165,7 +165,7 @@ mod tests {
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("lapply(x, function(x) {})"), @r#"
-        warning: apply_null
+        warning: null_list
          --> <test>:1:1
           |
         1 | lapply(x, function(x) {})
@@ -175,7 +175,7 @@ mod tests {
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("purrr::map(x, function(x) NULL)"), @r#"
-        warning: apply_null
+        warning: null_list
          --> <test>:1:1
           |
         1 | purrr::map(x, function(x) NULL)
@@ -185,7 +185,7 @@ mod tests {
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint(r"purrr::map(x, \(x) NULL)"), @r#"
-        warning: apply_null
+        warning: null_list
          --> <test>:1:1
           |
         1 | purrr::map(x, \(x) NULL)
@@ -195,7 +195,7 @@ mod tests {
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("purrr::map(x, ~NULL)"), @r#"
-        warning: apply_null
+        warning: null_list
          --> <test>:1:1
           |
         1 | purrr::map(x, ~NULL)
@@ -205,7 +205,7 @@ mod tests {
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("purrr::map(x, ~ { NULL })"), @r#"
-        warning: apply_null
+        warning: null_list
          --> <test>:1:1
           |
         1 | purrr::map(x, ~ { NULL })
@@ -215,7 +215,7 @@ mod tests {
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("purrr::map(.x = x, .f = function(x) return(NULL))"), @r#"
-        warning: apply_null
+        warning: null_list
          --> <test>:1:1
           |
         1 | purrr::map(.x = x, .f = function(x) return(NULL))
@@ -225,7 +225,7 @@ mod tests {
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("purrr::map(x, function(x) {})"), @r#"
-        warning: apply_null
+        warning: null_list
          --> <test>:1:1
           |
         1 | purrr::map(x, function(x) {})
@@ -235,7 +235,7 @@ mod tests {
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("library(purrr); map(x, ~NULL)"), @r#"
-        warning: apply_null
+        warning: null_list
          --> <test>:1:17
           |
         1 | library(purrr); map(x, ~NULL)
@@ -247,7 +247,7 @@ mod tests {
     }
 
     #[test]
-    fn test_fix_apply_null() {
+    fn test_fix_null_list() {
         assert_snapshot!(
             "fix_output",
             get_unsafe_fixed_text_with_cache(
@@ -262,14 +262,14 @@ mod tests {
                     "library(purrr); map(x, function(x) {})",
                     "y <- lapply(\n  x,\n  function(x) NULL\n)",
                 ],
-                "apply_null",
+                "null_list",
                 &NS,
             )
         );
     }
 
     #[test]
-    fn test_apply_null_with_comments_no_fix() {
+    fn test_null_list_with_comments_no_fix() {
         assert_snapshot!(
             "no_fix_with_comments",
             get_unsafe_fixed_text_with_cache(
@@ -277,7 +277,7 @@ mod tests {
                     "lapply(x, function(x) NULL # comment\n)",
                     "lapply(\n  # comment\n  x,\n  function(x) NULL\n)",
                 ],
-                "apply_null",
+                "null_list",
                 &NS,
             )
         );

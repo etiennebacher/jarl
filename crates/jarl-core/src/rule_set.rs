@@ -371,7 +371,7 @@ declare_rules! {
         min_r_version: None,
     },
     EmptyList => {
-        name: "apply_null",
+        name: "null_list",
         categories: [Perf],
         default: Enabled,
         fix: Unsafe,

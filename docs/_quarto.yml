@@ -86,7 +86,6 @@ website:
             - rules/all_equal.md
             - rules/any_duplicated.md
             - rules/any_is_na.md
-            - rules/apply_null.md
             - rules/apply_paste.md
             - rules/assignment_on_if_no_else.md
             - rules/assignment.md
@@ -143,6 +142,7 @@ website:
             - rules/missing_argument.md
             - rules/nested_pipe.md
             - rules/notin.md
+            - rules/null_list.md
             - rules/numeric_leading_zero.md
             - rules/nzchar.md
             - rules/outdated_suppression.md

@@ -1,6 +1,6 @@
 ---
-source: crates/jarl-core/src/lints/base/apply_null/mod.rs
-expression: "get_unsafe_fixed_text_with_cache(vec![\"lapply(x, function(x) NULL)\",\n\"sapply(x, function(x) NULL)\",\n\"base::lapply(x, function(x) { return(NULL) })\",\n\"lapply(FUN = function(...) NULL, X = foo$bar)\",\n\"lapply(names(x), function(x) NULL)\", \"purrr::map(x, ~NULL)\",\nr\"purrr::map(.f = \\(x) NULL, .x = 1:10)\",\n\"library(purrr); map(x, function(x) {})\",\n\"y <- lapply(\\n  x,\\n  function(x) NULL\\n)\",], \"apply_null\", &NS,)"
+source: crates/jarl-core/src/lints/base/null_list/mod.rs
+expression: "get_unsafe_fixed_text_with_cache(vec![\"lapply(x, function(x) NULL)\",\n\"sapply(x, function(x) NULL)\",\n\"base::lapply(x, function(x) { return(NULL) })\",\n\"lapply(FUN = function(...) NULL, X = foo$bar)\",\n\"lapply(names(x), function(x) NULL)\", \"purrr::map(x, ~NULL)\",\nr\"purrr::map(.f = \\(x) NULL, .x = 1:10)\",\n\"library(purrr); map(x, function(x) {})\",\n\"y <- lapply(\\n  x,\\n  function(x) NULL\\n)\",], \"null_list\", &NS,)"
 ---
 OLD:
 ====
