@@ -1,6 +1,6 @@
-import * as vscode from "vscode";
 import * as assert from "assert";
 import { suite, suiteSetup, test } from "mocha";
+import * as vscode from "vscode";
 
 import { hasRule, waitForDiagnostics } from "./editor-utils";
 import { waitLsp, withFile } from "./extension";
@@ -117,7 +117,10 @@ suite("Code Actions Test Suite", () => {
 	test("No code actions outside of violations", async () => {
 		await withFile(VIOLATION, "R", async (_, doc) => {
 			await waitForViolation(doc);
-			const actions = await codeActions(doc, new vscode.Range(0, 0, 0, 0));
+			const actions = await codeActions(
+				doc,
+				new vscode.Range(0, 0, 0, 0),
+			);
 			assert.deepStrictEqual(
 				actions.map((a) => a.title),
 				[],

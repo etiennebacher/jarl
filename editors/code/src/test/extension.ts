@@ -1,8 +1,8 @@
-import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
+import * as vscode from "vscode";
 
-import { JARL_EXTENSION_ID, EXTENSION_ROOT_DIR } from "../constants";
+import { EXTENSION_ROOT_DIR, JARL_EXTENSION_ID } from "../constants";
 import { createRandomFile, withFileEditor } from "./editor-utils";
 
 // The test folder is the test workspace. Its `jarl.toml` overrides the one at

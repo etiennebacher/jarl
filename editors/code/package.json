@@ -19,7 +19,7 @@
 		"diagnostics"
 	],
 	"engines": {
-		"vscode": "^1.90.0"
+		"vscode": "^1.91.0"
 	},
 	"categories": [
 		"Linters",
@@ -113,40 +113,41 @@
 		]
 	},
 	"scripts": {
+		"compile": "npm run check-types && node esbuild.js",
+		"check-types": "tsc --noEmit",
+		"watch": "npm-run-all -p watch:*",
+		"watch:esbuild": "node esbuild.js --watch",
+		"watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
 		"vscode:prepublish": "npm run package",
-		"compile": "webpack",
-		"watch": "webpack --watch",
-		"package": "webpack --mode production --devtool hidden-source-map",
+		"package": "npm run check-types && node esbuild.js --production",
 		"vsce:package": "vsce package",
-		"compile-tests": "tsc -p . --outDir out",
-		"watch-tests": "tsc -p . -w --outDir out",
-		"pretest": "npm run compile-tests && npm run compile && npm run lint",
-		"lint": "eslint src",
+		"pretest": "npm run compile && npm run lint",
+		"lint": "biome check",
+		"format": "biome check --write --linter-enabled=false",
 		"test": "vscode-test"
 	},
 	"dependencies": {
-		"@types/p-queue": "3.1.0",
 		"fs-extra": "^11.4.1",
-		"p-queue": "npm:@esm2cjs/p-queue@^7.3.0",
-		"vscode-languageclient": "^9.0.1",
+		"p-queue": "^9.3.5",
+		"vscode-languageclient": "^11.0.0",
 		"which": "^7.0.0"
 	},
 	"devDependencies": {
+		"@biomejs/biome": "2.6.4",
 		"@types/fs-extra": "^11.0.4",
 		"@types/mocha": "^10.0.9",
 		"@types/node": "20.x",
-		"@types/vscode": "^1.90.0",
+		"@types/vscode": "~1.91.0",
 		"@types/which": "^3.0.4",
-		"@typescript-eslint/eslint-plugin": "^8.71.2",
-		"@typescript-eslint/parser": "^8.7.0",
-		"@vscode/test-cli": "^0.0.10",
+		"@vscode/test-cli": "^0.0.15",
 		"@vscode/test-electron": "^3.1.0",
 		"@vscode/vsce": "^4.0.0",
-		"eslint": "^10.13.0",
-		"prettier": "^3.9.10",
-		"ts-loader": "^9.6.2",
-		"typescript": "^6.0.3",
-		"webpack": "^5.112.0",
-		"webpack-cli": "^7.2.3"
+		"esbuild": "^0.28.2",
+		"npm-run-all": "^4.1.5",
+		"typescript": "^7.0.2"
+	},
+	"overrides": {
+		"minimatch": "^11.0.1",
+		"serialize-javascript": "^7.1.3"
 	}
 }

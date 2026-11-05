@@ -1,6 +1,6 @@
-import * as vscode from "vscode";
 import * as assert from "assert";
 import { suite, suiteSetup, test } from "mocha";
+import * as vscode from "vscode";
 
 import { hasRule, waitForDiagnostics } from "./editor-utils";
 import { extension, internalApi, waitLsp, withFile } from "./extension";
