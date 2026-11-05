@@ -374,7 +374,7 @@ declare_rules! {
         name: "apply_null",
         categories: [Perf],
         default: Enabled,
-        fix: None,
+        fix: Unsafe,
         min_r_version: None,
     },
     EqualsNa => {

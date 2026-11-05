@@ -1,7 +1,7 @@
 use crate::checker::{Checker, PackageOrigin};
 use crate::diagnostic::*;
 use crate::rule_set::Rule;
-use crate::utils::{Formals, StatementsExt, get_arg};
+use crate::utils::{Formals, StatementsExt, get_arg, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -18,9 +18,6 @@ pub struct EmptyList;
 ///
 /// Checks for `sapply()`, `lapply()` and `purrr::map()` calls where the
 /// anonymous function returns only `NULL`.
-///
-/// Calls to `map()` without the `purrr::` prefix are only reported when
-/// `map()` can be attributed to purrr (e.g. after `library(purrr)`).
 ///
 /// ## Why is this bad?
 ///
@@ -40,17 +37,25 @@ pub struct EmptyList;
 /// vector("list", length(x))
 /// ```
 ///
-/// This suggestion does not preserve names from `x`.
+/// The automated fix is marked unsafe because `vector("list", length(x))`
+/// doesn't preserve names: `lapply()` and `purrr::map()` keep the names of
+/// `x`, and `sapply()` also uses `x` itself as names when it is a character
+/// vector. Jarl cannot know whether `x` has names, so they need to be added
+/// back manually if they matter, e.g. with
+/// `setNames(vector("list", length(x)), names(x))`.
 /// <!-- docs: end -->
 impl Violation for EmptyList {
     fn rule(&self) -> Rule {
         Rule::EmptyList
     }
     fn body(&self) -> String {
-        "This way of creating an empty list can be inefficient.".to_string()
+        "This way of creating an empty list is inefficient.".to_string()
     }
     fn suggestion(&self) -> Option<String> {
-        Some("Use `vector(\"list\", length(x))` to allocate the list directly.".to_string())
+        Some(
+            "Use `vector(\"list\", length(x))` to allocate the list directly. Names of `x` are not kept."
+                .to_string(),
+        )
     }
 }
 
@@ -60,12 +65,12 @@ pub fn apply_null(
     ns_prefix: Option<&str>,
     checker: &Checker,
 ) -> anyhow::Result<Option<Diagnostic>> {
-    let (formals, fun_arg) = match (fn_name, ns_prefix) {
-        ("lapply", None | Some("base::")) => (FORMALS_LAPPLY, "FUN"),
-        ("sapply", None | Some("base::")) => (FORMALS_SAPPLY, "FUN"),
-        ("map", Some("purrr::")) => (FORMALS_MAP, ".f"),
+    let (formals, x_arg, fun_arg) = match (fn_name, ns_prefix) {
+        ("lapply", None | Some("base::")) => (FORMALS_LAPPLY, "X", "FUN"),
+        ("sapply", None | Some("base::")) => (FORMALS_SAPPLY, "X", "FUN"),
+        ("map", Some("purrr::")) => (FORMALS_MAP, ".x", ".f"),
         ("map", None) if matches!(checker.resolve_package("map"), PackageOrigin::Resolved(pkg) if pkg == "purrr") => {
-            (FORMALS_MAP, ".f")
+            (FORMALS_MAP, ".x", ".f")
         }
         _ => return Ok(None),
     };
@@ -92,7 +97,15 @@ pub fn apply_null(
     }
 
     let range = ast.syntax().text_trimmed_range();
-    Ok(Some(Diagnostic::new(EmptyList, range, Fix::empty())))
+    let fix = match get_arg(ast, formals, x_arg).and_then(|arg| arg.value()) {
+        Some(x) => Fix::new(
+            range,
+            format!("vector(\"list\", length({}))", x.syntax().text_trimmed()),
+            node_contains_comments(ast.syntax()),
+        ),
+        None => Fix::empty(),
+    };
+    Ok(Some(Diagnostic::new(EmptyList, range, fix)))
 }
 
 /// Whether a function body only returns `NULL`: `NULL`, `return()`,
@@ -112,29 +125,24 @@ fn returns_null(expr: &AnyRExpression) -> bool {
         return true;
     }
 
-    let Some(call) = expr.as_r_call() else {
-        return false;
-    };
-    let Ok(function) = call.function() else {
-        return false;
-    };
-    if !function.as_r_identifier().is_some_and(|id| {
-        id.name_token()
-            .is_ok_and(|token| token.text_trimmed() == "return")
-    }) {
-        return false;
-    }
-
-    let Ok(arguments) = call.arguments() else {
-        return false;
-    };
-    let mut items = arguments.items().into_iter();
-    match (items.next(), items.next()) {
-        (None, None) => true,
-        (Some(argument), None) => argument
-            .ok()
-            .and_then(|argument| argument.value())
-            .is_some_and(|value| value.syntax().text_trimmed() == "NULL"),
-        _ => false,
+    if let Some(call) = expr.as_r_call()
+        && let Ok(function) = call.function()
+        && function.as_r_identifier().is_some_and(|id| {
+            id.name_token()
+                .is_ok_and(|token| token.text_trimmed() == "return")
+        })
+        && let Ok(arguments) = call.arguments()
+    {
+        let mut items = arguments.items().into_iter();
+        match (items.next(), items.next()) {
+            (None, None) => true,
+            (Some(argument), None) => argument
+                .ok()
+                .and_then(|argument| argument.value())
+                .is_some_and(|value| value.syntax().text_trimmed() == "NULL"),
+            _ => false,
+        }
+    } else {
+        false
     }
 }

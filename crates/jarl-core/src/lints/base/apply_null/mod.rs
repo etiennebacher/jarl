@@ -56,6 +56,10 @@ mod tests {
             snapshot_lint("library(purrr); library(maps); map(x, function(x) NULL)"),
             @"All checks passed!"
         );
+        assert_snapshot!(
+            snapshot_lint("library(maps); library(purrr); map(x, function(x) NULL)"),
+            @"All checks passed!"
+        );
     }
 
     #[test]
@@ -65,9 +69,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | lapply(x, function(x) NULL)
-          | --------------------------- This way of creating an empty list can be inefficient.
+          | --------------------------- This way of creating an empty list is inefficient.
           |
-          = help: Use `vector("list", length(x))` to allocate the list directly.
+          = help: Use `vector("list", length(x))` to allocate the list directly. Names of `x` are not kept.
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("sapply(x, function(x) NULL)"), @r#"
@@ -75,9 +79,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | sapply(x, function(x) NULL)
-          | --------------------------- This way of creating an empty list can be inefficient.
+          | --------------------------- This way of creating an empty list is inefficient.
           |
-          = help: Use `vector("list", length(x))` to allocate the list directly.
+          = help: Use `vector("list", length(x))` to allocate the list directly. Names of `x` are not kept.
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("base::lapply(x, function(x) NULL)"), @r#"
@@ -85,9 +89,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | base::lapply(x, function(x) NULL)
-          | --------------------------------- This way of creating an empty list can be inefficient.
+          | --------------------------------- This way of creating an empty list is inefficient.
           |
-          = help: Use `vector("list", length(x))` to allocate the list directly.
+          = help: Use `vector("list", length(x))` to allocate the list directly. Names of `x` are not kept.
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("base::sapply(x, function(x) NULL)"), @r#"
@@ -95,9 +99,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | base::sapply(x, function(x) NULL)
-          | --------------------------------- This way of creating an empty list can be inefficient.
+          | --------------------------------- This way of creating an empty list is inefficient.
           |
-          = help: Use `vector("list", length(x))` to allocate the list directly.
+          = help: Use `vector("list", length(x))` to allocate the list directly. Names of `x` are not kept.
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("lapply(X = x, FUN = function(...) NULL)"), @r#"
@@ -105,9 +109,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | lapply(X = x, FUN = function(...) NULL)
-          | --------------------------------------- This way of creating an empty list can be inefficient.
+          | --------------------------------------- This way of creating an empty list is inefficient.
           |
-          = help: Use `vector("list", length(x))` to allocate the list directly.
+          = help: Use `vector("list", length(x))` to allocate the list directly. Names of `x` are not kept.
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("lapply(x, function(x) { NULL })"), @r#"
@@ -115,9 +119,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | lapply(x, function(x) { NULL })
-          | ------------------------------- This way of creating an empty list can be inefficient.
+          | ------------------------------- This way of creating an empty list is inefficient.
           |
-          = help: Use `vector("list", length(x))` to allocate the list directly.
+          = help: Use `vector("list", length(x))` to allocate the list directly. Names of `x` are not kept.
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("lapply(x, function(x) return(NULL))"), @r#"
@@ -125,9 +129,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | lapply(x, function(x) return(NULL))
-          | ----------------------------------- This way of creating an empty list can be inefficient.
+          | ----------------------------------- This way of creating an empty list is inefficient.
           |
-          = help: Use `vector("list", length(x))` to allocate the list directly.
+          = help: Use `vector("list", length(x))` to allocate the list directly. Names of `x` are not kept.
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("lapply(x, function(x) { return(NULL) })"), @r#"
@@ -135,9 +139,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | lapply(x, function(x) { return(NULL) })
-          | --------------------------------------- This way of creating an empty list can be inefficient.
+          | --------------------------------------- This way of creating an empty list is inefficient.
           |
-          = help: Use `vector("list", length(x))` to allocate the list directly.
+          = help: Use `vector("list", length(x))` to allocate the list directly. Names of `x` are not kept.
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("sapply(x, function(x) return())"), @r#"
@@ -145,9 +149,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | sapply(x, function(x) return())
-          | ------------------------------- This way of creating an empty list can be inefficient.
+          | ------------------------------- This way of creating an empty list is inefficient.
           |
-          = help: Use `vector("list", length(x))` to allocate the list directly.
+          = help: Use `vector("list", length(x))` to allocate the list directly. Names of `x` are not kept.
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("sapply(x, function(...) return(value = NULL))"), @r#"
@@ -155,9 +159,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | sapply(x, function(...) return(value = NULL))
-          | --------------------------------------------- This way of creating an empty list can be inefficient.
+          | --------------------------------------------- This way of creating an empty list is inefficient.
           |
-          = help: Use `vector("list", length(x))` to allocate the list directly.
+          = help: Use `vector("list", length(x))` to allocate the list directly. Names of `x` are not kept.
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("lapply(x, function(x) {})"), @r#"
@@ -165,9 +169,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | lapply(x, function(x) {})
-          | ------------------------- This way of creating an empty list can be inefficient.
+          | ------------------------- This way of creating an empty list is inefficient.
           |
-          = help: Use `vector("list", length(x))` to allocate the list directly.
+          = help: Use `vector("list", length(x))` to allocate the list directly. Names of `x` are not kept.
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("purrr::map(x, function(x) NULL)"), @r#"
@@ -175,19 +179,19 @@ mod tests {
          --> <test>:1:1
           |
         1 | purrr::map(x, function(x) NULL)
-          | ------------------------------- This way of creating an empty list can be inefficient.
+          | ------------------------------- This way of creating an empty list is inefficient.
           |
-          = help: Use `vector("list", length(x))` to allocate the list directly.
+          = help: Use `vector("list", length(x))` to allocate the list directly. Names of `x` are not kept.
         Found 1 error.
         "#);
-        assert_snapshot!(snapshot_lint("purrr::map(x, \\(x) NULL)"), @r#"
+        assert_snapshot!(snapshot_lint(r"purrr::map(x, \(x) NULL)"), @r#"
         warning: apply_null
          --> <test>:1:1
           |
         1 | purrr::map(x, \(x) NULL)
-          | ------------------------ This way of creating an empty list can be inefficient.
+          | ------------------------ This way of creating an empty list is inefficient.
           |
-          = help: Use `vector("list", length(x))` to allocate the list directly.
+          = help: Use `vector("list", length(x))` to allocate the list directly. Names of `x` are not kept.
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("purrr::map(x, ~NULL)"), @r#"
@@ -195,9 +199,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | purrr::map(x, ~NULL)
-          | -------------------- This way of creating an empty list can be inefficient.
+          | -------------------- This way of creating an empty list is inefficient.
           |
-          = help: Use `vector("list", length(x))` to allocate the list directly.
+          = help: Use `vector("list", length(x))` to allocate the list directly. Names of `x` are not kept.
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("purrr::map(x, ~ { NULL })"), @r#"
@@ -205,9 +209,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | purrr::map(x, ~ { NULL })
-          | ------------------------- This way of creating an empty list can be inefficient.
+          | ------------------------- This way of creating an empty list is inefficient.
           |
-          = help: Use `vector("list", length(x))` to allocate the list directly.
+          = help: Use `vector("list", length(x))` to allocate the list directly. Names of `x` are not kept.
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("purrr::map(.x = x, .f = function(x) return(NULL))"), @r#"
@@ -215,9 +219,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | purrr::map(.x = x, .f = function(x) return(NULL))
-          | ------------------------------------------------- This way of creating an empty list can be inefficient.
+          | ------------------------------------------------- This way of creating an empty list is inefficient.
           |
-          = help: Use `vector("list", length(x))` to allocate the list directly.
+          = help: Use `vector("list", length(x))` to allocate the list directly. Names of `x` are not kept.
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("purrr::map(x, function(x) {})"), @r#"
@@ -225,9 +229,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | purrr::map(x, function(x) {})
-          | ----------------------------- This way of creating an empty list can be inefficient.
+          | ----------------------------- This way of creating an empty list is inefficient.
           |
-          = help: Use `vector("list", length(x))` to allocate the list directly.
+          = help: Use `vector("list", length(x))` to allocate the list directly. Names of `x` are not kept.
         Found 1 error.
         "#);
         assert_snapshot!(snapshot_lint("library(purrr); map(x, ~NULL)"), @r#"
@@ -235,10 +239,47 @@ mod tests {
          --> <test>:1:17
           |
         1 | library(purrr); map(x, ~NULL)
-          |                 ------------- This way of creating an empty list can be inefficient.
+          |                 ------------- This way of creating an empty list is inefficient.
           |
-          = help: Use `vector("list", length(x))` to allocate the list directly.
+          = help: Use `vector("list", length(x))` to allocate the list directly. Names of `x` are not kept.
         Found 1 error.
         "#);
+    }
+
+    #[test]
+    fn test_fix_apply_null() {
+        assert_snapshot!(
+            "fix_output",
+            get_unsafe_fixed_text_with_cache(
+                vec![
+                    "lapply(x, function(x) NULL)",
+                    "sapply(x, function(x) NULL)",
+                    "base::lapply(x, function(x) { return(NULL) })",
+                    "lapply(FUN = function(...) NULL, X = foo$bar)",
+                    "lapply(names(x), function(x) NULL)",
+                    "purrr::map(x, ~NULL)",
+                    r"purrr::map(.f = \(x) NULL, .x = 1:10)",
+                    "library(purrr); map(x, function(x) {})",
+                    "y <- lapply(\n  x,\n  function(x) NULL\n)",
+                ],
+                "apply_null",
+                &NS,
+            )
+        );
+    }
+
+    #[test]
+    fn test_apply_null_with_comments_no_fix() {
+        assert_snapshot!(
+            "no_fix_with_comments",
+            get_unsafe_fixed_text_with_cache(
+                vec![
+                    "lapply(x, function(x) NULL # comment\n)",
+                    "lapply(\n  # comment\n  x,\n  function(x) NULL\n)",
+                ],
+                "apply_null",
+                &NS,
+            )
+        );
     }
 }

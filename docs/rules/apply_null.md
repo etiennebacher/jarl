@@ -8,9 +8,6 @@
 Checks for `sapply()`, `lapply()` and `purrr::map()` calls where the
 anonymous function returns only `NULL`.
 
-Calls to `map()` without the `purrr::` prefix are only reported when
-`map()` can be attributed to purrr (e.g. after `library(purrr)`).
-
 ## Why is this bad?
 
 These calls iterate over the input only to create a list of `NULL` values.
@@ -29,4 +26,9 @@ Use instead:
 vector("list", length(x))
 ```
 
-This suggestion does not preserve names from `x`.
+The automated fix is marked unsafe because `vector("list", length(x))`
+doesn't preserve names: `lapply()` and `purrr::map()` keep the names of
+`x`, and `sapply()` also uses `x` itself as names when it is a character
+vector. Jarl cannot know whether `x` has names, so they need to be added
+back manually if they matter, e.g. with
+`setNames(vector("list", length(x)), names(x))`.
