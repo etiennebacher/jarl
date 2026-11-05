@@ -120,6 +120,12 @@ fn body_returns_null(body: &AnyRExpression) -> bool {
     }
 }
 
+/// Whether a single expression evaluates to `NULL`. This is true for:
+/// - `NULL`
+/// - `return()`
+/// - `return(NULL)` (also with a named argument, e.g. `return(value = NULL)`)
+///
+/// Other expressions, such as `return(x)` or `foo(NULL)`, return false.
 fn returns_null(expr: &AnyRExpression) -> bool {
     if expr.syntax().text_trimmed() == "NULL" {
         return true;
