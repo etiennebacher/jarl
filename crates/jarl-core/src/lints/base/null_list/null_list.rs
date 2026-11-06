@@ -23,6 +23,12 @@ pub struct EmptyList;
 /// These calls iterate over the input only to create a list of `NULL` values.
 /// Creating an empty list of a given length with `vector()` is more efficient.
 ///
+/// This rule has an automated fix that is unsafe because `vector("list", length(x))`
+/// doesn't preserve names: `lapply()` and `purrr::map()` keep the names of `x`,
+/// and `sapply()` also uses `x` itself as names when it is a character vector.
+/// Jarl cannot know whether `x` has names, so they need to be added back manually
+/// if they matter, e.g. with `setNames(vector("list", length(x)), names(x))`.
+///
 /// ## Example
 ///
 /// ```r
@@ -35,13 +41,6 @@ pub struct EmptyList;
 /// ```r
 /// vector("list", length(x))
 /// ```
-///
-/// The automated fix is marked unsafe because `vector("list", length(x))`
-/// doesn't preserve names: `lapply()` and `purrr::map()` keep the names of
-/// `x`, and `sapply()` also uses `x` itself as names when it is a character
-/// vector. Jarl cannot know whether `x` has names, so they need to be added
-/// back manually if they matter, e.g. with
-/// `setNames(vector("list", length(x)), names(x))`.
 /// <!-- docs: end -->
 impl Violation for EmptyList {
     fn rule(&self) -> Rule {
