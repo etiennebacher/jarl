@@ -8,8 +8,12 @@ fn test_config_override_without_jarl_toml() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut case
             .command()
-            .args(["check", ".", "--output-format", "concise"])
-            .args(["--config", "lint.select = ['any_is_na']"])
+                        .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("concise")
+            .arg("--config")
+            .arg("lint.select = ['any_is_na']")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -41,8 +45,12 @@ fn test_config_override_keeps_other_options_of_jarl_toml() -> anyhow::Result<()>
     insta::assert_snapshot!(
         &mut case
             .command()
-            .args(["check", ".", "--output-format", "concise"])
-            .args(["--config", "lint.undesirable_operator.operators = ['$']"])
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("concise")
+            .arg("--config")
+            .arg("lint.undesirable_operator.operators = ['$']")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -74,8 +82,12 @@ fn test_config_override_applies_to_nested_jarl_toml() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut case
             .command()
-            .args(["check", ".", "--output-format", "concise"])
-            .args(["--config", "lint.select = ['any_duplicated']"])
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("concise")
+            .arg("--config")
+            .arg("lint.select = ['any_duplicated']")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -102,12 +114,19 @@ fn test_several_config_overrides() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut case
             .command()
-            .args(["check", ".", "--output-format", "concise"])
-            .args(["--config", "lint.select = ['any_is_na']"])
-            .args(["--config", "lint.extend-select = ['any_duplicated']"])
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("concise")
+            .arg("--config")
+            .arg("lint.select = ['any_is_na']")
+            .arg("--config")
+            .arg("lint.extend-select = ['any_duplicated']")
             // The last value of an option wins.
-            .args(["--config", "lint.select = ['undesirable_operator']"])
-            .args(["--config", "lint.undesirable_operator.operators = ['$']"])
+            .arg("--config")
+            .arg("lint.select = ['undesirable_operator']")
+            .arg("--config")
+            .arg("lint.undesirable_operator.operators = ['$']")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -143,8 +162,12 @@ fn test_config_file_replaces_discovered_jarl_toml() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut case
             .command()
-            .args(["check", ".", "--output-format", "concise"])
-            .args(["--config", "configs/custom.toml"])
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("concise")
+            .arg("--config")
+            .arg("configs/custom.toml")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -174,9 +197,14 @@ fn test_config_file_and_overrides() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut case
             .command()
-            .args(["check", ".", "--output-format", "concise"])
-            .args(["--config", "lint.extend-select = ['any_is_na']"])
-            .args(["--config", "custom.toml"])
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("concise")
+            .arg("--config")
+            .arg("lint.extend-select = ['any_is_na']")
+            .arg("--config")
+            .arg("custom.toml")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -210,8 +238,12 @@ fn test_config_file_relative_paths_resolved_from_cwd() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut case
             .command()
-            .args(["check", ".", "--output-format", "concise"])
-            .args(["--config", "configs/custom.toml"])
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("concise")
+            .arg("--config")
+            .arg("configs/custom.toml")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -240,8 +272,12 @@ fn test_config_file_applies_to_files_outside_cwd() -> anyhow::Result<()> {
     let output = case
         .command()
         .current_dir(case.root().join("work"))
-        .args(["check", "../other", "--output-format", "concise"])
-        .args(["--config", "custom.toml"])
+        .arg("check")
+        .arg("../other")
+        .arg("--output-format")
+        .arg("concise")
+        .arg("--config")
+        .arg("custom.toml")
         .run();
     // The file is displayed with its absolute path, whose separators depend on
     // the platform.
@@ -261,15 +297,20 @@ fn test_config_with_stdin() -> anyhow::Result<()> {
     let case = CliTest::with_file("custom.toml", "[lint]\nselect = [\"any_is_na\"]\n")?;
     let mut child = case
         .command()
-        .args(["check", "--stdin-file-path", "R/foo.R"])
-        .args(["--output-format", "concise", "--config", "custom.toml"])
+        .arg("check")
+        .arg("--stdin-file-path")
+        .arg("foo.R")
+        .arg("--output-format")
+        .arg("concise")
+        .arg("--config")
+        .arg("custom.toml")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()?;
     child.stdin.take().unwrap().write_all(CODE.as_bytes())?;
     let output = child.wait_with_output()?;
     insta::assert_snapshot!(String::from_utf8_lossy(&output.stdout), @"
-    R/foo.R [1:1] any_is_na `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
+    foo.R [1:1] any_is_na `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
 
     ── Summary ──────────────────────────────────────
     Found 1 error.
@@ -283,8 +324,12 @@ fn test_config_with_stdin() -> anyhow::Result<()> {
 fn check_with_config_path(case: &CliTest, path: &str) -> String {
     let output = case
         .command()
-        .args(["check", ".", "--output-format", "concise"])
-        .args(["--config", path])
+        .arg("check")
+        .arg(".")
+        .arg("--output-format")
+        .arg("concise")
+        .arg("--config")
+        .arg(path)
         .run();
     assert!(
         output.stderr.is_empty(),
@@ -340,8 +385,12 @@ fn test_config_file_parent_relative_path() -> anyhow::Result<()> {
     let stdout = case
         .command()
         .current_dir(case.root().join("project"))
-        .args(["check", ".", "--output-format", "concise"])
-        .args(["--config", "../custom.toml"])
+        .arg("check")
+        .arg(".")
+        .arg("--output-format")
+        .arg("concise")
+        .arg("--config")
+        .arg("../custom.toml")
         .run()
         .stdout;
     assert!(stdout.starts_with(EXPECTED), "{stdout}");
@@ -392,7 +441,12 @@ fn test_config_only_one_file() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut case
             .command()
-            .args(["check", ".", "--config", "a.toml", "--config", "b.toml"])
+            .arg("check")
+            .arg(".")
+            .arg("--config")
+            .arg("a.toml")
+            .arg("--config")
+            .arg("b.toml")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -415,7 +469,10 @@ fn test_config_missing_file() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut case
             .command()
-            .args(["check", ".", "--config", "configs/nope.toml"])
+            .arg("check")
+            .arg(".")
+            .arg("--config")
+            .arg("configs/nope.toml")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -439,7 +496,10 @@ fn test_config_invalid_toml() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut case
             .command()
-            .args(["check", ".", "--config", "lint.select = any_is_na"])
+            .arg("check")
+            .arg(".")
+            .arg("--config")
+            .arg("lint.select = any_is_na")
             .run()
             .normalize_os_executable_name(),
         @r#"
@@ -469,7 +529,10 @@ fn test_config_unknown_option() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut case
             .command()
-            .args(["check", ".", "--config", "lint.foo = 1"])
+            .arg("check")
+            .arg(".")
+            .arg("--config")
+            .arg("lint.foo = 1")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -494,7 +557,10 @@ fn test_config_invalid_file() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut case
             .command()
-            .args(["check", ".", "--config", "custom.toml"])
+            .arg("check")
+            .arg(".")
+            .arg("--config")
+            .arg("custom.toml")
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
@@ -524,8 +590,12 @@ fn test_config_override_adds_table_before_other_headers() -> anyhow::Result<()> 
     insta::assert_snapshot!(
         &mut case
             .command()
-            .args(["check", ".", "--output-format", "concise"])
-            .args(["--config", "lint.select = ['assignment']"])
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("concise")
+            .arg("--config")
+            .arg("lint.select = ['assignment']")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -551,12 +621,14 @@ fn test_config_override_with_quoted_inline_table_keys() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut case
             .command()
-            .args(["check", ".", "--output-format", "concise"])
-            .args(["--config", "lint.select = ['undesirable_operator']"])
-            .args([
-                "--config",
-                r#"lint.undesirable_operator.operators = [{ "$" = "Use [[ instead." }]"#,
-            ])
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("concise")
+            .arg("--config")
+            .arg("lint.select = ['undesirable_operator']")
+            .arg("--config")
+            .arg(r#"lint.undesirable_operator.operators = [{ "$" = "Use [[ instead." }]"#)
             .run()
             .normalize_os_executable_name(),
         @"
@@ -581,11 +653,12 @@ fn test_config_override_with_unquoted_inline_table_keys() -> anyhow::Result<()> 
     insta::assert_snapshot!(
         &mut case
             .command()
-            .args(["check", ".", "--output-format", "concise"])
-            .args([
-                "--config",
-                r#"lint.undesirable_operator.operators = [{ foo = "Don't." }]"#,
-            ])
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("concise")
+            .arg("--config")
+            .arg(r#"lint.undesirable_operator.operators = [{ foo = "Don't." }]"#)
             .run()
             .normalize_os_executable_name(),
         @r#"
@@ -612,8 +685,12 @@ fn test_config_override_with_malformed_jarl_toml() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut case
             .command()
-            .args(["check", ".", "--output-format", "concise"])
-            .args(["--config", "lint.select = ['any_is_na']"])
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("concise")
+            .arg("--config")
+            .arg("lint.select = ['any_is_na']")
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
