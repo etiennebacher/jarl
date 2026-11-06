@@ -59,7 +59,11 @@ pub enum ConfigArgument {
 fn parse_config_argument(value: &str) -> Result<ConfigArgument, String> {
     let path = Path::new(value);
     if path.is_file() {
-        return Ok(ConfigArgument::File(path.to_path_buf()));
+        if path.extension().is_some_and(|ext| ext == "toml") {
+            return Ok(ConfigArgument::File(path.to_path_buf()));
+        } else {
+            return Err(format!("configuration file must be a TOML file"));
+        }
     }
 
     match value.parse::<toml::Table>() {

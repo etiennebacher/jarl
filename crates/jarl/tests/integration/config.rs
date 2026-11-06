@@ -1,4 +1,5 @@
 use crate::helpers::{CliTest, CommandExt};
+use crate::stdin::check_stdin;
 
 const CODE: &str = "any(is.na(x))\nany(duplicated(x))\nx$a\n";
 
@@ -8,7 +9,7 @@ fn test_config_override_without_jarl_toml() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut case
             .command()
-                        .arg("check")
+            .arg("check")
             .arg(".")
             .arg("--output-format")
             .arg("concise")
@@ -269,74 +270,66 @@ fn test_config_file_applies_to_files_outside_cwd() -> anyhow::Result<()> {
         ("other/test.R", CODE),
         ("work/custom.toml", "[lint]\nselect = [\"any_is_na\"]\n"),
     ])?;
-    let output = case
-        .command()
-        .current_dir(case.root().join("work"))
-        .arg("check")
-        .arg("../other")
-        .arg("--output-format")
-        .arg("concise")
-        .arg("--config")
-        .arg("custom.toml")
-        .run();
-    // The file is displayed with its absolute path, whose separators depend on
-    // the platform.
-    let lines: Vec<_> = output.stdout.lines().filter(|l| l.contains(" [")).collect();
-    assert_eq!(lines.len(), 1, "{}", output.stdout);
-    assert!(lines[0].ends_with(
-        "test.R [1:1] any_is_na `any(is.na(...))` is inefficient. Use `anyNA(...)` instead."
-    ));
+    // `--statistics` avoids printing the path of a file outside of the cwd,
+    // which depends on the platform.
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .current_dir(case.root().join("work"))
+            .arg("check")
+            .arg("../other")
+            .arg("--statistics")
+            .arg("--config")
+            .arg("custom.toml")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+        1 [*] any_is_na
+
+    Rules with `[*]` have an automatic safe fix.
+    Rules with `[^]` have an automatic unsafe fix.
+
+    ----- stderr -----
+    "
+    );
     Ok(())
 }
 
 #[test]
 fn test_config_with_stdin() -> anyhow::Result<()> {
-    use std::io::Write;
-    use std::process::Stdio;
-
     let case = CliTest::with_file("custom.toml", "[lint]\nselect = [\"any_is_na\"]\n")?;
-    let mut child = case
-        .command()
-        .arg("check")
-        .arg("--stdin-file-path")
-        .arg("foo.R")
-        .arg("--output-format")
-        .arg("concise")
-        .arg("--config")
-        .arg("custom.toml")
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .spawn()?;
-    child.stdin.take().unwrap().write_all(CODE.as_bytes())?;
-    let output = child.wait_with_output()?;
-    insta::assert_snapshot!(String::from_utf8_lossy(&output.stdout), @"
+    insta::assert_snapshot!(
+        check_stdin(
+            &case,
+            CODE,
+            &[
+                "--stdin-file-path",
+                "foo.R",
+                "--output-format",
+                "concise",
+                "--config",
+                "custom.toml",
+            ],
+        )?,
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
     foo.R [1:1] any_is_na `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
 
     ── Summary ──────────────────────────────────────
     Found 1 error.
     1 fixable with the `--fix` option.
-    ");
-    Ok(())
-}
 
-/// The path of a `--config` file is given as is to the shell on each platform,
-/// so it can be absolute, contain spaces, or use the platform's separators.
-fn check_with_config_path(case: &CliTest, path: &str) -> String {
-    let output = case
-        .command()
-        .arg("check")
-        .arg(".")
-        .arg("--output-format")
-        .arg("concise")
-        .arg("--config")
-        .arg(path)
-        .run();
-    assert!(
-        output.stderr.is_empty(),
-        "`--config {path}` failed:\n{}",
-        output.stderr
+    ----- stderr -----
+    "
     );
-    output.stdout
+    Ok(())
 }
 
 fn case_with_config_in(dir: &str) -> anyhow::Result<CliTest> {
@@ -349,30 +342,97 @@ fn case_with_config_in(dir: &str) -> anyhow::Result<CliTest> {
     ])
 }
 
-const EXPECTED: &str = "test.R [2:1] any_duplicated";
-
 #[test]
 fn test_config_file_absolute_path() -> anyhow::Result<()> {
     let case = case_with_config_in("configs")?;
     let path = case.root().join("configs").join("custom.toml");
-    let stdout = check_with_config_path(&case, &path.to_string_lossy());
-    assert!(stdout.starts_with(EXPECTED), "{stdout}");
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("concise")
+            .arg("--config")
+            .arg(path)
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    test.R [2:1] any_duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
+    );
     Ok(())
 }
 
 #[test]
 fn test_config_file_dot_relative_path() -> anyhow::Result<()> {
     let case = case_with_config_in("configs")?;
-    let stdout = check_with_config_path(&case, "./configs/custom.toml");
-    assert!(stdout.starts_with(EXPECTED), "{stdout}");
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("concise")
+            .arg("--config")
+            .arg("./configs/custom.toml")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    test.R [2:1] any_duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
+    );
     Ok(())
 }
 
 #[test]
 fn test_config_file_path_with_spaces() -> anyhow::Result<()> {
     let case = case_with_config_in("my configs")?;
-    let stdout = check_with_config_path(&case, "my configs/custom.toml");
-    assert!(stdout.starts_with(EXPECTED), "{stdout}");
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("concise")
+            .arg("--config")
+            .arg("my configs/custom.toml")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    test.R [2:1] any_duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
+    );
     Ok(())
 }
 
@@ -382,18 +442,32 @@ fn test_config_file_parent_relative_path() -> anyhow::Result<()> {
         ("project/test.R", CODE),
         ("custom.toml", "[lint]\nselect = [\"any_duplicated\"]\n"),
     ])?;
-    let stdout = case
-        .command()
-        .current_dir(case.root().join("project"))
-        .arg("check")
-        .arg(".")
-        .arg("--output-format")
-        .arg("concise")
-        .arg("--config")
-        .arg("../custom.toml")
-        .run()
-        .stdout;
-    assert!(stdout.starts_with(EXPECTED), "{stdout}");
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .current_dir(case.root().join("project"))
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("concise")
+            .arg("--config")
+            .arg("../custom.toml")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    test.R [2:1] any_duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
+    );
     Ok(())
 }
 
@@ -404,8 +478,29 @@ fn test_config_file_without_toml_extension() -> anyhow::Result<()> {
         case.root().join("configs/custom.toml"),
         case.root().join("configs/custom"),
     )?;
-    let stdout = check_with_config_path(&case, "configs/custom");
-    assert!(stdout.starts_with(EXPECTED), "{stdout}");
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("concise")
+            .arg("--config")
+            .arg("configs/custom")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 2
+    ----- stdout -----
+
+    ----- stderr -----
+    error: invalid value 'configs/custom' for '--config <CONFIG_OPTION>': configuration file must be a TOML file
+
+    For more information, try '--help'.
+    "
+    );
     Ok(())
 }
 
@@ -413,10 +508,32 @@ fn test_config_file_without_toml_extension() -> anyhow::Result<()> {
 #[test]
 fn test_config_file_windows_backslash_path() -> anyhow::Result<()> {
     let case = case_with_config_in("configs")?;
-    let stdout = check_with_config_path(&case, r"configs\custom.toml");
-    assert!(stdout.starts_with(EXPECTED), "{stdout}");
-    let stdout = check_with_config_path(&case, r".\configs\custom.toml");
-    assert!(stdout.starts_with(EXPECTED), "{stdout}");
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("concise")
+            .arg("--config")
+            .arg(r"configs\custom.toml")
+            .run()
+            .normalize_os_executable_name(),
+        @""
+    );
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("concise")
+            .arg("--config")
+            .arg(r".\configs\custom.toml")
+            .run()
+            .normalize_os_executable_name(),
+        @""
+    );
     Ok(())
 }
 
@@ -426,8 +543,19 @@ fn test_config_file_windows_absolute_forward_slash_path() -> anyhow::Result<()> 
     let case = case_with_config_in("configs")?;
     let path = case.root().join("configs").join("custom.toml");
     let path = path.to_string_lossy().replace('\\', "/");
-    let stdout = check_with_config_path(&case, &path);
-    assert!(stdout.starts_with(EXPECTED), "{stdout}");
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("concise")
+            .arg("--config")
+            .arg(path)
+            .run()
+            .normalize_os_executable_name(),
+        @""
+    );
     Ok(())
 }
 
