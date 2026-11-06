@@ -16,6 +16,7 @@ use crate::toml::find_jarl_toml_in_directory;
 use crate::toml::parse_jarl_toml;
 use air_workspace::resolve::PathResolver;
 use etcetera::BaseStrategy;
+use toml_edit::DocumentMut;
 
 /// Default patterns to exclude from linting
 /// These match common R project files that should not be linted
@@ -52,7 +53,10 @@ fn get_user_config_dir() -> Option<PathBuf> {
 /// - Walk up its ancestors until the user config directory, looking for a `jarl.toml`
 /// - If no config found in ancestors, fall back to checking the user config directory
 /// - If `path` is a directory, also walk down into it to find any nested `jarl.toml`s
-pub fn discover_settings<P: AsRef<Path>>(paths: &[P]) -> anyhow::Result<Vec<DiscoveredSettings>> {
+pub fn discover_settings<P: AsRef<Path>>(
+    paths: &[P],
+    overrides: &[DocumentMut],
+) -> anyhow::Result<Vec<DiscoveredSettings>> {
     let paths: Vec<PathBuf> = paths.iter().map(air_fs::normalize_path).collect();
 
     let mut seen = FxHashSet::default();
@@ -72,7 +76,7 @@ pub fn discover_settings<P: AsRef<Path>>(paths: &[P]) -> anyhow::Result<Vec<Disc
             }
 
             if let Some(toml) = find_jarl_toml_in_directory(ancestor)? {
-                let settings = parse_settings(&toml, ancestor)?;
+                let settings = parse_settings(&toml, ancestor, overrides)?;
                 discovered_settings.push(DiscoveredSettings {
                     directory: ancestor.to_path_buf(),
                     settings,
@@ -96,7 +100,7 @@ pub fn discover_settings<P: AsRef<Path>>(paths: &[P]) -> anyhow::Result<Vec<Disc
             && seen.insert(config_dir.as_path())
             && let Some(toml) = find_jarl_toml_in_directory(config_dir)?
         {
-            let settings = parse_settings(&toml, config_dir)?;
+            let settings = parse_settings(&toml, config_dir, overrides)?;
             discovered_settings.push(DiscoveredSettings {
                 directory: config_dir.clone(),
                 settings,
@@ -115,7 +119,12 @@ pub fn discover_settings<P: AsRef<Path>>(paths: &[P]) -> anyhow::Result<Vec<Disc
 
     for path in &paths {
         if path.is_dir() {
-            discover_nested_settings(path, &mut already_found, &mut discovered_settings)?;
+            discover_nested_settings(
+                path,
+                overrides,
+                &mut already_found,
+                &mut discovered_settings,
+            )?;
         }
     }
 
@@ -125,6 +134,7 @@ pub fn discover_settings<P: AsRef<Path>>(paths: &[P]) -> anyhow::Result<Vec<Disc
 /// Walk down into `root`, collecting any nested `jarl.toml` files not yet in `already_found`.
 fn discover_nested_settings(
     root: &Path,
+    overrides: &[DocumentMut],
     already_found: &mut FxHashSet<PathBuf>,
     discovered_settings: &mut Vec<DiscoveredSettings>,
 ) -> anyhow::Result<()> {
@@ -162,7 +172,7 @@ fn discover_nested_settings(
 
         if let Some(toml) = find_jarl_toml_in_directory(path)? {
             already_found.insert(path.to_path_buf());
-            let settings = parse_settings(&toml, path)?;
+            let settings = parse_settings(&toml, path, overrides)?;
             discovered_settings.push(DiscoveredSettings {
                 directory: path.to_path_buf(),
                 settings,
@@ -174,12 +184,17 @@ fn discover_nested_settings(
     Ok(())
 }
 
-/// Parse [Settings] from a given `jarl.toml`
+/// Parse [Settings] from a given `jarl.toml`, with the `--config` `overrides`
+/// taking precedence over its options.
 // TODO(hierarchical): Allow for an `extends` option in `jarl.toml`, which will make things
 // more complex, but will be very useful once we support hierarchical configuration as a
 // way of "inheriting" most top level configuration while slightly tweaking it in a nested directory.
-fn parse_settings(toml: &Path, root_directory: &Path) -> anyhow::Result<Settings> {
-    let options = parse_jarl_toml(toml)?;
+pub fn parse_settings(
+    toml: &Path,
+    root_directory: &Path,
+    overrides: &[DocumentMut],
+) -> anyhow::Result<Settings> {
+    let options = parse_jarl_toml(toml, overrides)?;
     let settings = options
         .into_settings(root_directory)
         .map_err(|err| anyhow::anyhow!("Invalid configuration in {}:\n{err}", toml.display()))?;

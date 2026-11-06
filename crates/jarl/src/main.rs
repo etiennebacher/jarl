@@ -1,13 +1,9 @@
 use clap::CommandFactory;
 use clap::Parser;
 use jarl::args::Args;
-use jarl::logging;
-use jarl::output_format;
 use jarl::run;
 use jarl::status::ExitStatus;
 use std::process::ExitCode;
-
-mod args;
 
 fn main() -> ExitCode {
     // Emit shell completions and exit when the shell asks for them, i.e. when the

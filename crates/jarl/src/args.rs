@@ -5,7 +5,10 @@ use clap::builder::styling::{AnsiColor, Effects};
 use clap::{Parser, Subcommand};
 use clap_complete::engine::{ArgValueCompleter, CompletionCandidate};
 use jarl_core::rule_set::{Category, Rule};
+use jarl_core::toml::parse_config_overrides;
 use std::ffi::OsStr;
+use std::path::{Path, PathBuf};
+use toml_edit::DocumentMut;
 
 // Configures Clap v3-style help menu colors
 const STYLES: Styles = Styles::styled()
@@ -40,6 +43,41 @@ fn complete_rule_names(current: &OsStr) -> Vec<CompletionCandidate> {
         .filter(|name| name.starts_with(partial))
         .map(|name| CompletionCandidate::new(format!("{completed}{name}")))
         .collect()
+}
+
+/// A value of `--config`.
+#[derive(Clone, Debug)]
+pub enum ConfigArgument {
+    /// A configuration file replacing the discovered ones.
+    File(PathBuf),
+    /// Options overriding those of the configuration files.
+    Override(DocumentMut),
+}
+
+/// A value is a configuration file if such a file exists, and a TOML override
+/// otherwise. Overrides are validated here so that an invalid one is reported
+/// as such, not as an error in each `jarl.toml`.
+fn parse_config_argument(value: &str) -> Result<ConfigArgument, String> {
+    let path = Path::new(value);
+    if path.is_file() {
+        return Ok(ConfigArgument::File(path.to_path_buf()));
+    }
+
+    match value.parse::<DocumentMut>() {
+        Ok(document) if !document.is_empty() => {
+            let cwd = std::env::current_dir().unwrap_or_default();
+            parse_config_overrides(std::slice::from_ref(&document), &cwd)
+                .map_err(|err| format!("invalid configuration option:\n{err}"))?;
+            Ok(ConfigArgument::Override(document))
+        }
+        _ if path.extension().is_some_and(|ext| ext == "toml") => {
+            Err(format!("configuration file '{value}' does not exist"))
+        }
+        Ok(_) => Err("expected a path or a `<KEY> = <VALUE>` pair, got nothing".to_string()),
+        Err(err) => Err(format!(
+            "neither a path to an existing file nor a valid TOML `<KEY> = <VALUE>` pair, e.g. `\"lint.select = ['any_is_na']\"`:\n{err}"
+        )),
+    }
 }
 
 #[derive(Parser)]
@@ -217,6 +255,14 @@ pub struct CheckCommand {
         help = "Automatically insert a `# jarl-ignore` comment to suppress all violations.\nThe default reason can be customized with `--add-jarl-ignore=\"my_reason\"`."
     )]
     pub add_jarl_ignore: Option<String>,
+    #[arg(
+        long,
+        value_name = "CONFIG_OPTION",
+        value_parser = parse_config_argument,
+        help_heading = "Other options",
+        help = "Either a path to a TOML configuration file, which is used instead of the discovered one, or a TOML `<KEY> = <VALUE>` pair overriding an option of the configuration, e.g. `--config \"lint.select = ['any_is_na']\"`. Can be passed several times, but only once with a path."
+    )]
+    pub config: Vec<ConfigArgument>,
     // Help flag declared manually (auto flag disabled above) so it lands in the
     // "Other options" group instead of clap's default "Options" heading, which
     // would otherwise be forced to the top of the help output.

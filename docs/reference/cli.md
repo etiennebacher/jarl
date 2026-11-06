@@ -149,6 +149,18 @@ Automatically insert a `# jarl-ignore` comment to suppress all violations. The d
 
 ---
 
+**`--config <CONFIG_OPTION>`**
+
+Either a path to a TOML configuration file or a TOML `<KEY> = <VALUE>` pair overriding an option of the configuration. This argument can be passed several times, but only once with a path:
+
+```sh
+jarl check . --config path/to/custom.toml --config "lint.select = ['any_is_na']"
+```
+
+See [Using `--config`](config-file.md#using---config) for details.
+
+---
+
 **`-h, --help`**
 
 Print help (see a summary with `-h`).
