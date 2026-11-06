@@ -114,6 +114,7 @@ dat <- as.data.frame(
     c("missing_argument", "suspicious", "❌", ""),
     c("nested_pipe", "readability", "❌", "Disabled by default"),
     c("notin", "readability", "✅", "R >= 4.6"),
+    c("null_list", "performance", "❗", ""),
     c("numeric_leading_zero", "readability", "✅", ""),
     c("nzchar", "performance", "❗", "Disabled by default"),
     c("outdated_suppression", "comments", "✅", ""),
