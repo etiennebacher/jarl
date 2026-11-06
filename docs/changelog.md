@@ -31,6 +31,10 @@
 * New option `ignore-roxygen` in `jarl.toml` to ignore some rules only in
   roxygen `@examples` and `@examplesIf` sections (#780).
 
+* New CLI argument `--config` to use a specific configuration file instead of
+  the discovered ones, or to override some options of the configuration, e.g.
+  `--config "lint.select = ['any_is_na']"` (#804).
+
 ### Bug fixes
 
 * Fix `comparison_negation` precedence and tidy-evaluation handling, detect nested

@@ -3,7 +3,7 @@ use std::io::Write;
 use std::process::Stdio;
 
 /// Run `jarl check <args>` with `code` piped to stdin.
-fn check_stdin(case: &CliTest, code: &str, args: &[&str]) -> anyhow::Result<Output> {
+pub(crate) fn check_stdin(case: &CliTest, code: &str, args: &[&str]) -> anyhow::Result<Output> {
     let mut command = case.command();
     command
         .arg("check")
