@@ -2,17 +2,11 @@ pub(crate) mod null_list;
 
 #[cfg(test)]
 mod tests {
-    use crate::{declare_ns, utils_test::*};
+    use crate::utils_test::*;
     use insta::assert_snapshot;
 
-    // Needed to get a package cache working without requiring an R runtime.
-    declare_ns! {
-        "purrr" => ["map"],
-        "maps" => ["map"],
-    }
-
     fn snapshot_lint(code: &str) -> String {
-        format_diagnostics_with_cache(code, "null_list", None, &NS)
+        format_diagnostics(code, "null_list", None)
     }
 
     #[test]
@@ -34,6 +28,10 @@ mod tests {
             // Bare `map()` without `library(purrr)`
             "map(x, function(x) NULL)",
             "map(x, ~NULL)",
+            // Bare `map()` that another attached package could mask
+            "library(maps); map(x, function(x) NULL)",
+            "library(purrr); library(maps); map(x, function(x) NULL)",
+            "library(maps); library(purrr); map(x, function(x) NULL)",
             // Not one of the targeted functions
             "purrr::map_chr(x, function(x) NULL)",
             "other::map(x, function(x) NULL)",
@@ -46,20 +44,6 @@ mod tests {
         ] {
             expect_no_lint(code, "null_list", None);
         }
-
-        // Bare `map()` that can't be attributed to purrr alone
-        assert_snapshot!(
-            snapshot_lint("library(maps); map(x, function(x) NULL)"),
-            @"All checks passed!"
-        );
-        assert_snapshot!(
-            snapshot_lint("library(purrr); library(maps); map(x, function(x) NULL)"),
-            @"All checks passed!"
-        );
-        assert_snapshot!(
-            snapshot_lint("library(maps); library(purrr); map(x, function(x) NULL)"),
-            @"All checks passed!"
-        );
     }
 
     #[test]
@@ -234,23 +218,14 @@ mod tests {
           = help: Use `vector("list", length(x))` to allocate the list directly. Names of `x` are not kept.
         Found 1 error.
         "#);
-        assert_snapshot!(snapshot_lint("library(purrr); map(x, ~NULL)"), @r#"
-        warning: null_list
-         --> <test>:1:17
-          |
-        1 | library(purrr); map(x, ~NULL)
-          |                 ------------- This way of creating an empty list is inefficient.
-          |
-          = help: Use `vector("list", length(x))` to allocate the list directly. Names of `x` are not kept.
-        Found 1 error.
-        "#);
+        assert_snapshot!(snapshot_lint("library(purrr); map(x, ~NULL)"), @"All checks passed!");
     }
 
     #[test]
     fn test_fix_null_list() {
         assert_snapshot!(
             "fix_output",
-            get_unsafe_fixed_text_with_cache(
+            get_unsafe_fixed_text(
                 vec![
                     "lapply(x, function(x) NULL)",
                     "sapply(x, function(x) NULL)",
@@ -259,11 +234,9 @@ mod tests {
                     "lapply(names(x), function(x) NULL)",
                     "purrr::map(x, ~NULL)",
                     r"purrr::map(.f = \(x) NULL, .x = 1:10)",
-                    "library(purrr); map(x, function(x) {})",
                     "y <- lapply(\n  x,\n  function(x) NULL\n)",
                 ],
                 "null_list",
-                &NS,
             )
         );
     }
@@ -272,13 +245,12 @@ mod tests {
     fn test_null_list_with_comments_no_fix() {
         assert_snapshot!(
             "no_fix_with_comments",
-            get_unsafe_fixed_text_with_cache(
+            get_unsafe_fixed_text(
                 vec![
                     "lapply(x, function(x) NULL # comment\n)",
                     "lapply(\n  # comment\n  x,\n  function(x) NULL\n)",
                 ],
                 "null_list",
-                &NS,
             )
         );
     }

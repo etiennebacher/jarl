@@ -1,4 +1,3 @@
-use crate::checker::{Checker, PackageOrigin};
 use crate::diagnostic::*;
 use crate::rule_set::Rule;
 use crate::utils::{Formals, StatementsExt, get_arg, node_contains_comments};
@@ -63,15 +62,11 @@ pub fn null_list(
     ast: &RCall,
     fn_name: &str,
     ns_prefix: Option<&str>,
-    checker: &Checker,
 ) -> anyhow::Result<Option<Diagnostic>> {
     let (formals, x_arg, fun_arg) = match (fn_name, ns_prefix) {
         ("lapply", None | Some("base::")) => (FORMALS_LAPPLY, "X", "FUN"),
         ("sapply", None | Some("base::")) => (FORMALS_SAPPLY, "X", "FUN"),
         ("map", Some("purrr::")) => (FORMALS_MAP, ".x", ".f"),
-        ("map", None) if matches!(checker.resolve_package("map"), PackageOrigin::Resolved(pkg) if pkg == "purrr") => {
-            (FORMALS_MAP, ".x", ".f")
-        }
         _ => return Ok(None),
     };
 
