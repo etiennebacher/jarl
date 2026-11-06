@@ -11,6 +11,7 @@
   * `function_return` (#750)
   * `null_list` (#785, @JosephBARBIERDARNAL)
   * `todo_comment` (#739, @Yousa-Mirage)
+  * `loop_invariant` (disabled by default)
 
 * Improved rules:
 
