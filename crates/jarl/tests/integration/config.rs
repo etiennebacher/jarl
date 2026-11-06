@@ -542,7 +542,7 @@ fn test_config_unknown_option() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    error: invalid value 'lint.foo = 1' for '--config <CONFIG_OPTION>': invalid configuration option:
+    error: invalid value 'lint.foo = 1' for '--config <CONFIG_OPTION>': Invalid configuration in --config:
     Unknown field `foo` in `[lint]`. Expected one of: `select`, `extend-select`, `ignore`, `fixable`, `unfixable`, `exclude`, `default-exclude`, `include`, `per-file-ignores`, `check-roxygen`, `fix-roxygen`, `ignore-roxygen`.
 
     For more information, try '--help'.
@@ -668,7 +668,7 @@ fn test_config_override_with_unquoted_inline_table_keys() -> anyhow::Result<()> 
     ----- stdout -----
 
     ----- stderr -----
-    error: invalid value 'lint.undesirable_operator.operators = [{ foo = "Don't." }]' for '--config <CONFIG_OPTION>': invalid configuration option:
+    error: invalid value 'lint.undesirable_operator.operators = [{ foo = "Don't." }]' for '--config <CONFIG_OPTION>': Invalid configuration in --config:
     Key `foo` in `operators` of `[lint.undesirable_operator]` must be quoted. Use `"foo"` instead.
 
     For more information, try '--help'.

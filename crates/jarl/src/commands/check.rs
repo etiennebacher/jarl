@@ -68,24 +68,19 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         None => args.files.clone(),
     };
 
-    let mut config_files = args.config.iter().filter_map(|config| match config {
-        ConfigArgument::File(path) => Some(air_fs::normalize_path(path)),
-        ConfigArgument::Override(_) => None,
-    });
-    let config_file = config_files.next();
-    if config_files.next().is_some() {
-        return Err(anyhow::anyhow!(
-            "`--config` can be a path to a configuration file only once."
-        ));
+    let mut config_file = None;
+    let mut overrides = Vec::new();
+    for config in &args.config {
+        match config {
+            ConfigArgument::File(_) if config_file.is_some() => {
+                return Err(anyhow::anyhow!(
+                    "`--config` can be a path to a configuration file only once."
+                ));
+            }
+            ConfigArgument::File(path) => config_file = Some(air_fs::normalize_path(path)),
+            ConfigArgument::Override(table) => overrides.push(table.clone()),
+        }
     }
-    let overrides: Vec<_> = args
-        .config
-        .iter()
-        .filter_map(|config| match config {
-            ConfigArgument::Override(document) => Some(document.clone()),
-            ConfigArgument::File(_) => None,
-        })
-        .collect();
 
     // A `--config` file, or overrides that no `jarl.toml` picks up, aren't tied
     // to a directory: their relative paths are resolved from the working
@@ -103,7 +98,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     if discovered.is_empty() && !overrides.is_empty() {
         discovered.push(DiscoveredSettings {
             directory: root.clone(),
-            settings: parse_config_overrides(&overrides, &root)?,
+            settings: parse_config_overrides("", &overrides, &root)?,
             config_path: None,
         });
     }
@@ -206,7 +201,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
             .and_then(|dir| resolver.items().iter().find(|item| item.path() == dir))
             .map(|item| item.value());
 
-        let config = build_config(&check_config, settings, group_paths.clone())?;
+        let mut config = build_config(&check_config, settings, group_paths.clone())?;
 
         if !config.rules_to_apply.has_package_specific_rules() {
             file_results.extend(run_check(config, stdin.as_ref()));
@@ -236,14 +231,12 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         }
 
         let r_pkg_names = config.rules_to_apply.pkg_names_from_category();
-        drop(config);
 
         // Skip the expensive Rscript call if no file in this group actually
         // references any of the target packages. In that case, strip the
         // package-specific rules since they can't produce meaningful results
         // without a PackageCache.
         if !any_file_references_packages(&group_paths, &r_pkg_names) {
-            let mut config = build_config(&check_config, settings, group_paths)?;
             config.rules_to_apply = config
                 .rules_to_apply
                 .filter(|r| !r.categories().iter().any(|c| c.is_package_specific()));

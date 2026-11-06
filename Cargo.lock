@@ -1041,7 +1041,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
- "toml_edit",
+ "toml",
  "tracing",
  "tracing-subscriber",
  "workspace",

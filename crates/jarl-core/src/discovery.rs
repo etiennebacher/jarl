@@ -16,7 +16,6 @@ use crate::toml::find_jarl_toml_in_directory;
 use crate::toml::parse_jarl_toml;
 use air_workspace::resolve::PathResolver;
 use etcetera::BaseStrategy;
-use toml_edit::DocumentMut;
 
 /// Default patterns to exclude from linting
 /// These match common R project files that should not be linted
@@ -55,7 +54,7 @@ fn get_user_config_dir() -> Option<PathBuf> {
 /// - If `path` is a directory, also walk down into it to find any nested `jarl.toml`s
 pub fn discover_settings<P: AsRef<Path>>(
     paths: &[P],
-    overrides: &[DocumentMut],
+    overrides: &[toml::Table],
 ) -> anyhow::Result<Vec<DiscoveredSettings>> {
     let paths: Vec<PathBuf> = paths.iter().map(air_fs::normalize_path).collect();
 
@@ -134,7 +133,7 @@ pub fn discover_settings<P: AsRef<Path>>(
 /// Walk down into `root`, collecting any nested `jarl.toml` files not yet in `already_found`.
 fn discover_nested_settings(
     root: &Path,
-    overrides: &[DocumentMut],
+    overrides: &[toml::Table],
     already_found: &mut FxHashSet<PathBuf>,
     discovered_settings: &mut Vec<DiscoveredSettings>,
 ) -> anyhow::Result<()> {
@@ -192,7 +191,7 @@ fn discover_nested_settings(
 pub fn parse_settings(
     toml: &Path,
     root_directory: &Path,
-    overrides: &[DocumentMut],
+    overrides: &[toml::Table],
 ) -> anyhow::Result<Settings> {
     let options = parse_jarl_toml(toml, overrides)?;
     let settings = options

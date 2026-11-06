@@ -8,7 +8,6 @@ use jarl_core::rule_set::{Category, Rule};
 use jarl_core::toml::parse_config_overrides;
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
-use toml_edit::DocumentMut;
 
 // Configures Clap v3-style help menu colors
 const STYLES: Styles = Styles::styled()
@@ -51,7 +50,7 @@ pub enum ConfigArgument {
     /// A configuration file replacing the discovered ones.
     File(PathBuf),
     /// Options overriding those of the configuration files.
-    Override(DocumentMut),
+    Override(toml::Table),
 }
 
 /// A value is a configuration file if such a file exists, and a TOML override
@@ -63,12 +62,11 @@ fn parse_config_argument(value: &str) -> Result<ConfigArgument, String> {
         return Ok(ConfigArgument::File(path.to_path_buf()));
     }
 
-    match value.parse::<DocumentMut>() {
-        Ok(document) if !document.is_empty() => {
+    match value.parse::<toml::Table>() {
+        Ok(table) if !table.is_empty() => {
             let cwd = std::env::current_dir().unwrap_or_default();
-            parse_config_overrides(std::slice::from_ref(&document), &cwd)
-                .map_err(|err| format!("invalid configuration option:\n{err}"))?;
-            Ok(ConfigArgument::Override(document))
+            parse_config_overrides(value, &[], &cwd).map_err(|err| err.to_string())?;
+            Ok(ConfigArgument::Override(table))
         }
         _ if path.extension().is_some_and(|ext| ext == "toml") => {
             Err(format!("configuration file '{value}' does not exist"))

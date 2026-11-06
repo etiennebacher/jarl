@@ -35,7 +35,6 @@ use crate::per_file_ignores::PerFileIgnores;
 use crate::rule_options::ResolvedRuleOptions;
 use crate::settings::LinterSettings;
 use crate::settings::Settings;
-use toml_edit::{DocumentMut, Item, Table, TableLike};
 
 #[derive(Debug)]
 pub enum ParseTomlError {
@@ -72,32 +71,29 @@ impl Display for ParseTomlError {
 /// precedence over its options.
 pub fn parse_jarl_toml(
     path: &Path,
-    overrides: &[DocumentMut],
+    overrides: &[toml::Table],
 ) -> Result<TomlOptions, ParseTomlError> {
-    let toml =
+    let contents =
         fs::read_to_string(path).map_err(|err| ParseTomlError::Read(path.to_path_buf(), err))?;
-    parse_jarl_toml_contents(&toml, path, overrides)
+    parse_jarl_toml_contents(&contents, path, overrides)
 }
 
-/// Build [Settings] from the `--config` `overrides` alone, i.e. on top of an
-/// empty `jarl.toml` located in `root`.
-pub fn parse_config_overrides(overrides: &[DocumentMut], root: &Path) -> anyhow::Result<Settings> {
-    let options = match parse_jarl_toml_contents("", Path::new("--config"), overrides) {
-        Ok(options) => options,
-        // The fake path would only clutter the message.
-        Err(ParseTomlError::Deserialize(_, err)) => return Err(anyhow::anyhow!("{err}")),
-        Err(ParseTomlError::Invalid(_, err)) => return Err(anyhow::anyhow!("{err}")),
-        Err(err) => return Err(err.into()),
-    };
-    options.into_settings(root)
+/// Build [Settings] from `contents`, a `jarl.toml` that only exists as
+/// `--config` values, with `overrides` taking precedence over its options.
+pub fn parse_config_overrides(
+    contents: &str,
+    overrides: &[toml::Table],
+    root: &Path,
+) -> anyhow::Result<Settings> {
+    parse_jarl_toml_contents(contents, Path::new("--config"), overrides)?.into_settings(root)
 }
 
 fn parse_jarl_toml_contents(
-    toml: &str,
+    contents: &str,
     path: &Path,
-    overrides: &[DocumentMut],
+    overrides: &[toml::Table],
 ) -> Result<TomlOptions, ParseTomlError> {
-    let toml = apply_overrides(toml, overrides);
+    let toml = merge_overrides(contents, overrides);
 
     // Rule options are sub-tables (`[lint.assignment]`), so a `[lint]` key set
     // to anything else can only be an unknown option. Catch those before
@@ -118,8 +114,9 @@ fn parse_jarl_toml_contents(
         .map_err(|err| ParseTomlError::Deserialize(path.to_path_buf(), err))?;
 
     // We need to run this here because then serde loses the information on
-    // whether a key was quoted.
-    if let Ok(document) = toml.parse::<toml_edit::DocumentMut>()
+    // whether a key was quoted. Merging overrides loses it too, so check the
+    // original text: overrides are checked on their own when parsing the CLI.
+    if let Ok(document) = contents.parse::<toml_edit::DocumentMut>()
         && let Some(message) = unquoted_key(&document)
     {
         return Err(ParseTomlError::Invalid(path.to_path_buf(), message));
@@ -128,50 +125,33 @@ fn parse_jarl_toml_contents(
     Ok(options)
 }
 
-/// Merge `overrides` into `toml`, in order, so that the last one wins. Only the
-/// options they set are replaced: `lint.select = [...]` keeps the other
-/// `[lint]` options of `toml`. A malformed `toml` is returned as is so that the
+/// Merge `overrides` into `contents`, in order, so that the last one wins.
+/// Only the options they set are replaced: `lint.select = [...]` keeps the
+/// other `[lint]` options. A malformed `contents` is returned as is so that the
 /// deserializer reports the syntax error with its position.
-fn apply_overrides(toml: &str, overrides: &[DocumentMut]) -> String {
+fn merge_overrides(contents: &str, overrides: &[toml::Table]) -> String {
     if overrides.is_empty() {
-        return toml.to_string();
+        return contents.to_string();
     }
-    let Ok(mut document) = toml.parse::<DocumentMut>() else {
-        return toml.to_string();
+    let Ok(mut table) = contents.parse::<toml::Table>() else {
+        return contents.to_string();
     };
-    for override_document in overrides {
-        merge_tables(document.as_table_mut(), override_document.as_table());
+    for override_table in overrides {
+        merge_tables(&mut table, override_table);
     }
-    document.to_string()
+    table.to_string()
 }
 
-fn merge_tables(base: &mut dyn TableLike, overrides: &dyn TableLike) {
-    for (key, item) in overrides.iter() {
-        if let (Some(base), Some(item)) = (
-            base.get_mut(key).and_then(Item::as_table_like_mut),
-            item.as_table_like(),
-        ) {
-            merge_tables(base, item);
-        } else {
-            base.insert(key, into_standard_tables(item.clone()));
-        }
-    }
-}
-
-/// Turn the dotted tables of `lint.select = [...]` into `[lint]` headers.
-/// Inserted as is, their keys could be rendered after an unrelated header of
-/// the document and be attributed to it.
-fn into_standard_tables(item: Item) -> Item {
-    match item {
-        Item::Table(table) => {
-            let mut standard = Table::new();
-            standard.set_implicit(true);
-            for (key, item) in table {
-                standard.insert(&key, into_standard_tables(item));
+fn merge_tables(base: &mut toml::Table, overrides: &toml::Table) {
+    for (key, value) in overrides {
+        match (base.get_mut(key), value) {
+            (Some(toml::Value::Table(base)), toml::Value::Table(value)) => {
+                merge_tables(base, value)
             }
-            Item::Table(standard)
+            _ => {
+                base.insert(key.clone(), value.clone());
+            }
         }
-        item => item,
     }
 }
 
