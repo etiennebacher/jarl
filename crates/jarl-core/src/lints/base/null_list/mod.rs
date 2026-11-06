@@ -28,10 +28,9 @@ mod tests {
             // Bare `map()` without `library(purrr)`
             "map(x, function(x) NULL)",
             "map(x, ~NULL)",
-            // Bare `map()` that another attached package could mask
+            // Doesn't handle package namespaces
+            "library(purrr); map(x, function(x) NULL)",
             "library(maps); map(x, function(x) NULL)",
-            "library(purrr); library(maps); map(x, function(x) NULL)",
-            "library(maps); library(purrr); map(x, function(x) NULL)",
             // Not one of the targeted functions
             "purrr::map_chr(x, function(x) NULL)",
             "other::map(x, function(x) NULL)",
