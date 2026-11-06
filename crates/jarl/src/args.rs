@@ -62,7 +62,7 @@ fn parse_config_argument(value: &str) -> Result<ConfigArgument, String> {
         if path.extension().is_some_and(|ext| ext == "toml") {
             return Ok(ConfigArgument::File(path.to_path_buf()));
         } else {
-            return Err(format!("configuration file must be a TOML file"));
+            return Err("configuration file must be a TOML file".to_string());
         }
     }
 

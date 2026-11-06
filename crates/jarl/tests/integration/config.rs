@@ -519,7 +519,19 @@ fn test_config_file_windows_backslash_path() -> anyhow::Result<()> {
             .arg(r"configs\custom.toml")
             .run()
             .normalize_os_executable_name(),
-        @""
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    test.R [2:1] any_duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
     insta::assert_snapshot!(
         &mut case
@@ -532,7 +544,19 @@ fn test_config_file_windows_backslash_path() -> anyhow::Result<()> {
             .arg(r".\configs\custom.toml")
             .run()
             .normalize_os_executable_name(),
-        @""
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    test.R [2:1] any_duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
     Ok(())
 }
@@ -554,7 +578,19 @@ fn test_config_file_windows_absolute_forward_slash_path() -> anyhow::Result<()> 
             .arg(path)
             .run()
             .normalize_os_executable_name(),
-        @""
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    test.R [2:1] any_duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
     Ok(())
 }
