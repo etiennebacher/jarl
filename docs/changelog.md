@@ -33,7 +33,7 @@
 
 * New CLI argument `--config` to use a specific configuration file instead of
   the discovered ones, or to override some options of the configuration, e.g.
-  `--config "lint.select = ['any_is_na']"`. It can be passed several times.
+  `--config "lint.select = ['any_is_na']"` (#804).
 
 ### Bug fixes
 
