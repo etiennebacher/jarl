@@ -9,7 +9,6 @@
 mod add_jarl_ignore;
 mod allow_dirty;
 mod allow_no_vcs;
-mod assignment;
 mod comments;
 mod config;
 mod edge_cases;
