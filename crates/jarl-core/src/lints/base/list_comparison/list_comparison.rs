@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::get_function_name;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -57,7 +58,12 @@ pub fn list_comparison(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnos
     let mut mapper = None;
 
     for expression in [&left, &right] {
-        let Some(call) = expression.as_r_call() else {
+        // Also handle `x |> lapply(f)`, where the call is the right-hand side of a pipe.
+        let call = match expression.as_r_binary_expression() {
+            Some(pipe) if pipe.operator()?.kind() == RSyntaxKind::PIPE => pipe.right()?,
+            _ => expression.clone(),
+        };
+        let Some(call) = call.as_r_call() else {
             continue;
         };
 
@@ -79,7 +85,7 @@ pub fn list_comparison(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnos
 
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "list_comparison".to_string(),
+            Rule::ListComparison,
             format!(
                 "`{mapper}()` returns a list, so R must convert it to a vector before applying `{}`.",
                 operator.text_trimmed()
