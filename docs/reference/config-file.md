@@ -80,8 +80,6 @@ jarl check . --config "lint.select = ['any_is_na']"
 jarl check . --config "lint.undesirable_operator.operators = ['$']"
 ```
 
-Use single quotes for strings inside the TOML value so that they don't conflict with the double quotes around it in the shell.
-
 `--config` can be passed several times, but only once with a path. When the same option is overridden several times, the last value is used:
 
 ```sh
@@ -90,8 +88,6 @@ jarl check . \
   --config "lint.select = ['PERF']" \
   --config "lint.extend-select = ['any_is_na']"
 ```
-
-Like other CLI arguments, `--select`, `--extend-select` and `--ignore` take precedence over the configuration, including the options set with `--config`.
 
 ## Top-level arguments
 
