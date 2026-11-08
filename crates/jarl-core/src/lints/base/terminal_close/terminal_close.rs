@@ -57,23 +57,71 @@ pub fn terminal_close(ast: &RFunctionDefinition) -> anyhow::Result<Option<Diagno
         return Ok(None);
     };
 
-    let name = get_function_name(call.function()?);
-    let is_terminal_close = match name.as_str() {
-        "close" => true,
+    let close_call = match get_function_name(call.function()?).as_str() {
+        "close" => call.clone(),
         "return" => {
             let args: Vec<_> = call.arguments()?.items().iter().flatten().collect();
-            match args.as_slice() {
-                [arg] => arg
-                    .value()
-                    .and_then(|v| v.as_r_call().cloned())
-                    .and_then(|inner| inner.function().ok())
-                    .is_some_and(|f| get_function_name(f) == "close"),
-                _ => false,
+            let inner = match args.as_slice() {
+                [arg] => arg.value().and_then(|v| v.as_r_call().cloned()),
+                _ => None,
+            };
+            match inner {
+                Some(inner)
+                    if inner
+                        .function()
+                        .is_ok_and(|f| get_function_name(f) == "close") =>
+                {
+                    inner
+                }
+                _ => return Ok(None),
             }
         }
-        _ => false,
+        _ => return Ok(None),
     };
-    if !is_terminal_close {
+
+    // Only report connections created in the function itself: the closed
+    // object must be a variable assigned in the function body (ignoring
+    // nested functions).
+    let Some(connection) = close_call
+        .arguments()?
+        .items()
+        .iter()
+        .flatten()
+        .next()
+        .and_then(|arg| arg.value())
+        .and_then(|value| {
+            value
+                .as_r_identifier()
+                .map(|id| id.syntax().text_trimmed().to_string())
+        })
+    else {
+        return Ok(None);
+    };
+
+    let is_assigned = ast
+        .syntax()
+        .descendants()
+        .filter_map(RBinaryExpression::cast)
+        .filter(|binary| {
+            binary
+                .syntax()
+                .ancestors()
+                .find_map(RFunctionDefinition::cast)
+                .is_some_and(|f| f.syntax() == ast.syntax())
+        })
+        .any(|binary| {
+            let (Ok(left), Ok(op), Ok(right)) = (binary.left(), binary.operator(), binary.right())
+            else {
+                return false;
+            };
+            let target = match op.kind() {
+                RSyntaxKind::ASSIGN | RSyntaxKind::SUPER_ASSIGN | RSyntaxKind::EQUAL => left,
+                RSyntaxKind::ASSIGN_RIGHT | RSyntaxKind::SUPER_ASSIGN_RIGHT => right,
+                _ => return false,
+            };
+            target.syntax().text_trimmed() == connection.as_str()
+        });
+    if !is_assigned {
         return Ok(None);
     }
 
