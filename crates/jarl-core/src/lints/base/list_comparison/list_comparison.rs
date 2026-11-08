@@ -3,7 +3,8 @@ use crate::utils::get_function_name;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
-/// Version added: 0.6.0
+/// <!-- docs: start -->
+/// Version added: 0.8.0
 ///
 /// ## What it does
 ///
@@ -36,6 +37,7 @@ use biome_rowan::AstNode;
 /// ## References
 ///
 /// See `?lapply` and `?Comparison`.
+/// <!-- docs: end -->
 pub fn list_comparison(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let operator = ast.operator()?;
     if !matches!(
