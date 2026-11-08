@@ -18,7 +18,7 @@ use air_r_syntax::{
     RIfStatement, RStringValue, RSyntaxKind, RSyntaxNode,
 };
 use biome_rowan::{AstNode, AstSeparatedList, SyntaxNodeCast, TextRange, TextSize};
-use oak_core::syntax_ext::{AnyRSelectorExt, RIdentifierExt, RStringValueExt};
+use oak_core::syntax_ext::{AnyRSelectorExt, RIdentifierExt};
 use oak_semantic::DefinitionId;
 use oak_semantic::effects::BoundArguments;
 use oak_semantic::semantic_index::{
@@ -1392,7 +1392,7 @@ fn argument_name_is(arg: &RArgument, name: &str) -> bool {
 }
 
 fn string_literal_value(node: &RSyntaxNode) -> Option<String> {
-    node.clone().cast::<RStringValue>()?.string_text()
+    node.clone().cast::<RStringValue>()?.inner_string_text().ok().map(|t| t.text().to_string())
 }
 
 /// True if the value assigned by this binary assignment is a function
