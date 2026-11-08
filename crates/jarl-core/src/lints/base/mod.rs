@@ -61,6 +61,7 @@ pub(crate) mod stopifnot_all;
 pub(crate) mod string_boundary;
 pub(crate) mod strings_as_factors;
 pub(crate) mod system_file;
+pub(crate) mod terminal_close;
 pub(crate) mod todo_comment;
 pub(crate) mod true_false_symbol;
 pub(crate) mod undesirable_function;
