@@ -149,7 +149,9 @@ pub fn get_arg_by_name(args: &RArgumentList, name: &str) -> Option<RArgument> {
 fn argument_name(arg: &RArgument) -> Option<String> {
     match arg.name_clause()?.name().ok()? {
         AnyRArgumentName::RIdentifier(ident) => Some(ident.name_text()),
-        AnyRArgumentName::RStringValue(s) => s.inner_string_text().ok().map(|t| t.text().to_string()),
+        AnyRArgumentName::RStringValue(s) => {
+            s.inner_string_text().ok().map(|t| t.text().to_string())
+        }
         _ => None,
     }
 }

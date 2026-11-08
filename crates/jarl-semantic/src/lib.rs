@@ -1392,7 +1392,11 @@ fn argument_name_is(arg: &RArgument, name: &str) -> bool {
 }
 
 fn string_literal_value(node: &RSyntaxNode) -> Option<String> {
-    node.clone().cast::<RStringValue>()?.inner_string_text().ok().map(|t| t.text().to_string())
+    node.clone()
+        .cast::<RStringValue>()?
+        .inner_string_text()
+        .ok()
+        .map(|t| t.text().to_string())
 }
 
 /// True if the value assigned by this binary assignment is a function
