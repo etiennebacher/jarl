@@ -9,6 +9,7 @@
   * `apply_paste` (#563)
   * `assignment_on_if_no_else` (#605, @christopherkenny)
   * `function_return` (#750)
+  * `list_comparison` (#572, @Yousa-Mirage)
   * `null_list` (#785, @JosephBARBIERDARNAL)
   * `todo_comment` (#739, @Yousa-Mirage)
 
@@ -42,8 +43,8 @@
   @Yousa-Mirage).
 
 * Fix `outer_negation` handling of operator precedence, pipes, and `na.rm`,
-  and detect parenthesized and namespace-qualified calls. Its fix is now 
-  unsafe because it can change warnings and errors for inputs that are not 
+  and detect parenthesized and namespace-qualified calls. Its fix is now
+  unsafe because it can change warnings and errors for inputs that are not
   logical (#779, @Yousa-Mirage).
 
 * `for_loop_index` now detects reused variables in nested expressions,
@@ -217,7 +218,6 @@ Therefore, I release 0.7.1 so that all releases with 0.7.1 match, no matter wher
   * `glue` (#484, @novica)
   * `if_not_else` (#551)
   * `literal_coercion` (#504)
-  * `list_comparison` (#572, @Yousa-Mirage)
   * `missing_argument` (#506)
   * `nested_pipe` (#516)
   * `notin` (#459, @Yousa-Mirage)
