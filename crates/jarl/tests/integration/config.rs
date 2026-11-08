@@ -398,19 +398,15 @@ fn test_config_with_stdin() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn case_with_config_in(dir: &str) -> anyhow::Result<CliTest> {
-    CliTest::with_files([
-        ("test.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n"),
-        (
-            &format!("{dir}/custom.toml"),
-            "[lint]\nselect = [\"any_duplicated\"]\n",
-        ),
-    ])
-}
-
 #[test]
 fn test_config_file_absolute_path() -> anyhow::Result<()> {
-    let case = case_with_config_in("configs")?;
+    let case = CliTest::with_files([
+        ("test.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n"),
+        (
+            "configs/custom.toml",
+            "[lint]\nselect = [\"any_duplicated\"]\n",
+        ),
+    ])?;
     let path = case.root().join("configs").join("custom.toml");
     insta::assert_snapshot!(
         &mut case
@@ -447,7 +443,13 @@ fn test_config_file_absolute_path() -> anyhow::Result<()> {
 
 #[test]
 fn test_config_file_dot_relative_path() -> anyhow::Result<()> {
-    let case = case_with_config_in("configs")?;
+    let case = CliTest::with_files([
+        ("test.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n"),
+        (
+            "configs/custom.toml",
+            "[lint]\nselect = [\"any_duplicated\"]\n",
+        ),
+    ])?;
     insta::assert_snapshot!(
         &mut case
             .command()
@@ -483,7 +485,13 @@ fn test_config_file_dot_relative_path() -> anyhow::Result<()> {
 
 #[test]
 fn test_config_file_path_with_spaces() -> anyhow::Result<()> {
-    let case = case_with_config_in("my configs")?;
+    let case = CliTest::with_files([
+        ("test.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n"),
+        (
+            "my configs/custom.toml",
+            "[lint]\nselect = [\"any_duplicated\"]\n",
+        ),
+    ])?;
     insta::assert_snapshot!(
         &mut case
             .command()
@@ -559,11 +567,10 @@ fn test_config_file_parent_relative_path() -> anyhow::Result<()> {
 
 #[test]
 fn test_config_file_without_toml_extension() -> anyhow::Result<()> {
-    let case = case_with_config_in("configs")?;
-    std::fs::rename(
-        case.root().join("configs/custom.toml"),
-        case.root().join("configs/custom"),
-    )?;
+    let case = CliTest::with_files([
+        ("test.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n"),
+        ("configs/custom", "[lint]\nselect = [\"any_duplicated\"]\n"),
+    ])?;
     insta::assert_snapshot!(
         &mut case
             .command()
