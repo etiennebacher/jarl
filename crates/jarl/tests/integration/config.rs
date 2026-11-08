@@ -11,8 +11,6 @@ fn test_config_override_without_jarl_toml() -> anyhow::Result<()> {
             .command()
             .arg("check")
             .arg(".")
-            .arg("--output-format")
-            .arg("concise")
             .arg("--config")
             .arg("lint.select = ['any_is_na']")
             .run()
@@ -22,7 +20,14 @@ fn test_config_override_without_jarl_toml() -> anyhow::Result<()> {
     success: false
     exit_code: 1
     ----- stdout -----
-    test.R [1:1] any_is_na `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
 
     ── Summary ──────────────────────────────────────
     Found 1 error.
@@ -48,8 +53,6 @@ fn test_config_override_keeps_other_options_of_jarl_toml() -> anyhow::Result<()>
             .command()
             .arg("check")
             .arg(".")
-            .arg("--output-format")
-            .arg("concise")
             .arg("--config")
             .arg("lint.undesirable_operator.operators = ['$']")
             .run()
@@ -59,8 +62,21 @@ fn test_config_override_keeps_other_options_of_jarl_toml() -> anyhow::Result<()>
     success: false
     exit_code: 1
     ----- stdout -----
-    test.R [1:1] any_is_na `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
-    test.R [3:2] undesirable_operator `$` is listed as an undesirable operator.
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+    warning: undesirable_operator
+     --> test.R:3:2
+      |
+    3 | x$a
+      |  - `$` is listed as an undesirable operator.
+      |
+
 
     ── Summary ──────────────────────────────────────
     Found 2 errors.
@@ -85,8 +101,6 @@ fn test_config_override_applies_to_nested_jarl_toml() -> anyhow::Result<()> {
             .command()
             .arg("check")
             .arg(".")
-            .arg("--output-format")
-            .arg("concise")
             .arg("--config")
             .arg("lint.select = ['any_duplicated']")
             .run()
@@ -96,8 +110,22 @@ fn test_config_override_applies_to_nested_jarl_toml() -> anyhow::Result<()> {
     success: false
     exit_code: 1
     ----- stdout -----
-    sub/test.R [2:1] any_duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
-    test.R [2:1] any_duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
+    warning: any_duplicated
+     --> sub/test.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
+
+    warning: any_duplicated
+     --> test.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
+
 
     ── Summary ──────────────────────────────────────
     Found 2 errors.
@@ -117,8 +145,6 @@ fn test_several_config_overrides() -> anyhow::Result<()> {
             .command()
             .arg("check")
             .arg(".")
-            .arg("--output-format")
-            .arg("concise")
             .arg("--config")
             .arg("lint.select = ['any_is_na']")
             .arg("--config")
@@ -135,8 +161,21 @@ fn test_several_config_overrides() -> anyhow::Result<()> {
     success: false
     exit_code: 1
     ----- stdout -----
-    test.R [2:1] any_duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
-    test.R [3:2] undesirable_operator `$` is listed as an undesirable operator.
+    warning: any_duplicated
+     --> test.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
+
+    warning: undesirable_operator
+     --> test.R:3:2
+      |
+    3 | x$a
+      |  - `$` is listed as an undesirable operator.
+      |
+
 
     ── Summary ──────────────────────────────────────
     Found 2 errors.
@@ -165,8 +204,6 @@ fn test_config_file_replaces_discovered_jarl_toml() -> anyhow::Result<()> {
             .command()
             .arg("check")
             .arg(".")
-            .arg("--output-format")
-            .arg("concise")
             .arg("--config")
             .arg("configs/custom.toml")
             .run()
@@ -176,8 +213,22 @@ fn test_config_file_replaces_discovered_jarl_toml() -> anyhow::Result<()> {
     success: false
     exit_code: 1
     ----- stdout -----
-    sub/test.R [2:1] any_duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
-    test.R [2:1] any_duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
+    warning: any_duplicated
+     --> sub/test.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
+
+    warning: any_duplicated
+     --> test.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
+
 
     ── Summary ──────────────────────────────────────
     Found 2 errors.
@@ -200,8 +251,6 @@ fn test_config_file_and_overrides() -> anyhow::Result<()> {
             .command()
             .arg("check")
             .arg(".")
-            .arg("--output-format")
-            .arg("concise")
             .arg("--config")
             .arg("lint.extend-select = ['any_is_na']")
             .arg("--config")
@@ -213,8 +262,22 @@ fn test_config_file_and_overrides() -> anyhow::Result<()> {
     success: false
     exit_code: 1
     ----- stdout -----
-    test.R [1:1] any_is_na `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
-    test.R [2:1] any_duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+    warning: any_duplicated
+     --> test.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
+
 
     ── Summary ──────────────────────────────────────
     Found 2 errors.
@@ -241,8 +304,6 @@ fn test_config_file_relative_paths_resolved_from_cwd() -> anyhow::Result<()> {
             .command()
             .arg("check")
             .arg(".")
-            .arg("--output-format")
-            .arg("concise")
             .arg("--config")
             .arg("configs/custom.toml")
             .run()
@@ -252,7 +313,14 @@ fn test_config_file_relative_paths_resolved_from_cwd() -> anyhow::Result<()> {
     success: false
     exit_code: 1
     ----- stdout -----
-    R/kept.R [1:1] any_is_na `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
+    warning: any_is_na
+     --> R/kept.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
 
     ── Summary ──────────────────────────────────────
     Found 1 error.
@@ -351,8 +419,6 @@ fn test_config_file_absolute_path() -> anyhow::Result<()> {
             .command()
             .arg("check")
             .arg(".")
-            .arg("--output-format")
-            .arg("concise")
             .arg("--config")
             .arg(path)
             .run()
@@ -362,7 +428,14 @@ fn test_config_file_absolute_path() -> anyhow::Result<()> {
     success: false
     exit_code: 1
     ----- stdout -----
-    test.R [2:1] any_duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
+    warning: any_duplicated
+     --> test.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
+
 
     ── Summary ──────────────────────────────────────
     Found 1 error.
@@ -382,8 +455,6 @@ fn test_config_file_dot_relative_path() -> anyhow::Result<()> {
             .command()
             .arg("check")
             .arg(".")
-            .arg("--output-format")
-            .arg("concise")
             .arg("--config")
             .arg("./configs/custom.toml")
             .run()
@@ -393,7 +464,14 @@ fn test_config_file_dot_relative_path() -> anyhow::Result<()> {
     success: false
     exit_code: 1
     ----- stdout -----
-    test.R [2:1] any_duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
+    warning: any_duplicated
+     --> test.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
+
 
     ── Summary ──────────────────────────────────────
     Found 1 error.
@@ -413,8 +491,6 @@ fn test_config_file_path_with_spaces() -> anyhow::Result<()> {
             .command()
             .arg("check")
             .arg(".")
-            .arg("--output-format")
-            .arg("concise")
             .arg("--config")
             .arg("my configs/custom.toml")
             .run()
@@ -424,7 +500,14 @@ fn test_config_file_path_with_spaces() -> anyhow::Result<()> {
     success: false
     exit_code: 1
     ----- stdout -----
-    test.R [2:1] any_duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
+    warning: any_duplicated
+     --> test.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
+
 
     ── Summary ──────────────────────────────────────
     Found 1 error.
@@ -448,8 +531,6 @@ fn test_config_file_parent_relative_path() -> anyhow::Result<()> {
             .current_dir(case.root().join("project"))
             .arg("check")
             .arg(".")
-            .arg("--output-format")
-            .arg("concise")
             .arg("--config")
             .arg("../custom.toml")
             .run()
@@ -459,7 +540,14 @@ fn test_config_file_parent_relative_path() -> anyhow::Result<()> {
     success: false
     exit_code: 1
     ----- stdout -----
-    test.R [2:1] any_duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
+    warning: any_duplicated
+     --> test.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
+
 
     ── Summary ──────────────────────────────────────
     Found 1 error.
@@ -483,8 +571,6 @@ fn test_config_file_without_toml_extension() -> anyhow::Result<()> {
             .command()
             .arg("check")
             .arg(".")
-            .arg("--output-format")
-            .arg("concise")
             .arg("--config")
             .arg("configs/custom")
             .run()
@@ -513,8 +599,6 @@ fn test_config_file_windows_backslash_path() -> anyhow::Result<()> {
             .command()
             .arg("check")
             .arg(".")
-            .arg("--output-format")
-            .arg("concise")
             .arg("--config")
             .arg(r"configs\custom.toml")
             .run()
@@ -538,8 +622,6 @@ fn test_config_file_windows_backslash_path() -> anyhow::Result<()> {
             .command()
             .arg("check")
             .arg(".")
-            .arg("--output-format")
-            .arg("concise")
             .arg("--config")
             .arg(r".\configs\custom.toml")
             .run()
@@ -572,8 +654,6 @@ fn test_config_file_windows_absolute_forward_slash_path() -> anyhow::Result<()> 
             .command()
             .arg("check")
             .arg(".")
-            .arg("--output-format")
-            .arg("concise")
             .arg("--config")
             .arg(path)
             .run()
@@ -756,8 +836,6 @@ fn test_config_override_adds_table_before_other_headers() -> anyhow::Result<()> 
             .command()
             .arg("check")
             .arg(".")
-            .arg("--output-format")
-            .arg("concise")
             .arg("--config")
             .arg("lint.select = ['assignment']")
             .run()
@@ -767,7 +845,13 @@ fn test_config_override_adds_table_before_other_headers() -> anyhow::Result<()> 
     success: false
     exit_code: 1
     ----- stdout -----
-    test.R [1:1] assignment Use `<-` for assignment.
+    warning: assignment
+     --> test.R:1:1
+      |
+    1 | x = 1
+      | --- Use `<-` for assignment.
+      |
+
 
     ── Summary ──────────────────────────────────────
     Found 1 error.
@@ -787,8 +871,6 @@ fn test_config_override_with_quoted_inline_table_keys() -> anyhow::Result<()> {
             .command()
             .arg("check")
             .arg(".")
-            .arg("--output-format")
-            .arg("concise")
             .arg("--config")
             .arg("lint.select = ['undesirable_operator']")
             .arg("--config")
@@ -800,7 +882,14 @@ fn test_config_override_with_quoted_inline_table_keys() -> anyhow::Result<()> {
     success: false
     exit_code: 1
     ----- stdout -----
-    test.R [3:2] undesirable_operator `$` is listed as an undesirable operator. Use [[ instead.
+    warning: undesirable_operator
+     --> test.R:3:2
+      |
+    3 | x$a
+      |  - `$` is listed as an undesirable operator.
+      |
+      = help: Use [[ instead.
+
 
     ── Summary ──────────────────────────────────────
     Found 1 error.
@@ -819,8 +908,6 @@ fn test_config_override_with_unquoted_inline_table_keys() -> anyhow::Result<()> 
             .command()
             .arg("check")
             .arg(".")
-            .arg("--output-format")
-            .arg("concise")
             .arg("--config")
             .arg(r#"lint.undesirable_operator.operators = [{ foo = "Don't." }]"#)
             .run()
@@ -851,8 +938,6 @@ fn test_config_override_with_malformed_jarl_toml() -> anyhow::Result<()> {
             .command()
             .arg("check")
             .arg(".")
-            .arg("--output-format")
-            .arg("concise")
             .arg("--config")
             .arg("lint.select = ['any_is_na']")
             .run()
