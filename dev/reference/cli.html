@@ -434,6 +434,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><strong><code>--add-jarl-ignore[=&lt;REASON&gt;]</code></strong></p>
 <p>Automatically insert a <code># jarl-ignore</code> comment to suppress all violations. The default reason can be customized with <code>--add-jarl-ignore="my_reason"</code>.</p>
 <hr>
+<p><strong><code>--config &lt;CONFIG_OPTION&gt;</code></strong></p>
+<p>Either a path to a TOML configuration file or a TOML <code>&lt;KEY&gt; = &lt;VALUE&gt;</code> pair overriding an option of the configuration. This argument can be passed several times, but only once with a path:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">jarl</span> check . <span class="at">--config</span> path/to/custom.toml <span class="at">--config</span> <span class="st">"lint.select = ['any_is_na']"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>See <a href="../reference/config-file.html#using---config" target="_blank">Using <code>--config</code></a> for details.</p>
+<hr>
 <p><strong><code>-h, --help</code></strong></p>
 <p>Print help (see a summary with <code>-h</code>).</p>
 </section>
@@ -447,7 +452,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="examples" class="level3">
 <h3 class="anchored" data-anchor-id="examples">Examples</h3>
 <p>You can pass multiple options at once, for instance:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">jarl</span> check . <span class="at">--fix</span> <span class="at">--select</span> any_is_na,class_equals</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">jarl</span> check . <span class="at">--fix</span> <span class="at">--select</span> any_is_na,class_equals</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 </section>
 <section id="rule" class="level2">
