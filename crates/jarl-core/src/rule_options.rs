@@ -95,6 +95,7 @@ declare_rule_options! {
     base::duplicated_arguments => ResolvedDuplicatedArgumentsOptions,
     base::function_return => ResolvedFunctionReturnOptions,
     base::if_not_else => ResolvedIfNotElseOptions,
+    base::if_switch => ResolvedIfSwitchOptions,
     base::implicit_assignment => ResolvedImplicitAssignmentOptions,
     base::missing_argument => ResolvedMissingArgumentOptions,
     base::nested_pipe => ResolvedNestedPipeOptions,

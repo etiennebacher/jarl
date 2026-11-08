@@ -20,6 +20,7 @@ use crate::lints::base::cyclomatic_complexity::options::CyclomaticComplexityOpti
 use crate::lints::base::duplicated_arguments::options::DuplicatedArgumentsOptions;
 use crate::lints::base::function_return::options::FunctionReturnOptions;
 use crate::lints::base::if_not_else::options::IfNotElseOptions;
+use crate::lints::base::if_switch::options::IfSwitchOptions;
 use crate::lints::base::implicit_assignment::options::ImplicitAssignmentOptions;
 use crate::lints::base::missing_argument::options::MissingArgumentOptions;
 use crate::lints::base::nested_pipe::options::NestedPipeOptions;
@@ -465,6 +466,13 @@ pub struct LinterTomlOptions {
     /// Specifying both is an error.
     #[serde(rename = "if_not_else")]
     pub if_not_else: Option<IfNotElseOptions>,
+
+    /// # Options for the `if_switch` rule
+    ///
+    /// Use `max-branches` to set the number of equality branches from which an
+    /// `if`/`else` chain is reported.
+    #[serde(rename = "if_switch")]
+    pub if_switch: Option<IfSwitchOptions>,
 
     /// # Options for the `implicit_assignment` rule
     ///

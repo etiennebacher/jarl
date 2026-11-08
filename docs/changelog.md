@@ -9,6 +9,7 @@
   * `apply_paste` (#563)
   * `assignment_on_if_no_else` (#605, @christopherkenny)
   * `function_return` (#750)
+  * `if_switch` (#812)
   * `list_comparison` (#572, @Yousa-Mirage)
   * `null_list` (#785, @JosephBARBIERDARNAL)
   * `todo_comment` (#739, @Yousa-Mirage)
