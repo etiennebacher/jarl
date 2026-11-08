@@ -693,6 +693,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    TerminalClose => {
+        name: "terminal_close",
+        categories: [Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     TodoComment => {
         name: "todo_comment",
         categories: [Read],
