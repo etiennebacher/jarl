@@ -11,6 +11,10 @@ pub fn function_definition(
     func: &RFunctionDefinition,
     checker: &mut Checker,
 ) -> anyhow::Result<()> {
+    if checker.is_rule_enabled(Rule::CyclomaticComplexity) {
+        let diagnostic = cyclomatic_complexity(func, checker)?;
+        checker.report_diagnostic(diagnostic);
+    }
     if checker.is_rule_enabled(Rule::FunctionReturn) {
         let diagnostics = function_return(func, checker.rule_options.function_return.mode)?;
         for diagnostic in diagnostics {
@@ -20,11 +24,6 @@ pub fn function_definition(
     if checker.is_rule_enabled(Rule::TerminalClose) {
         checker.report_diagnostic(terminal_close(func)?);
     }
-    if checker.is_rule_enabled(Rule::CyclomaticComplexity) {
-        let diagnostic = cyclomatic_complexity(func, checker)?;
-        checker.report_diagnostic(diagnostic);
-    }
-
     if checker.is_rule_enabled(Rule::UnreachableCode) {
         let diagnostics = unreachable_code(func, checker)?;
         for diagnostic in diagnostics {
