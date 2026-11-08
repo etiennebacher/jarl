@@ -9,6 +9,7 @@
   * `apply_paste` (#563)
   * `assignment_on_if_no_else` (#605, @christopherkenny)
   * `function_return` (#750)
+  * `list_comparison` (#572, @Yousa-Mirage)
   * `null_list` (#785, @JosephBARBIERDARNAL)
   * `todo_comment` (#739, @Yousa-Mirage)
 
@@ -42,8 +43,8 @@
   @Yousa-Mirage).
 
 * Fix `outer_negation` handling of operator precedence, pipes, and `na.rm`,
-  and detect parenthesized and namespace-qualified calls. Its fix is now 
-  unsafe because it can change warnings and errors for inputs that are not 
+  and detect parenthesized and namespace-qualified calls. Its fix is now
+  unsafe because it can change warnings and errors for inputs that are not
   logical (#779, @Yousa-Mirage).
 
 * `for_loop_index` now detects reused variables in nested expressions,
