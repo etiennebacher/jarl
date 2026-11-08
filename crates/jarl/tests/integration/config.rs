@@ -1,11 +1,9 @@
 use crate::helpers::{CliTest, CommandExt};
 use crate::stdin::check_stdin;
 
-const CODE: &str = "any(is.na(x))\nany(duplicated(x))\nx$a\n";
-
 #[test]
 fn test_config_override_without_jarl_toml() -> anyhow::Result<()> {
-    let case = CliTest::with_file("test.R", CODE)?;
+    let case = CliTest::with_file("test.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n")?;
     insta::assert_snapshot!(
         &mut case
             .command()
@@ -42,7 +40,7 @@ fn test_config_override_without_jarl_toml() -> anyhow::Result<()> {
 #[test]
 fn test_config_override_keeps_other_options_of_jarl_toml() -> anyhow::Result<()> {
     let case = CliTest::with_files([
-        ("test.R", CODE),
+        ("test.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n"),
         (
             "jarl.toml",
             "[lint]\nselect = [\"undesirable_operator\", \"any_is_na\"]\n\n[lint.undesirable_operator]\noperators = [\"<<-\"]\n",
@@ -92,9 +90,9 @@ fn test_config_override_keeps_other_options_of_jarl_toml() -> anyhow::Result<()>
 fn test_config_override_applies_to_nested_jarl_toml() -> anyhow::Result<()> {
     let case = CliTest::with_files([
         ("jarl.toml", "[lint]\nselect = [\"any_is_na\"]\n"),
-        ("test.R", CODE),
+        ("test.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n"),
         ("sub/jarl.toml", "[lint]\nselect = [\"any_is_na\"]\n"),
-        ("sub/test.R", CODE),
+        ("sub/test.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n"),
     ])?;
     insta::assert_snapshot!(
         &mut case
@@ -139,7 +137,7 @@ fn test_config_override_applies_to_nested_jarl_toml() -> anyhow::Result<()> {
 
 #[test]
 fn test_several_config_overrides() -> anyhow::Result<()> {
-    let case = CliTest::with_file("test.R", CODE)?;
+    let case = CliTest::with_file("test.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n")?;
     insta::assert_snapshot!(
         &mut case
             .command()
@@ -191,9 +189,9 @@ fn test_several_config_overrides() -> anyhow::Result<()> {
 fn test_config_file_replaces_discovered_jarl_toml() -> anyhow::Result<()> {
     let case = CliTest::with_files([
         ("jarl.toml", "[lint]\nselect = [\"any_is_na\"]\n"),
-        ("test.R", CODE),
+        ("test.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n"),
         ("sub/jarl.toml", "[lint]\nselect = [\"any_is_na\"]\n"),
-        ("sub/test.R", CODE),
+        ("sub/test.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n"),
         (
             "configs/custom.toml",
             "[lint]\nselect = [\"any_duplicated\"]\n",
@@ -243,7 +241,7 @@ fn test_config_file_replaces_discovered_jarl_toml() -> anyhow::Result<()> {
 #[test]
 fn test_config_file_and_overrides() -> anyhow::Result<()> {
     let case = CliTest::with_files([
-        ("test.R", CODE),
+        ("test.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n"),
         ("custom.toml", "[lint]\nselect = [\"any_duplicated\"]\n"),
     ])?;
     insta::assert_snapshot!(
@@ -292,8 +290,8 @@ fn test_config_file_and_overrides() -> anyhow::Result<()> {
 #[test]
 fn test_config_file_relative_paths_resolved_from_cwd() -> anyhow::Result<()> {
     let case = CliTest::with_files([
-        ("R/excluded.R", CODE),
-        ("R/kept.R", CODE),
+        ("R/excluded.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n"),
+        ("R/kept.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n"),
         (
             "configs/custom.toml",
             "[lint]\nselect = [\"any_is_na\"]\nexclude = [\"R/excluded.R\"]\n",
@@ -335,7 +333,7 @@ fn test_config_file_relative_paths_resolved_from_cwd() -> anyhow::Result<()> {
 #[test]
 fn test_config_file_applies_to_files_outside_cwd() -> anyhow::Result<()> {
     let case = CliTest::with_files([
-        ("other/test.R", CODE),
+        ("other/test.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n"),
         ("work/custom.toml", "[lint]\nselect = [\"any_is_na\"]\n"),
     ])?;
     // `--statistics` avoids printing the path of a file outside of the cwd,
@@ -373,7 +371,7 @@ fn test_config_with_stdin() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         check_stdin(
             &case,
-            CODE,
+            "any(is.na(x))\nany(duplicated(x))\nx$a\n",
             &[
                 "--stdin-file-path",
                 "foo.R",
@@ -402,7 +400,7 @@ fn test_config_with_stdin() -> anyhow::Result<()> {
 
 fn case_with_config_in(dir: &str) -> anyhow::Result<CliTest> {
     CliTest::with_files([
-        ("test.R", CODE),
+        ("test.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n"),
         (
             &format!("{dir}/custom.toml"),
             "[lint]\nselect = [\"any_duplicated\"]\n",
@@ -522,7 +520,7 @@ fn test_config_file_path_with_spaces() -> anyhow::Result<()> {
 #[test]
 fn test_config_file_parent_relative_path() -> anyhow::Result<()> {
     let case = CliTest::with_files([
-        ("project/test.R", CODE),
+        ("project/test.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n"),
         ("custom.toml", "[lint]\nselect = [\"any_duplicated\"]\n"),
     ])?;
     insta::assert_snapshot!(
@@ -593,7 +591,7 @@ fn test_config_file_without_toml_extension() -> anyhow::Result<()> {
 #[test]
 fn test_config_only_one_file() -> anyhow::Result<()> {
     let case = CliTest::with_files([
-        ("test.R", CODE),
+        ("test.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n"),
         ("a.toml", "[lint]\n"),
         ("b.toml", "[lint]\n"),
     ])?;
@@ -624,7 +622,7 @@ fn test_config_only_one_file() -> anyhow::Result<()> {
 
 #[test]
 fn test_config_missing_file() -> anyhow::Result<()> {
-    let case = CliTest::with_file("test.R", CODE)?;
+    let case = CliTest::with_file("test.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n")?;
     insta::assert_snapshot!(
         &mut case
             .command()
@@ -651,7 +649,7 @@ fn test_config_missing_file() -> anyhow::Result<()> {
 
 #[test]
 fn test_config_invalid_toml() -> anyhow::Result<()> {
-    let case = CliTest::with_file("test.R", CODE)?;
+    let case = CliTest::with_file("test.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n")?;
     insta::assert_snapshot!(
         &mut case
             .command()
@@ -684,7 +682,7 @@ fn test_config_invalid_toml() -> anyhow::Result<()> {
 
 #[test]
 fn test_config_unknown_option() -> anyhow::Result<()> {
-    let case = CliTest::with_file("test.R", CODE)?;
+    let case = CliTest::with_file("test.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n")?;
     insta::assert_snapshot!(
         &mut case
             .command()
@@ -712,7 +710,10 @@ fn test_config_unknown_option() -> anyhow::Result<()> {
 
 #[test]
 fn test_config_invalid_file() -> anyhow::Result<()> {
-    let case = CliTest::with_files([("test.R", CODE), ("custom.toml", "[lint]\nfoo = 1\n")])?;
+    let case = CliTest::with_files([
+        ("test.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n"),
+        ("custom.toml", "[lint]\nfoo = 1\n"),
+    ])?;
     insta::assert_snapshot!(
         &mut case
             .command()
@@ -780,7 +781,7 @@ fn test_config_override_adds_table_before_other_headers() -> anyhow::Result<()> 
 
 #[test]
 fn test_config_override_with_quoted_inline_table_keys() -> anyhow::Result<()> {
-    let case = CliTest::with_file("test.R", CODE)?;
+    let case = CliTest::with_file("test.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n")?;
     insta::assert_snapshot!(
         &mut case
             .command()
@@ -817,7 +818,7 @@ fn test_config_override_with_quoted_inline_table_keys() -> anyhow::Result<()> {
 
 #[test]
 fn test_config_override_with_unquoted_inline_table_keys() -> anyhow::Result<()> {
-    let case = CliTest::with_file("test.R", CODE)?;
+    let case = CliTest::with_file("test.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n")?;
     insta::assert_snapshot!(
         &mut case
             .command()
@@ -847,7 +848,10 @@ fn test_config_override_with_unquoted_inline_table_keys() -> anyhow::Result<()> 
 fn test_config_override_with_malformed_jarl_toml() -> anyhow::Result<()> {
     // The syntax error is reported at its position in `jarl.toml`, not in a
     // document merged with the overrides.
-    let case = CliTest::with_files([("test.R", CODE), ("jarl.toml", "[lint]\nselect = [\n")])?;
+    let case = CliTest::with_files([
+        ("test.R", "any(is.na(x))\nany(duplicated(x))\nx$a\n"),
+        ("jarl.toml", "[lint]\nselect = [\n"),
+    ])?;
     insta::assert_snapshot!(
         &mut case
             .command()
