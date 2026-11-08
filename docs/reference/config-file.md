@@ -63,6 +63,32 @@ Storing a default `jarl.toml` in the home config directory may be useful to appl
 
 Note that Jarl cannot handle multiple config files, it will use the first one it finds.
 
+## Using `--config`
+
+The CLI argument `--config` takes either a path to a configuration file or a TOML `<KEY> = <VALUE>` pair.
+
+When given a path, Jarl uses this configuration file for all checked files and doesn't look for any `jarl.toml` (as described in the section above). The file doesn't need to be named `jarl.toml`. Relative paths in this file, such as `exclude` patterns, are resolved from the current working directory, not from the directory of the file.
+
+```sh
+jarl check . --config path/to/custom.toml
+```
+
+When given a `<KEY> = <VALUE>` pair, Jarl overrides this option of the configuration, whether it comes from a discovered `jarl.toml` or from a file passed to `--config`. The other options of the configuration are kept. Keys use the same names as in `jarl.toml`, prefixed with the table they belong to:
+
+```sh
+jarl check . --config "lint.select = ['any_is_na']"
+jarl check . --config "lint.undesirable_operator.operators = ['$']"
+```
+
+`--config` can be passed several times, but only once with a path. When the same option is overridden several times, the last value is used:
+
+```sh
+jarl check . \
+  --config path/to/custom.toml \
+  --config "lint.select = ['PERF']" \
+  --config "lint.extend-select = ['any_is_na']"
+```
+
 ## Top-level arguments
 
 ### `select`

@@ -137,7 +137,8 @@ fn run_jarl_linting(
     // Discover settings from the actual file path.
     let actual_file_path = vec![file_path.to_string_lossy().to_string()];
     let mut resolver = PathResolver::new();
-    for DiscoveredSettings { directory, settings, .. } in discover_settings(&actual_file_path)? {
+    for DiscoveredSettings { directory, settings, .. } in discover_settings(&actual_file_path, &[])?
+    {
         resolver.add(&directory, settings);
         tracing::debug!("Discovered settings from directory: {:?}", directory);
     }

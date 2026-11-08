@@ -65,7 +65,9 @@ fn setup_resolver(file_path: &Path, settings: Option<Settings>) -> PathResolver<
             resolver.add(file_path.parent().unwrap(), s);
         }
         None => {
-            if let Ok(discovered) = discover_settings(&[file_path.to_string_lossy().to_string()]) {
+            if let Ok(discovered) =
+                discover_settings(&[file_path.to_string_lossy().to_string()], &[])
+            {
                 for discovery in discovered {
                     resolver.add(&discovery.directory, discovery.settings);
                 }
