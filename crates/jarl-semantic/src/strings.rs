@@ -1,10 +1,9 @@
 //! String-literal parsing shared across jarl crates.
 //!
 //! Unquotes R string literals — standard (`"x"` / `'x'`) and raw
-//! (`r"(x)"`, `R'-[x]-'`, …) — into their contents. oak's
-//! `RStringValueExt::string_text` only strips surrounding quotes and does not
-//! understand raw strings, so these helpers fill that gap. Reused by the
-//! `glue` lint in jarl-core and by the custom-delimiter interpolation pass.
+//! (`r"(x)"`, `R'-[x]-'`, …) — into their contents, working from raw token
+//! text. Reused by the `glue` lint in jarl-core and by the custom-delimiter
+//! interpolation pass.
 
 /// Parse string literal content from its raw token text (including quotes).
 /// Handles both standard strings (`"abc"` or `'abc'`) and raw strings
