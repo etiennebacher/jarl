@@ -13,6 +13,11 @@ mod tests {
     fn test_no_lint_seq2() {
         // seq_len(...) or seq_along(...) expressions are fine
         expect_no_lint("seq_len(x)", "seq2", None);
+        expect_no_lint("seq_len(foo(x))", "seq2", None);
+        expect_no_lint("seq_len(length(x), 2)", "seq2", None);
+        expect_no_lint("seq_len(n = length(x))", "seq2", None);
+        expect_no_lint("seq_len(length(x, y))", "seq2", None);
+        expect_no_lint("seq_len(length(x = y))", "seq2", None);
         expect_no_lint("seq_along(x)", "seq2", None);
         expect_no_lint("seq(2, length(x))", "seq2", None);
         expect_no_lint("seq(length(x), 2)", "seq2", None);
@@ -43,6 +48,32 @@ mod tests {
           |
         1 | base::seq(base::length(x))
           | -------------------------- `seq(length(...))` can be wrong if the argument has length 0.
+          |
+          = help: Use `seq_along(...)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("seq_len(length(x))"),
+            @"
+        warning: seq2
+         --> <test>:1:1
+          |
+        1 | seq_len(length(x))
+          | ------------------ `seq_len(length(...))` is more verbose than `seq_along(...)`.
+          |
+          = help: Use `seq_along(...)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("base::seq_len(base::length(foo(x)))"),
+            @"
+        warning: seq2
+         --> <test>:1:1
+          |
+        1 | base::seq_len(base::length(foo(x)))
+          | ----------------------------------- `seq_len(length(...))` is more verbose than `seq_along(...)`.
           |
           = help: Use `seq_along(...)` instead.
         Found 1 error.
@@ -110,7 +141,9 @@ mod tests {
                     "seq(ncol(x))",
                     "seq(NROW(x))",
                     "seq(NCOL(x))",
-                    "seq(length(foo(x)))"
+                    "seq(length(foo(x)))",
+                    "seq_len(length(x))",
+                    "base::seq_len(base::length(foo(x)))"
                 ],
                 "seq2",
                 None
@@ -137,10 +170,28 @@ mod tests {
         "
         );
         assert_snapshot!(
+            snapshot_lint("seq_len(length(\n # a comment \nfoo(x)))"),
+            @"
+        warning: seq2
+         --> <test>:1:1
+          |
+        1 | / seq_len(length(
+        2 | |  # a comment 
+        3 | | foo(x)))
+          | |________- `seq_len(length(...))` is more verbose than `seq_along(...)`.
+          |
+          = help: Use `seq_along(...)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
             "no_fix_with_comments",
             get_fixed_text(
-                vec!["seq(length(\n # a comment \nfoo(x)))",],
-                "any_is_na",
+                vec![
+                    "seq(length(\n # a comment \nfoo(x)))",
+                    "seq_len(length(\n # a comment \nfoo(x)))",
+                ],
+                "seq2",
                 None
             )
         );

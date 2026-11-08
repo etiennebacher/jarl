@@ -1,11 +1,12 @@
 # for_loop_index
+
 ::: {.callout-note title="Added in 0.0.16" .low-opacity}
 :::
 
 ## What it does
 
-Checks whether the index symbol in a for loop is already used anywhere in
-the sequence of the same for loop.
+Checks whether the index variable in a `for` loop also occurs in its
+sequence expression.
 
 ## Why is this bad?
 
@@ -24,7 +25,7 @@ for (x in x) {
 Use instead:
 ```r
 x <- c(1, 2, 3)
-for (xi in x) {
-  xi + 1
+for (i in x) {
+  i + 1
 }
 ```

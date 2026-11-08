@@ -1,8 +1,10 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_function_name, get_function_namespace_prefix, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 
+/// <!-- docs: start -->
 /// Version added: 0.6.0
 ///
 /// ## What it does
@@ -32,6 +34,7 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// ## References
 ///
 /// See `?rep`
+/// <!-- docs: end -->
 pub fn rep_times_ignored(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let RCallFields { function, arguments } = ast.as_fields();
     let function = function?;
@@ -109,19 +112,17 @@ pub fn rep_times_ignored(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         object.to_trimmed_text(),
         length.to_trimmed_text()
     );
+    let each_placeholder = if each.is_empty() { "" } else { ", each = m" };
 
     Ok(Some(Diagnostic::new(
         ViolationData::new(
-            "rep_times_ignored".to_string(),
+            Rule::RepTimesIgnored,
             "`times` is ignored when `length.out` is supplied.".to_string(),
-            Some(format!("Use `{replacement}` instead.")),
+            Some(format!(
+                "Use `rep(x, length.out = n{each_placeholder})` instead."
+            )),
         ),
         range,
-        Fix {
-            content: replacement,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(range, replacement, node_contains_comments(ast.syntax())),
     )))
 }

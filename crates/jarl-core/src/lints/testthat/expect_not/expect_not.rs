@@ -1,17 +1,19 @@
 use crate::diagnostic::*;
-use crate::utils::{
-    get_arg_by_name_then_position, get_function_namespace_prefix, node_contains_comments,
-};
+use crate::rule_set::Rule;
+use crate::utils::{Formals, get_arg, get_function_namespace_prefix, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 
+const FORMALS_EXPECT_TRUE: Formals = &["object", "info", "label"];
+
+/// <!-- docs: start -->
 /// Version added: 0.2.0
 ///
 /// ## What it does
 ///
 /// Checks for usage of `expect_true(!x)` and `expect_false(!x)` in tests.
 ///
-/// ## Why is this bad
+/// ## Why is this bad?
 ///
 /// Using `expect_false(x)` is clearer and more direct than `expect_true(!x)`,
 /// and vice versa.
@@ -39,6 +41,7 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// # rlang "!!!" operator is left unmodified
 /// expect_true(!!!x)
 /// ```
+/// <!-- docs: end -->
 pub fn expect_not(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     // Only check expect_true and expect_false
     if fn_name != "expect_true" && fn_name != "expect_false" {
@@ -48,7 +51,7 @@ pub fn expect_not(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnosti
     let args = ast.arguments()?.items();
 
     // Get the first argument (object)
-    let object = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "object", 1));
+    let object = unwrap_or_return_none!(get_arg(ast, FORMALS_EXPECT_TRUE, "object"));
 
     // Skip if there are multiple arguments (e.g., expect_true(!x, label = "test"))
     // Only lint when there's exactly one argument
@@ -103,7 +106,7 @@ pub fn expect_not(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnosti
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "expect_not".to_string(),
+            Rule::TestthatExpectNot,
             format!(
                 "`{}(!x)` is not as clear as `{}(x)`.",
                 current_fn, replacement_fn
@@ -111,12 +114,11 @@ pub fn expect_not(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnosti
             Some(format!("Use `{}(x)` instead.", replacement_fn)),
         ),
         range,
-        Fix {
-            content: format!("{}{}({})", namespace_prefix, replacement_fn, inner_text),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(
+            range,
+            format!("{}{}({})", namespace_prefix, replacement_fn, inner_text),
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))

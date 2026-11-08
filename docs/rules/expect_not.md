@@ -1,4 +1,5 @@
 # expect_not
+
 ::: {.callout-note title="Added in 0.2.0" .low-opacity}
 :::
 
@@ -6,7 +7,7 @@
 
 Checks for usage of `expect_true(!x)` and `expect_false(!x)` in tests.
 
-## Why is this bad
+## Why is this bad?
 
 Using `expect_false(x)` is clearer and more direct than `expect_true(!x)`,
 and vice versa.

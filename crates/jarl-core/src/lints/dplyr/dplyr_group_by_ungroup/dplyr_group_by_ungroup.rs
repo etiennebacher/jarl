@@ -1,6 +1,7 @@
 use crate::check::Checker;
 use crate::checker::PackageOrigin;
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_function_name, get_function_namespace_prefix, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, TextRange};
@@ -31,6 +32,7 @@ fn by_arg_name(verb: &str) -> &'static str {
     }
 }
 
+/// <!-- docs: start -->
 /// Version added: 0.5.0
 ///
 /// ## What it does
@@ -71,6 +73,7 @@ fn by_arg_name(verb: &str) -> &'static str {
 /// ## References
 ///
 /// See the `.by` argument in `?dplyr::summarize`.
+/// <!-- docs: end -->
 pub fn dplyr_group_by_ungroup(
     ast: &RCall,
     fn_name: &str,
@@ -221,16 +224,15 @@ pub fn dplyr_group_by_ungroup(
             Some(pos) => format!("{}, {by_arg} = {grouping_args})", &verb_text[..pos]),
             None => return Ok(None),
         };
-        Fix {
-            content: fix_content,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(pipe_expr.syntax()),
-        }
+        Fix::new(
+            range,
+            fix_content,
+            node_contains_comments(pipe_expr.syntax()),
+        )
     };
 
     Ok(Some(Diagnostic::new(
-        ViolationData::new("dplyr_group_by_ungroup".to_string(), body, Some(suggestion)),
+        ViolationData::new(Rule::DplyrGroupByUngroup, body, Some(suggestion)),
         range,
         fix,
     )))

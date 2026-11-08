@@ -68,7 +68,7 @@ mod tests {
         1 | rep(1:10, 10:1, length.out = 50)
           | -------------------------------- `times` is ignored when `length.out` is supplied.
           |
-          = help: Use `rep(1:10, length.out = 50)` instead.
+          = help: Use `rep(x, length.out = n)` instead.
         Found 1 error.
         "
         );
@@ -81,7 +81,7 @@ mod tests {
         1 | rep(1:10, times = 10:1, length.out = 50)
           | ---------------------------------------- `times` is ignored when `length.out` is supplied.
           |
-          = help: Use `rep(1:10, length.out = 50)` instead.
+          = help: Use `rep(x, length.out = n)` instead.
         Found 1 error.
         "
         );
@@ -94,7 +94,7 @@ mod tests {
         1 | rep(1:10, 10:1, 50)
           | ------------------- `times` is ignored when `length.out` is supplied.
           |
-          = help: Use `rep(1:10, length.out = 50)` instead.
+          = help: Use `rep(x, length.out = n)` instead.
         Found 1 error.
         "
         );
@@ -107,7 +107,7 @@ mod tests {
         1 | rep(x = 1:2, 2, 50)
           | ------------------- `times` is ignored when `length.out` is supplied.
           |
-          = help: Use `rep(1:2, length.out = 50)` instead.
+          = help: Use `rep(x, length.out = n)` instead.
         Found 1 error.
         "
         );
@@ -120,7 +120,7 @@ mod tests {
         1 | rep(1:2, times = 2, 50)
           | ----------------------- `times` is ignored when `length.out` is supplied.
           |
-          = help: Use `rep(1:2, length.out = 50)` instead.
+          = help: Use `rep(x, length.out = n)` instead.
         Found 1 error.
         "
         );
@@ -133,7 +133,7 @@ mod tests {
         1 | base::rep(length.out = 50, times = 2, x = 1:2)
           | ---------------------------------------------- `times` is ignored when `length.out` is supplied.
           |
-          = help: Use `base::rep(1:2, length.out = 50)` instead.
+          = help: Use `rep(x, length.out = n)` instead.
         Found 1 error.
         "
         );
@@ -146,7 +146,7 @@ mod tests {
         1 | rep(x, times = 2, length.out = 5, each = 3)
           | ------------------------------------------- `times` is ignored when `length.out` is supplied.
           |
-          = help: Use `rep(x, length.out = 5, each = 3)` instead.
+          = help: Use `rep(x, length.out = n, each = m)` instead.
         Found 1 error.
         "
         );
@@ -159,7 +159,7 @@ mod tests {
         1 | rep(x, 2, 5, 3)
           | --------------- `times` is ignored when `length.out` is supplied.
           |
-          = help: Use `rep(x, length.out = 5, each = 3)` instead.
+          = help: Use `rep(x, length.out = n, each = m)` instead.
         Found 1 error.
         "
         );
@@ -172,7 +172,7 @@ mod tests {
         1 | rep(each = 3, x, length.out = 5, times = 2)
           | ------------------------------------------- `times` is ignored when `length.out` is supplied.
           |
-          = help: Use `rep(x, length.out = 5, each = 3)` instead.
+          = help: Use `rep(x, length.out = n, each = m)` instead.
         Found 1 error.
         "
         );
@@ -185,7 +185,7 @@ mod tests {
         1 | rep(x, times = 2, length.out = 5, each =)
           | ----------------------------------------- `times` is ignored when `length.out` is supplied.
           |
-          = help: Use `rep(x, length.out = 5)` instead.
+          = help: Use `rep(x, length.out = n)` instead.
         Found 1 error.
         "
         );
@@ -198,7 +198,7 @@ mod tests {
         1 | rep(x, times = 2, length.out = NULL)
           | ------------------------------------ `times` is ignored when `length.out` is supplied.
           |
-          = help: Use `rep(x, length.out = NULL)` instead.
+          = help: Use `rep(x, length.out = n)` instead.
         Found 1 error.
         "
         );

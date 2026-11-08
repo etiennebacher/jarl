@@ -1,10 +1,12 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_arg_by_name, get_function_name, node_contains_comments};
 use air_r_syntax::{RArgument, RCall};
 use biome_rowan::AstNode;
 
 pub struct StopifnotAll;
 
+/// <!-- docs: start -->
 /// Version added: 0.6.0
 ///
 /// ## What it does
@@ -36,9 +38,10 @@ pub struct StopifnotAll;
 /// ## References
 ///
 /// See `?stopifnot`.
+/// <!-- docs: end -->
 impl Violation for StopifnotAll {
-    fn name(&self) -> String {
-        "stopifnot_all".to_string()
+    fn rule(&self) -> Rule {
+        Rule::StopifnotAll
     }
 
     fn body(&self) -> String {
@@ -78,11 +81,10 @@ pub fn stopifnot_all(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagno
     Ok(Some(Diagnostic::new(
         StopifnotAll,
         range,
-        Fix {
-            content: arguments.into_syntax().to_string(),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(
+            range,
+            arguments.into_syntax().to_string(),
+            node_contains_comments(ast.syntax()),
+        ),
     )))
 }

@@ -33,11 +33,6 @@ updates:
     ignore:
       - dependency-name: '*'
         update-types: ['version-update:semver-patch']
-      # Replaces the "Url" type by "Uri", which doesn't make unanimity:
-      # https://github.com/gluon-lang/lsp-types/issues/284
-      - dependency-name: "lsp-types:*"
-      # Big perf hit in some cases: https://github.com/etiennebacher/jarl/pull/354
-      - dependency-name: "annotate-snippets:*"
       # Enable this one once they have a proper changelog:
       # https://github.com/zed-industries/zed/discussions/52144
       - dependency-name: "zed_extension_api:*"
@@ -45,6 +40,39 @@ updates:
       prefix: build
       prefix-development: chore(rust)
     groups:
+      # Major updates are intentionally ungrouped so each gets its own PR
       rust:
-        patterns:
-          - '*'
+        update-types:
+          - minor
+          - patch
+
+  # VS Code / Positron extension
+  - package-ecosystem: npm
+    directory: '/editors/code'
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 14
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-patch']
+      # Must not be newer than `engines.vscode` in package.json, otherwise
+      # `vsce package` fails
+      - dependency-name: '@types/vscode'
+      # Matches the Node version shipped with VS Code
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+      # Updated only when `engines.vscode`'s bundled Node version changes,
+      # as p-queue v10 requires Node 22, but `engines.vscode` `^1.91.0` only
+      # requires Node 20
+      - dependency-name: 'p-queue'
+        update-types: ['version-update:semver-major']
+    commit-message:
+      prefix: build
+      prefix-development: chore(vscode)
+    groups:
+      # Major updates are intentionally ungrouped so each gets its own PR
+      vscode:
+        update-types:
+          - minor
+          - patch

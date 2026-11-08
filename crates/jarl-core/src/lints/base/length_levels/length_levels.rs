@@ -1,8 +1,10 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_nested_functions_content, node_contains_comments};
 use air_r_syntax::*;
 pub struct LengthLevels;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.8
 ///
 /// ## What it does
@@ -28,9 +30,10 @@ pub struct LengthLevels;
 /// x <- factor(1:3)
 /// nlevels(x)
 /// ```
+/// <!-- docs: end -->
 impl Violation for LengthLevels {
-    fn name(&self) -> String {
-        "length_levels".to_string()
+    fn rule(&self) -> Rule {
+        Rule::LengthLevels
     }
     fn body(&self) -> String {
         "`length(levels(...))` is less readable than `nlevels(...)`.".to_string()
@@ -49,11 +52,10 @@ pub fn length_levels(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagno
     Ok(Some(Diagnostic::new(
         LengthLevels,
         range,
-        Fix {
-            content: format!("nlevels({inner_content})"),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(&outer_syntax),
-        },
+        Fix::new(
+            range,
+            format!("nlevels({inner_content})"),
+            node_contains_comments(&outer_syntax),
+        ),
     )))
 }

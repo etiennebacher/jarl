@@ -1,8 +1,12 @@
 use air_workspace::resolve::PathResolver;
-use jarl_core::discovery::{discover_r_file_paths, discover_settings, validate_exclude_patterns};
+use jarl_core::discovery::{
+    DiscoveredSettings, discover_r_file_paths, discover_settings, excluded_by_settings,
+    parse_settings, should_exclude_file_based_on_settings, validate_exclude_patterns,
+};
 use jarl_core::library_paths::is_r_available;
 use jarl_core::package_cache::{PackageCache, any_file_references_packages, find_r_project_root};
 use jarl_core::rule_set::Rule;
+use jarl_core::toml::parse_config_overrides;
 use jarl_core::{
     config::ArgsConfig,
     config::build_config,
@@ -24,7 +28,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
 
-use crate::args::CheckCommand;
+use crate::args::{CheckCommand, ConfigArgument};
 use crate::output_format::{self, GithubEmitter, print_notes, print_summary, print_warnings};
 use crate::statistics::print_statistics;
 use crate::status::ExitStatus;
@@ -44,7 +48,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     // ignoring them during discovery.
     validate_exclude_patterns(&args.exclude)?;
 
-    let mut resolver = PathResolver::new(Settings::default());
+    let mut resolver = PathResolver::new();
 
     // Track if we're using a config from a parent directory
     let mut parent_config_path: Option<PathBuf> = None;
@@ -54,8 +58,52 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     // override each discovered settings' `default_exclude` to `false` so the
     // default patterns from `DEFAULT_EXCLUDE_PATTERNS` are not applied during
     // discovery.
-    let discovered = discover_settings(&args.files)?;
-    let single_config = discovered.len() == 1;
+    let stdin = read_stdin_source(&args)?;
+    let sources = match &stdin {
+        Some((path, contents)) => output_format::Sources::with_stdin(path, contents.clone()),
+        None => output_format::Sources::default(),
+    };
+    let files: Vec<String> = match &stdin {
+        Some((path, _)) => vec![path.to_string_lossy().into_owned()],
+        None => args.files.clone(),
+    };
+
+    let mut config_file = None;
+    let mut overrides = Vec::new();
+    for config in &args.config {
+        match config {
+            ConfigArgument::File(_) if config_file.is_some() => {
+                return Err(anyhow::anyhow!(
+                    "`--config` can be a path to a configuration file only once."
+                ));
+            }
+            ConfigArgument::File(path) => config_file = Some(air_fs::normalize_path(path)),
+            ConfigArgument::Override(table) => overrides.push(table.clone()),
+        }
+    }
+
+    // A `--config` file, or overrides that no `jarl.toml` picks up, aren't tied
+    // to a directory: their relative paths are resolved from the working
+    // directory, and they apply to all files, even those outside of it.
+    let root = cwd.clone().unwrap_or_default();
+    let mut discovered = match &config_file {
+        Some(path) => vec![DiscoveredSettings {
+            directory: root.clone(),
+            settings: parse_settings(path, &root, &overrides)?,
+            config_path: Some(path.clone()),
+        }],
+        None => discover_settings(&files, &overrides)?,
+    };
+    let settings_apply_everywhere = config_file.is_some() || discovered.is_empty();
+    if discovered.is_empty() && !overrides.is_empty() {
+        discovered.push(DiscoveredSettings {
+            directory: root.clone(),
+            settings: parse_config_overrides("", &overrides, &root)?,
+            config_path: None,
+        });
+    }
+    // No need to tell which config was used when it was passed explicitly.
+    let single_config = discovered.len() == 1 && config_file.is_none();
 
     for mut ds in discovered {
         if args.no_default_exclude {
@@ -74,16 +122,37 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         resolver.add(&ds.directory, ds.settings);
     }
 
-    let paths = discover_r_file_paths(
-        &args.files,
-        &args.exclude,
-        &resolver,
-        true,
-        args.no_default_exclude,
-    )
-    .into_iter()
-    .filter_map(Result::ok)
-    .collect::<Vec<_>>();
+    // Like a file found on disk, stdin code is not linted when the settings
+    // exclude its path. Without any `jarl.toml`, the default settings still
+    // apply (e.g. `renv/` is excluded).
+    if let Some((path, _)) = &stdin {
+        let excluded = if resolver.items().is_empty() {
+            let mut settings = Settings::default();
+            if args.no_default_exclude {
+                settings.linter.default_exclude = Some(false);
+            }
+            excluded_by_settings(path, &settings, &cwd.clone().unwrap_or_default())
+        } else {
+            should_exclude_file_based_on_settings(path, &resolver)
+        };
+        if excluded {
+            return Ok(ExitStatus::Success);
+        }
+    }
+
+    let paths = match &stdin {
+        Some((path, _)) => vec![path.clone()],
+        None => discover_r_file_paths(
+            &args.files,
+            &args.exclude,
+            &resolver,
+            true,
+            args.no_default_exclude,
+        )
+        .into_iter()
+        .filter_map(Result::ok)
+        .collect::<Vec<_>>(),
+    };
 
     if paths.is_empty() {
         println!(
@@ -95,7 +164,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     }
 
     let check_config = ArgsConfig {
-        files: args.files.iter().map(|s| s.into()).collect(),
+        files: files.iter().map(|s| s.into()).collect(),
         fix: args.fix,
         unsafe_fixes: args.unsafe_fixes,
         fix_only: args.fix_only,
@@ -105,16 +174,18 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         min_r_version: args.min_r_version.clone(),
         allow_dirty: args.allow_dirty,
         allow_no_vcs: args.allow_no_vcs,
-        assignment: args.assignment.clone(),
     };
 
     // Group paths by their closest resolved config directory, so each file is
     // checked with the settings from the nearest jarl.toml.
     let mut groups: HashMap<Option<PathBuf>, Vec<PathBuf>> = HashMap::new();
     for path in paths {
-        let key = resolver
-            .resolve(&path)
-            .map(|item| item.path().to_path_buf());
+        let item = if settings_apply_everywhere {
+            resolver.items().first()
+        } else {
+            resolver.resolve(&path)
+        };
+        let key = item.map(|item| item.path().to_path_buf());
         groups.entry(key).or_default().push(path);
     }
 
@@ -130,10 +201,10 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
             .and_then(|dir| resolver.items().iter().find(|item| item.path() == dir))
             .map(|item| item.value());
 
-        let config = build_config(&check_config, settings, group_paths.clone())?;
+        let mut config = build_config(&check_config, settings, group_paths.clone())?;
 
         if !config.rules_to_apply.has_package_specific_rules() {
-            file_results.extend(jarl_core::check::check(config));
+            file_results.extend(run_check(config, stdin.as_ref()));
             continue;
         }
 
@@ -160,18 +231,16 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         }
 
         let r_pkg_names = config.rules_to_apply.pkg_names_from_category();
-        drop(config);
 
         // Skip the expensive Rscript call if no file in this group actually
         // references any of the target packages. In that case, strip the
         // package-specific rules since they can't produce meaningful results
         // without a PackageCache.
         if !any_file_references_packages(&group_paths, &r_pkg_names) {
-            let mut config = build_config(&check_config, settings, group_paths)?;
             config.rules_to_apply = config
                 .rules_to_apply
                 .filter(|r| !r.categories().iter().any(|c| c.is_package_specific()));
-            file_results.extend(jarl_core::check::check(config));
+            file_results.extend(run_check(config, stdin.as_ref()));
             continue;
         }
 
@@ -194,7 +263,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
                 .clone();
 
             config.package_cache = cache;
-            file_results.extend(jarl_core::check::check(config));
+            file_results.extend(run_check(config, stdin.as_ref()));
         }
     }
 
@@ -241,28 +310,33 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         .collect();
 
     all_diagnostics_flat.sort();
+    let mut stdout = std::io::stdout();
 
     if args.statistics {
-        return print_statistics(&all_diagnostics_flat, parent_config_path);
-    }
+        // Statistics must still report parse errors and preserve a failing exit status.
+        let has_errors = !all_errors.is_empty();
+        if has_errors {
+            FullEmitter.emit(&mut stdout, &[], &all_errors, &sources)?;
+        }
 
-    let mut stdout = std::io::stdout();
+        return print_statistics(&all_diagnostics_flat, has_errors, parent_config_path);
+    }
 
     match args.output_format {
         OutputFormat::Concise => {
-            ConciseEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
+            ConciseEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors, &sources)?;
         }
         OutputFormat::Json => {
-            JsonEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
+            JsonEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors, &sources)?;
         }
         OutputFormat::Github => {
-            GithubEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
+            GithubEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors, &sources)?;
         }
         OutputFormat::Sarif => {
-            SarifEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
+            SarifEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors, &sources)?;
         }
         OutputFormat::Full => {
-            FullEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
+            FullEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors, &sources)?;
         }
     }
 
@@ -277,15 +351,14 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         // ── Summary ──
         print_summary(&all_diagnostics_flat, !all_errors.is_empty());
 
+        // Only when the user asked for fixes: otherwise nothing in the output
+        // claims these violations were fixable in the first place.
+        if args.fix || args.fix_only {
+            output_format::print_roxygen_fix_note(&all_diagnostics_flat);
+        }
+
         // ── Warnings ──
         let mut warnings: Vec<String> = Vec::new();
-
-        if check_config.assignment.is_some() {
-            warnings.push(
-                "`--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead."
-                    .to_string(),
-            );
-        }
 
         if unused_fn_hidden {
             warnings.push(format!(
@@ -295,16 +368,6 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
                  - or explicitly include 'unused_function' in the set of rules.",
                 unused_fn_count
             ));
-        }
-
-        for item in resolver.items() {
-            if item.value().linter.deprecated_assignment_syntax {
-                warnings.push(
-                    "Argument `assignment` in `[lint]` is deprecated. \
-                     Use `[lint.assignment]` with `operator` instead."
-                        .to_string(),
-                );
-            }
         }
 
         // Deprecation warnings for explicitly-used deprecated rules.
@@ -421,7 +484,7 @@ fn add_jarl_ignore_comments(
         for diagnostic in &diagnostics {
             let start: usize = diagnostic.range.start().into();
             let end: usize = diagnostic.range.end().into();
-            let rule_name = &diagnostic.message.name;
+            let rule_name = diagnostic.message.rule.name();
 
             let edit = if is_rmd {
                 create_suppression_edit_in_rmd(&content, start, end, rule_name, reason)
@@ -434,7 +497,7 @@ fn add_jarl_ignore_comments(
                     edit.insert_point.offset,
                     edit.insert_point.indent,
                     edit.insert_point.needs_leading_newline,
-                    rule_name.clone(),
+                    rule_name.to_string(),
                 ));
             }
         }
@@ -565,16 +628,50 @@ fn hide_unused_function_if_needed(
     let unused_fn_count = all_diagnostics
         .iter()
         .flat_map(|(_path, diagnostics)| diagnostics.iter())
-        .filter(|d| d.message.name == "unused_function")
+        .filter(|d| d.message.rule == Rule::UnusedFunction)
         .count();
 
     let hidden = !explicitly_selected && unused_fn_count > threshold_ignore;
     if hidden {
         for (_path, diagnostics) in all_diagnostics.iter_mut() {
-            diagnostics.retain(|d| d.message.name != "unused_function");
+            diagnostics.retain(|d| d.message.rule != Rule::UnusedFunction);
         }
         all_diagnostics.retain(|(_path, diagnostics)| !diagnostics.is_empty());
     }
 
     (hidden, unused_fn_count)
+}
+
+/// With `jarl check --stdin-file-path <PATH>`, read the code from stdin and
+/// return it with the (absolute) virtual path it stands for. `None` when not
+/// reading from stdin.
+fn read_stdin_source(args: &CheckCommand) -> Result<Option<(PathBuf, String)>> {
+    let Some(file_path) = &args.stdin_file_path else {
+        return Ok(None);
+    };
+
+    let mut contents = String::new();
+    std::io::Read::read_to_string(&mut std::io::stdin(), &mut contents)
+        .map_err(|e| anyhow::anyhow!("Failed to read from stdin: {e}"))?;
+
+    Ok(Some((
+        air_fs::normalize_path(PathBuf::from(file_path)),
+        contents,
+    )))
+}
+
+/// Check the files of `config`, or the stdin buffer standing in for its only
+/// path when there is one.
+fn run_check(
+    config: jarl_core::config::Config,
+    stdin: Option<&(PathBuf, String)>,
+) -> Vec<(String, Result<Vec<Diagnostic>>)> {
+    let Some((path, contents)) = stdin else {
+        return jarl_core::check::check(config);
+    };
+    let name = air_fs::relativize_path(path);
+    vec![(
+        name,
+        jarl_core::check::check_contents(contents, path, config),
+    )]
 }

@@ -67,7 +67,7 @@ To automatically format code, use [Air](https://posit-dev.github.io/air/) or [`s
 
 ### Configuration
 
-Persistent rule selection, file inclusion/exclusion, and rule-specific options can be stored in a `jarl.toml` file so that everyone contributing to a project uses the same configuration:
+Persistent rule selection, file inclusion/exclusion, and rule-specific options can be stored in a `jarl.toml` (or `.jarl.toml`) file so that everyone contributing to a project uses the same configuration:
 
 ```toml
 [lint]

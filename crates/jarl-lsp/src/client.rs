@@ -5,8 +5,8 @@
 
 use anyhow::Result;
 use crossbeam::channel;
+use gen_lsp_types::{self as types};
 use lsp_server::{Message, Notification, Request, RequestId, Response, ResponseError};
-use lsp_types::{self as types};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -44,10 +44,7 @@ impl Client {
     }
 
     /// Send a notification to the client
-    pub fn send_notification<N: types::notification::Notification>(
-        &self,
-        params: N::Params,
-    ) -> Result<()>
+    pub fn send_notification<N: types::Notification>(&self, params: N::Params) -> Result<()>
     where
         N::Params: Serialize,
     {
@@ -62,7 +59,7 @@ impl Client {
     }
 
     /// Send a request to the client and register a response handler
-    pub fn send_request<R: types::request::Request>(
+    pub fn send_request<R: types::Request>(
         &self,
         params: R::Params,
         _handler: impl FnOnce(R::Result) + Send + 'static,
@@ -104,8 +101,7 @@ impl Client {
     pub fn send_response(&self, id: RequestId, result: impl Serialize) -> Result<()> {
         let response = Response {
             id,
-            result: Some(serde_json::to_value(result)?),
-            error: None,
+            response_result: Ok(serde_json::to_value(result)?),
         };
 
         self.sender.send(Message::Response(response))?;
@@ -114,7 +110,7 @@ impl Client {
 
     /// Send an error response to a client request
     pub fn send_error_response(&self, id: RequestId, error: ResponseError) -> Result<()> {
-        let response = Response { id, result: None, error: Some(error) };
+        let response = Response { id, response_result: Err(error) };
 
         self.sender.send(Message::Response(response))?;
         Ok(())
@@ -123,19 +119,19 @@ impl Client {
     /// Convenience method to publish diagnostics
     pub fn publish_diagnostics(
         &self,
-        uri: types::Url,
+        uri: types::Uri,
         diagnostics: Vec<types::Diagnostic>,
         version: Option<i32>,
     ) -> Result<()> {
-        self.send_notification::<types::notification::PublishDiagnostics>(
+        self.send_notification::<types::PublishDiagnosticsNotification>(
             types::PublishDiagnosticsParams { uri, diagnostics, version },
         )
     }
 
     /// Convenience method to show a message to the user
     pub fn show_message(&self, message: &str, message_type: types::MessageType) -> Result<()> {
-        self.send_notification::<types::notification::ShowMessage>(types::ShowMessageParams {
-            typ: message_type,
+        self.send_notification::<types::ShowMessageNotification>(types::ShowMessageParams {
+            kind: message_type,
             message: message.to_string(),
         })
     }
@@ -156,14 +152,14 @@ impl Client {
              This message is shown once per session.",
             s = if hidden_count == 1 { "" } else { "s" },
         );
-        self.show_message(&message, types::MessageType::INFO)?;
+        self.show_message(&message, types::MessageType::Info)?;
         Ok(true)
     }
 
     /// Convenience method to log a message
     pub fn log_message(&self, message: &str, message_type: types::MessageType) -> Result<()> {
-        self.send_notification::<types::notification::LogMessage>(types::LogMessageParams {
-            typ: message_type,
+        self.send_notification::<types::LogMessageNotification>(types::LogMessageParams {
+            kind: message_type,
             message: message.to_string(),
         })
     }
@@ -188,7 +184,7 @@ impl Client {
                 elapsed
             );
 
-            if let Some(error) = &response.error {
+            if let Err(error) = &response.response_result {
                 error!(
                     "Request {} failed: {} - {}",
                     pending_request.method, error.code, error.message
@@ -263,14 +259,32 @@ pub mod error_codes {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::mpsc;
 
-    fn create_test_client() -> (Client, mpsc::Receiver<Message>) {
-        let (sender, _receiver) = channel::unbounded();
-        let client = Client::new(sender);
-        // Convert crossbeam receiver to mpsc for compatibility
-        let (_mpsc_sender, mpsc_receiver) = mpsc::channel();
-        (client, mpsc_receiver)
+    fn create_test_client() -> (Client, channel::Receiver<Message>) {
+        let (sender, receiver) = channel::unbounded();
+        (Client::new(sender), receiver)
+    }
+
+    /// Method and params of the next message the client sent
+    fn next_notification(receiver: &channel::Receiver<Message>) -> (String, serde_json::Value) {
+        match receiver.try_recv().expect("no message was sent") {
+            Message::Notification(notification) => (notification.method, notification.params),
+            other => panic!("expected a notification, got {other:?}"),
+        }
+    }
+
+    fn test_diagnostic() -> types::Diagnostic {
+        types::Diagnostic {
+            range: types::Range::new(types::Position::new(0, 0), types::Position::new(0, 3)),
+            severity: Some(types::DiagnosticSeverity::Warning),
+            code: Some(types::Code::String("any_duplicated".to_string())),
+            code_description: None,
+            source: Some(crate::DIAGNOSTIC_SOURCE.to_string()),
+            message: types::Message::String("Use anyDuplicated()".to_string()),
+            tags: None,
+            related_information: None,
+            data: None,
+        }
     }
 
     #[test]
@@ -287,5 +301,142 @@ mod tests {
         let lsp_error = error.to_lsp_error();
         assert_eq!(lsp_error.code, lsp_server::ErrorCode::InternalError as i32);
         assert_eq!(lsp_error.message, "Test error");
+    }
+
+    #[test]
+    fn test_send_request_uses_protocol_method_and_tracks_it() {
+        let (client, receiver) = create_test_client();
+
+        client
+            .send_request::<types::WorkspaceFoldersRequest>((), |_| {})
+            .unwrap();
+
+        let request = match receiver.try_recv().expect("no message was sent") {
+            Message::Request(request) => request,
+            other => panic!("expected a request, got {other:?}"),
+        };
+        assert_eq!(request.method, "workspace/workspaceFolders");
+        assert_eq!(request.id, RequestId::from(1));
+        assert_eq!(client.pending_requests.lock().unwrap().len(), 1);
+
+        // Receiving the response retires the pending entry.
+        client.handle_response(Response::new_ok(
+            RequestId::from(1),
+            serde_json::Value::Null,
+        ));
+        assert!(client.pending_requests.lock().unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_send_response_wire_format() {
+        let (client, receiver) = create_test_client();
+
+        client
+            .send_response(RequestId::from(1), serde_json::json!({ "ok": true }))
+            .unwrap();
+        client
+            .send_error_response(RequestId::from(2), anyhow::anyhow!("boom").to_lsp_error())
+            .unwrap();
+
+        let success = match receiver.try_recv().expect("no message was sent") {
+            Message::Response(response) => serde_json::to_value(response).unwrap(),
+            other => panic!("expected a response, got {other:?}"),
+        };
+        assert_eq!(success["id"], 1);
+        assert_eq!(success["result"]["ok"], true);
+
+        let failure = match receiver.try_recv().expect("no message was sent") {
+            Message::Response(response) => serde_json::to_value(response).unwrap(),
+            other => panic!("expected a response, got {other:?}"),
+        };
+        assert_eq!(failure["id"], 2);
+        assert_eq!(failure["error"]["code"], error_codes::INTERNAL_ERROR);
+        assert_eq!(failure["error"]["message"], "boom");
+    }
+
+    #[test]
+    fn test_cleanup_pending_requests_drops_timed_out_entries() {
+        let (client, _receiver) = create_test_client();
+
+        client
+            .send_request::<types::WorkspaceFoldersRequest>((), |_| {})
+            .unwrap();
+        assert_eq!(client.pending_requests.lock().unwrap().len(), 1);
+
+        client.cleanup_pending_requests(std::time::Duration::from_secs(60));
+        assert_eq!(client.pending_requests.lock().unwrap().len(), 1);
+
+        std::thread::sleep(std::time::Duration::from_millis(1));
+        client.cleanup_pending_requests(std::time::Duration::ZERO);
+        assert!(client.pending_requests.lock().unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_publish_diagnostics_wire_format() {
+        let (client, receiver) = create_test_client();
+        let uri = types::Uri::parse("file:///test.R").unwrap();
+
+        client
+            .publish_diagnostics(uri, vec![test_diagnostic()], Some(7))
+            .unwrap();
+
+        let (method, params) = next_notification(&receiver);
+        assert_eq!(method, "textDocument/publishDiagnostics");
+        assert_eq!(params["uri"], "file:///test.R");
+        assert_eq!(params["version"], 7);
+
+        let diagnostic = &params["diagnostics"][0];
+        assert_eq!(diagnostic["severity"], 2);
+        assert_eq!(diagnostic["source"], "Jarl");
+        assert_eq!(diagnostic["range"]["end"]["character"], 3);
+        // `code` and `message` are untagged enums, so they have to reach the
+        // client as bare values rather than as tagged objects.
+        assert_eq!(diagnostic["code"], "any_duplicated");
+        assert_eq!(diagnostic["message"], "Use anyDuplicated()");
+    }
+
+    #[test]
+    fn test_show_message_wire_format() {
+        let (client, receiver) = create_test_client();
+
+        client
+            .show_message("hello", types::MessageType::Info)
+            .unwrap();
+
+        let (method, params) = next_notification(&receiver);
+        assert_eq!(method, "window/showMessage");
+        // The field is `kind` in Rust but the protocol calls it `type`.
+        assert_eq!(params["type"], 3);
+        assert_eq!(params["message"], "hello");
+    }
+
+    #[test]
+    fn test_log_message_wire_format() {
+        let (client, receiver) = create_test_client();
+
+        client
+            .log_message("logged", types::MessageType::Log)
+            .unwrap();
+
+        let (method, params) = next_notification(&receiver);
+        assert_eq!(method, "window/logMessage");
+        assert_eq!(params["type"], 4);
+        assert_eq!(params["message"], "logged");
+    }
+
+    #[test]
+    fn test_unused_fn_threshold_notified_once() {
+        let (client, receiver) = create_test_client();
+
+        assert!(client.notify_unused_fn_threshold_once(3).unwrap());
+        assert!(!client.notify_unused_fn_threshold_once(3).unwrap());
+
+        let (method, params) = next_notification(&receiver);
+        assert_eq!(method, "window/showMessage");
+        assert_eq!(params["type"], 3);
+        assert!(
+            receiver.try_recv().is_err(),
+            "the notification should only be sent once per session"
+        );
     }
 }

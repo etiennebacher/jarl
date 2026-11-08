@@ -22,7 +22,7 @@ stop('x')
 stop('x')
 ",
         ),
-        ("test2.R", "mean(x <- 1)"),
+        ("test2.R", "mean(x <- 1); x"),
     ])?;
 
     insta::assert_snapshot!(
@@ -56,7 +56,7 @@ stop('x')
 
 #[test]
 fn test_stats_no_violation() -> anyhow::Result<()> {
-    let case = CliTest::with_file("test.R", "x <- 1")?;
+    let case = CliTest::with_file("test.R", "1 + 1")?;
 
     insta::assert_snapshot!(
         &mut case
@@ -74,6 +74,74 @@ fn test_stats_no_violation() -> anyhow::Result<()> {
     All checks passed!
 
     ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_stats_with_syntax_error() -> anyhow::Result<()> {
+    let case = CliTest::with_file("test.R", "repeat")?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--statistics")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    error: Expected a loop body but instead found the end of the file.
+     --> test.R:1:7
+      |
+    1 | repeat
+      |       ^
+      |
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_stats_with_diagnostic_and_syntax_error() -> anyhow::Result<()> {
+    let case = CliTest::with_file("test.R", "any(is.na(x))\nrepeat")?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("any_is_na")
+            .arg("--statistics")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+        1 [ ] any_is_na
+
+    Rules with `[*]` have an automatic safe fix.
+    Rules with `[^]` have an automatic unsafe fix.
+
+    ----- stderr -----
+    error: Expected a loop body but instead found the end of the file.
+     --> test.R:2:7
+      |
+    2 | repeat
+      |       ^
+      |
     "
     );
 
@@ -210,6 +278,50 @@ any(is.na(x))
     ── Summary ──────────────────────────────────────
     Found 17 errors.
     17 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+// A fixable rule whose violation sits in an `@examples` section is reported as
+// unfixable, so the output says why.
+#[test]
+fn test_stats_roxygen_fix_note() -> anyhow::Result<()> {
+    let case = CliTest::package_with_files([(
+        "R/test.R",
+        "\
+#' Title
+#' @examples
+#' any(is.na(x))
+foo <- function() NULL
+",
+    )])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("any_is_na")
+            .arg("--statistics")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+        1 [ ] any_is_na
+
+    Rules with `[*]` have an automatic safe fix.
+    Rules with `[^]` have an automatic unsafe fix.
+
+    Some fixes are disabled because the violations are in `@examples` sections.
+    Set `fix-roxygen = true` in `jarl.toml` to apply them.
 
     ----- stderr -----
     "

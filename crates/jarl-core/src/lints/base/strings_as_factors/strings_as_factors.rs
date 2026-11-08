@@ -1,11 +1,13 @@
 use crate::checker::Checker;
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_arg_by_position, get_function_name};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 
 pub struct StringsAsFactors;
 
+/// <!-- docs: start -->
 /// Version added: 0.6.0
 ///
 /// ## What it does
@@ -41,9 +43,10 @@ pub struct StringsAsFactors;
 ///
 /// See `?data.frame`
 /// and the [R Core discussion](https://developer.r-project.org/Blog/public/2020/02/16/stringsasfactors/).
+/// <!-- docs: end -->
 impl Violation for StringsAsFactors {
-    fn name(&self) -> String {
-        "strings_as_factors".to_string()
+    fn rule(&self) -> Rule {
+        Rule::StringsAsFactors
     }
 
     fn body(&self) -> String {

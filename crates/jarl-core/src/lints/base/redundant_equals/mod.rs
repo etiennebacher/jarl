@@ -134,6 +134,9 @@ mod tests {
         expect_no_lint("x == 'TRUE'", "redundant_equals", None);
         expect_no_lint("x == 'FALSE'", "redundant_equals", None);
         expect_no_lint("x > 1", "redundant_equals", None);
+
+        // This would suggest using `!!!x``, which is not the same.
+        expect_no_lint("!!x == FALSE", "redundant_equals", None);
     }
 
     #[test]

@@ -1,10 +1,14 @@
 use crate::diagnostic::*;
-use crate::utils::{
-    get_arg_by_name_then_position, get_function_namespace_prefix, node_contains_comments,
-};
+use crate::rule_set::Rule;
+use crate::utils::{Formals, get_arg, get_function_namespace_prefix, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// Omits `tolerance`, `info`, `label` and `expected.label`, which follow `...`.
+/// Shared with `expect_identical()`, whose first two formals are the same.
+const FORMALS_EXPECT_EQUAL: Formals = &["object", "expected"];
+
+/// <!-- docs: start -->
 /// Version added: 0.2.0
 ///
 /// ## What it does
@@ -33,17 +37,16 @@ use biome_rowan::AstNode;
 /// expect_true(is.numeric(x))
 /// expect_false(is.character(y))
 /// ```
+/// <!-- docs: end -->
 pub fn expect_true_false(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     // Check if this is expect_equal or expect_identical
     if fn_name != "expect_equal" && fn_name != "expect_identical" {
         return Ok(None);
     }
 
-    let args = ast.arguments()?.items();
-
     // Get `object` and `expected` arguments
-    let object = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "object", 1));
-    let expected = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "expected", 2));
+    let object = unwrap_or_return_none!(get_arg(ast, FORMALS_EXPECT_EQUAL, "object"));
+    let expected = unwrap_or_return_none!(get_arg(ast, FORMALS_EXPECT_EQUAL, "expected"));
 
     let object_value = unwrap_or_return_none!(object.value());
     let expected_value = unwrap_or_return_none!(expected.value());
@@ -94,17 +97,16 @@ pub fn expect_true_false(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Di
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "expect_true_false".to_string(),
+            Rule::TestthatExpectTrueFalse,
             msg,
             Some(suggestion.to_string()),
         ),
         range,
-        Fix {
-            content: format!("{}{}({})", namespace_prefix, new_function, other_arg_text),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(
+            range,
+            format!("{}{}({})", namespace_prefix, new_function, other_arg_text),
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))
