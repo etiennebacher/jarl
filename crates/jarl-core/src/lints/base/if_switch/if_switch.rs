@@ -23,16 +23,20 @@ use biome_rowan::AstNode;
 /// is also faster: its evaluation time doesn't depend on the number of
 /// branches, while an `if`/`else` chain evaluates each condition in turn.
 ///
-/// This rule has an unsafe automatic fix because `switch()` does not behave
-/// like `==` for factors and non-character values, and because the compared
-/// expression is evaluated once instead of once per branch. The fix is not
-/// available when the chain contains comments, or when a branch is an `=`
-/// assignment.
+/// The fix wraps the compared expression in `as.character()`. Without it,
+/// `switch()` would select numbers and logicals by position, not by name:
+/// `switch(3, a = "x", b = "y", c = "z")` returns `"z"` (the third branch),
+/// whereas `3 == "c"` is `FALSE`. Factors would likewise be matched by their
+/// integer codes instead of their labels.
+///
+/// This rule has an unsafe automatic fix because `NA` values make an `if` chain
+/// error, but `switch()` silently falls back to the default (or returns an
+/// invisible `NULL`). `NA_character_` even matches a branch named `"NA"`.
 ///
 /// Empty strings are not reported because `switch()` cannot have an empty
 /// string as an argument name.
 ///
-/// ## Example
+/// ## Examples
 ///
 /// ```r
 /// if (x == "a") {
@@ -46,7 +50,7 @@ use biome_rowan::AstNode;
 ///
 /// Use instead:
 /// ```r
-/// switch(x, a = 1, b = 2, c = 3)
+/// switch(as.character(x), a = 1, b = 2, c = 3)
 /// ```
 ///
 /// ## References
@@ -143,6 +147,10 @@ fn build_switch(
     default: &Option<AnyRExpression>,
 ) -> Option<String> {
     let (_, subject) = subject.as_ref()?;
+    // A non-character `switch()` input selects by position instead of by name,
+    // e.g. `x <- 3; switch(x, a = "first", b = "second", c = "third")` returns
+    // "third".
+    let subject = format!("as.character({subject})");
 
     let is_equal_assignment = |expr: &AnyRExpression| {
         expr.as_r_binary_expression()

@@ -19,31 +19,18 @@ with a non-empty string, and if it isn't itself part of a longer chain.
 is also faster: its evaluation time doesn't depend on the number of
 branches, while an `if`/`else` chain evaluates each condition in turn.
 
-This rule has an unsafe automatic fix because `switch()` does not behave
-like `==` for factors and non-character values, and because the compared
-expression is evaluated once instead of once per branch. The fix is not
-available when the chain contains comments, or when a branch is an `=`
-assignment.
+The fix wraps the compared expression in `as.character()`. Without it,
+`switch()` would select numbers and logicals by position, not by name:
+`switch(3, a = "x", b = "y", c = "z")` returns `"z"` (the third branch),
+whereas `3 == "c"` is `FALSE`. Factors would likewise be matched by their
+integer codes instead of their labels.
+
+This rule has an unsafe automatic fix because `NA` values make an `if` chain
+error, but `switch()` silently falls back to the default (or returns an
+invisible `NULL`). `NA_character_` even matches a branch named `"NA"`.
 
 Empty strings are not reported because `switch()` cannot have an empty
 string as an argument name.
-
-## Example
-
-```r
-if (x == "a") {
-  1
-} else if (x == "b") {
-  2
-} else if (x == "c") {
-  3
-}
-```
-
-Use instead:
-```r
-switch(x, a = 1, b = 2, c = 3)
-```
 
 ## Configuration options
 
@@ -67,6 +54,23 @@ max-branches = 3
 
 [lint.if_switch]
 max-branches = 4
+```
+
+## Examples
+
+```r
+if (x == "a") {
+  1
+} else if (x == "b") {
+  2
+} else if (x == "c") {
+  3
+}
+```
+
+Use instead:
+```r
+switch(as.character(x), a = 1, b = 2, c = 3)
 ```
 
 ## References
