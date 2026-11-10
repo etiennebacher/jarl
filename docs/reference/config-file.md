@@ -337,6 +337,7 @@ configuration file, see the relevant rule documentation page for details:
 * [`duplicated_arguments`](../rules/duplicated_arguments.md#configuration-options)
 * [`function_return`](../rules/function_return.md#configuration-options)
 * [`if_not_else`](../rules/if_not_else.md#configuration-options)
+* [`if_switch`](../rules/if_switch.md#configuration-options)
 * [`implicit_assignment`](../rules/implicit_assignment.md#configuration-options)
 * [`missing_argument`](../rules/missing_argument.md#configuration-options)
 * [`nested_pipe`](../rules/nested_pipe.md#configuration-options)

@@ -27,6 +27,7 @@ pub(crate) mod glue;
 pub(crate) mod grepv;
 pub(crate) mod if_always_true;
 pub(crate) mod if_not_else;
+pub(crate) mod if_switch;
 pub(crate) mod implicit_assignment;
 pub(crate) mod internal_function;
 pub(crate) mod is_numeric;

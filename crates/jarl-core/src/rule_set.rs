@@ -454,6 +454,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    IfSwitch => {
+        name: "if_switch",
+        categories: [Read],
+        default: Disabled,
+        fix: Unsafe,
+        min_r_version: None,
+    },
     ImplicitAssignment => {
         name: "implicit_assignment",
         categories: [Read],
