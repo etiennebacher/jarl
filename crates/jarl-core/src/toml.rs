@@ -18,7 +18,9 @@ use crate::config::resolve_rule_names;
 use crate::lints::base::assignment::options::AssignmentOptions;
 use crate::lints::base::cyclomatic_complexity::options::CyclomaticComplexityOptions;
 use crate::lints::base::duplicated_arguments::options::DuplicatedArgumentsOptions;
+use crate::lints::base::function_return::options::FunctionReturnOptions;
 use crate::lints::base::if_not_else::options::IfNotElseOptions;
+use crate::lints::base::if_switch::options::IfSwitchOptions;
 use crate::lints::base::implicit_assignment::options::ImplicitAssignmentOptions;
 use crate::lints::base::missing_argument::options::MissingArgumentOptions;
 use crate::lints::base::nested_pipe::options::NestedPipeOptions;
@@ -66,9 +68,33 @@ impl Display for ParseTomlError {
     }
 }
 
-pub fn parse_jarl_toml(path: &Path) -> Result<TomlOptions, ParseTomlError> {
-    let toml =
+/// Parse the `jarl.toml` at `path`, with the `--config` `overrides` taking
+/// precedence over its options.
+pub fn parse_jarl_toml(
+    path: &Path,
+    overrides: &[toml::Table],
+) -> Result<TomlOptions, ParseTomlError> {
+    let contents =
         fs::read_to_string(path).map_err(|err| ParseTomlError::Read(path.to_path_buf(), err))?;
+    parse_jarl_toml_contents(&contents, path, overrides)
+}
+
+/// Build [Settings] from `contents`, a `jarl.toml` that only exists as
+/// `--config` values, with `overrides` taking precedence over its options.
+pub fn parse_config_overrides(
+    contents: &str,
+    overrides: &[toml::Table],
+    root: &Path,
+) -> anyhow::Result<Settings> {
+    parse_jarl_toml_contents(contents, Path::new("--config"), overrides)?.into_settings(root)
+}
+
+fn parse_jarl_toml_contents(
+    contents: &str,
+    path: &Path,
+    overrides: &[toml::Table],
+) -> Result<TomlOptions, ParseTomlError> {
+    let toml = merge_overrides(contents, overrides);
 
     // Rule options are sub-tables (`[lint.assignment]`), so a `[lint]` key set
     // to anything else can only be an unknown option. Catch those before
@@ -89,14 +115,45 @@ pub fn parse_jarl_toml(path: &Path) -> Result<TomlOptions, ParseTomlError> {
         .map_err(|err| ParseTomlError::Deserialize(path.to_path_buf(), err))?;
 
     // We need to run this here because then serde loses the information on
-    // whether a key was quoted.
-    if let Ok(document) = toml.parse::<toml_edit::DocumentMut>()
+    // whether a key was quoted. Merging overrides loses it too, so check the
+    // original text: overrides are checked on their own when parsing the CLI.
+    if let Ok(document) = contents.parse::<toml_edit::DocumentMut>()
         && let Some(message) = unquoted_key(&document)
     {
         return Err(ParseTomlError::Invalid(path.to_path_buf(), message));
     }
 
     Ok(options)
+}
+
+/// Merge `overrides` into `contents`, in order, so that the last one wins.
+/// Only the options they set are replaced: `lint.select = [...]` keeps the
+/// other `[lint]` options. A malformed `contents` is returned as is so that the
+/// deserializer reports the syntax error with its position.
+fn merge_overrides(contents: &str, overrides: &[toml::Table]) -> String {
+    if overrides.is_empty() {
+        return contents.to_string();
+    }
+    let Ok(mut table) = contents.parse::<toml::Table>() else {
+        return contents.to_string();
+    };
+    for override_table in overrides {
+        merge_tables(&mut table, override_table);
+    }
+    table.to_string()
+}
+
+fn merge_tables(base: &mut toml::Table, overrides: &toml::Table) {
+    for (key, value) in overrides {
+        match (base.get_mut(key), value) {
+            (Some(toml::Value::Table(base)), toml::Value::Table(value)) => {
+                merge_tables(base, value)
+            }
+            _ => {
+                base.insert(key.clone(), value.clone());
+            }
+        }
+    }
 }
 
 /// `[lint.<rule>]` options holding inline tables whose keys must be quoted,
@@ -152,6 +209,7 @@ const LINT_OPTIONS: &[&str] = &[
     "per-file-ignores",
     "check-roxygen",
     "fix-roxygen",
+    "ignore-roxygen",
 ];
 
 /// Find a `[lint]` key that holds a non-table value but isn't a primary option.
@@ -357,6 +415,20 @@ pub struct LinterTomlOptions {
     ///
     /// Defaults to `false`.
     pub fix_roxygen: Option<bool>,
+
+    /// # Rules to ignore in roxygen examples
+    ///
+    /// A list of rules (or rule groups) that are not checked in R code found in
+    /// roxygen2 `@examples` and `@examplesIf` sections. These rules are still
+    /// checked in the rest of the file.
+    ///
+    /// For example:
+    ///
+    /// ```toml
+    /// [lint]
+    /// ignore-roxygen = ["unused_object"]
+    /// ```
+    pub ignore_roxygen: Option<Vec<String>>,
     /// # Options for the `assignment` rule
     ///
     /// Use `operator` to specify which assignment operator to enforce.
@@ -379,6 +451,13 @@ pub struct LinterTomlOptions {
     #[serde(rename = "duplicated_arguments")]
     pub duplicated_arguments: Option<DuplicatedArgumentsOptions>,
 
+    /// # Options for the `function_return` rule
+    ///
+    /// Use `mode` to choose the preferred return style in functions. Valid
+    /// values are `"implicit"` (default) and `"explicit"`.
+    #[serde(rename = "function_return")]
+    pub function_return: Option<FunctionReturnOptions>,
+
     /// # Options for the `if_not_else` rule
     ///
     /// Use `skipped-functions` to fully replace the default list of functions
@@ -387,6 +466,13 @@ pub struct LinterTomlOptions {
     /// Specifying both is an error.
     #[serde(rename = "if_not_else")]
     pub if_not_else: Option<IfNotElseOptions>,
+
+    /// # Options for the `if_switch` rule
+    ///
+    /// Use `max-branches` to set the number of equality branches from which an
+    /// `if`/`else` chain is reported.
+    #[serde(rename = "if_switch")]
+    pub if_switch: Option<IfSwitchOptions>,
 
     /// # Options for the `implicit_assignment` rule
     ///
@@ -537,6 +623,7 @@ impl TomlOptions {
             default_exclude: linter.default_exclude,
             check_roxygen: linter.check_roxygen,
             fix_roxygen: linter.fix_roxygen,
+            ignore_roxygen: linter.ignore_roxygen,
             fixable: linter.fixable,
             unfixable: linter.unfixable,
             rule_options,

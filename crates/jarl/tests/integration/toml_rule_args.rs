@@ -334,6 +334,218 @@ unknown-option = ["is.null"]
     Ok(())
 }
 
+// if_switch ----------------------------------------
+
+#[test]
+fn test_if_switch_unknown_field_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.if_switch]
+unknown-option = 3
+"#,
+        ),
+        ("test.R", "x <- 1"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 3, column 1
+      |
+    3 | unknown-option = 3
+      | ^^^^^^^^^^^^^^
+    unknown field `unknown-option`, expected `max-branches`
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_if_switch_wrong_type() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.if_switch]
+max-branches = "a"
+"#,
+        ),
+        ("test.R", "x <- 1"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 3, column 16
+      |
+    3 | max-branches = "a"
+      |                ^^^
+    invalid type: string "a", expected usize
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_if_switch_max_branches_below_two_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint.if_switch]
+max-branches = 1
+"#,
+        ),
+        ("test.R", "x <- 1"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    `max-branches` in `[lint.if_switch]` must be at least 2.
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_if_switch_max_branches_changes_reporting() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+select = ["if_switch"]
+
+[lint.if_switch]
+max-branches = 2
+"#,
+        ),
+        ("test.R", "if (x == 'a') 1 else if (x == 'b') 2"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: if_switch
+     --> test.R:1:1
+      |
+    1 | if (x == 'a') 1 else if (x == 'b') 2
+      | ------------------------------------ Repeated `if`/`else if` equality tests on the same value.
+      |
+      = help: Use `switch()` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fix is available with the `--fix --unsafe-fixes` option.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_if_switch_max_branches_not_reached() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+select = ["if_switch"]
+
+[lint.if_switch]
+max-branches = 4
+"#,
+        ),
+        (
+            "test.R",
+            "if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
 // implicit_assignment ----------------------------------------
 
 #[test]

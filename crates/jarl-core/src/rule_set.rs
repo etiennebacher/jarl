@@ -265,6 +265,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    ApplyPaste => {
+        name: "apply_paste",
+        categories: [Perf],
+        default: Enabled,
+        fix: Unsafe,
+        min_r_version: None,
+    },
     Assignment => {
         name: "assignment",
         categories: [Read],
@@ -297,7 +304,7 @@ declare_rules! {
         name: "comparison_negation",
         categories: [Read],
         default: Enabled,
-        fix: Unsafe,
+        fix: Safe,
         min_r_version: None,
     },
     ConditionCall => {
@@ -363,6 +370,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    EmptyList => {
+        name: "null_list",
+        categories: [Perf],
+        default: Enabled,
+        fix: Unsafe,
+        min_r_version: None,
+    },
     EqualsNa => {
         name: "equals_na",
         categories: [Corr],
@@ -405,6 +419,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    FunctionReturn => {
+        name: "function_return",
+        categories: [Read],
+        default: Disabled,
+        fix: Unsafe,
+        min_r_version: None,
+    },
     Glue => {
         name: "glue",
         categories: [Corr, Susp],
@@ -431,6 +452,13 @@ declare_rules! {
         categories: [Read],
         default: Disabled,
         fix: None,
+        min_r_version: None,
+    },
+    IfSwitch => {
+        name: "if_switch",
+        categories: [Read],
+        default: Disabled,
+        fix: Unsafe,
         min_r_version: None,
     },
     ImplicitAssignment => {
@@ -489,6 +517,13 @@ declare_rules! {
         default: Enabled,
         fix: Safe,
         min_r_version: Some((4, 0, 0)),
+    },
+    ListComparison => {
+        name: "list_comparison",
+        categories: [Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
     },
     LiteralCoercion => {
         name: "literal_coercion",
@@ -550,7 +585,7 @@ declare_rules! {
         name: "outer_negation",
         categories: [Perf, Read],
         default: Enabled,
-        fix: Safe,
+        fix: Unsafe,
         min_r_version: None,
     },
     PipeConsistency => {
@@ -663,6 +698,13 @@ declare_rules! {
         categories: [Read],
         default: Enabled,
         fix: Safe,
+        min_r_version: None,
+    },
+    TerminalClose => {
+        name: "terminal_close",
+        categories: [Susp],
+        default: Enabled,
+        fix: None,
         min_r_version: None,
     },
     TodoComment => {

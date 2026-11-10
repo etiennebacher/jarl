@@ -6,7 +6,13 @@
 
 * New rules:
 
+  * `apply_paste` (#563)
   * `assignment_on_if_no_else` (#605, @christopherkenny)
+  * `function_return` (#750)
+  * `if_switch` (#812)
+  * `list_comparison` (#572, @Yousa-Mirage)
+  * `null_list` (#785, @JosephBARBIERDARNAL)
+  * `terminal_close` (#811)
   * `todo_comment` (#739, @Yousa-Mirage)
   * `loop_invariant` (disabled by default)
 
@@ -14,6 +20,8 @@
 
   * The `seq2` rule now also reports `seq_len(length(...))` and suggests `seq_along(...)`
     (#761, @JosephBARBIERDARNAL).
+  * `outer_negation` now reports cases with `!` both inside and outside the call (#779,
+    @Yousa-Mirage).
 
 * Jarl handles parsing errors better, which may lead to more code being analysed
   in files with parsing errors (#762). Thanks to Davis Vaughan for his work
@@ -24,10 +32,39 @@
 
 * Jarl suggests more potential names when a rule name is unknown (#777).
 
+* New option `ignore-roxygen` in `jarl.toml` to ignore some rules only in
+  roxygen `@examples` and `@examplesIf` sections (#780).
+
+* New CLI argument `--config` to use a specific configuration file instead of
+  the discovered ones, or to override some options of the configuration, e.g.
+  `--config "lint.select = ['any_is_na']"` (#804).
+
 ### Bug fixes
+
+* Fix `download_file` handling of binary URL suffixes, string literals, namespaces,
+  and ignored `mode` arguments with external download methods (#786, @Yousa-Mirage).
+
+* Fix `comparison_negation` precedence and tidy-evaluation handling, detect nested
+  parentheses and unparenthesized comparisons, and provide safe fixes (#787,
+  @Yousa-Mirage).
+
+* Fix `outer_negation` handling of operator precedence, pipes, and `na.rm`,
+  and detect parenthesized and namespace-qualified calls. Its fix is now
+  unsafe because it can change warnings and errors for inputs that are not
+  logical (#779, @Yousa-Mirage).
+
+* `for_loop_index` now detects reused variables in nested expressions,
+  including function definitions and variable subscripts, while ignoring
+  argument labels and fixed field names (#752, @Yousa-Mirage).
+
+* Fix `system_file` diagnostics and safe fixes for nested `file.path()` calls,
+  preserving arguments and namespaces (#781, @Yousa-Mirage).
 
 * Prevent `unused_object` from reporting objects exported by `exportPattern()`
   (#711, @Yousa-Mirage).
+
+* Fix detection of backtick-quoted indices in `for_loop_dup_index`
+  (#753, @Yousa-Mirage).
 
 ## 0.7.1
 

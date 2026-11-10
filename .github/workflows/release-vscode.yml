@@ -2,11 +2,65 @@ name: Release extension
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag of the Jarl GitHub release to bundle
+        required: true
+        type: string
 
 env:
   FETCH_DEPTH: 0
 
 jobs:
+  # Bump the extension version and add the bundled Jarl version to the
+  # changelog. Entries under a "Development" heading are moved to the new
+  # version.
+  prepare:
+    name: Bump extension version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      sha: ${{ steps.commit.outputs.sha }}
+
+    defaults:
+      run:
+        working-directory: ./editors/code
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Bump version and update changelog
+        env:
+          JARL_VERSION: ${{ inputs.tag }}
+        run: |
+          EXT_VERSION=$(npm version patch --no-git-tag-version)
+          EXT_VERSION=${EXT_VERSION#v}
+          ITEM="- This version bundles Jarl ${JARL_VERSION#v}."
+
+          grep -qE '^##+ Development$' README.md ||
+            sed -i 's/^## Changelog$/&\n\n### Development/' README.md
+
+          awk -v ver="$EXT_VERSION" -v item="$ITEM" '
+            /^##+ Development$/ { print "### " ver; dev = 1; next }
+            dev && /^### / { print item "\n"; dev = 0 }
+            { print }
+          ' README.md > README.tmp && mv README.tmp README.md
+          grep -qF -- "$ITEM" README.md
+
+          echo "EXT_VERSION=$EXT_VERSION" >> "$GITHUB_ENV"
+          git diff
+
+      - name: Commit and push
+        id: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore: Bump extension to $EXT_VERSION"
+          git push origin "HEAD:${{ github.ref_name }}"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
   # Build the extension on all platforms.
   build:
     strategy:
@@ -33,6 +87,7 @@ jobs:
             code-target: darwin-arm64
 
     name: Build (${{ matrix.target }})
+    needs: ["prepare"]
     runs-on: ${{ matrix.os }}
 
     defaults:
@@ -43,6 +98,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
+          ref: ${{ needs.prepare.outputs.sha }}
           fetch-depth: ${{ env.FETCH_DEPTH }}
 
       - name: Download jarl binary (macOS or Linux)
@@ -52,7 +108,7 @@ jobs:
           ARCHIVE_NAME=jarl-${{ matrix.target }}
           ARCHIVE_FILE=$ARCHIVE_NAME.tar.gz
 
-          curl -LsSfO https://github.com/etiennebacher/jarl/releases/latest/download/$ARCHIVE_FILE
+          curl -LsSfO https://github.com/etiennebacher/jarl/releases/download/${{ inputs.tag }}/$ARCHIVE_FILE
           tar -xvzf $ARCHIVE_FILE
           mkdir -p bundled/bin/
           mv $ARCHIVE_NAME/jarl bundled/bin/jarl
@@ -68,7 +124,7 @@ jobs:
           ARCHIVE_NAME=jarl-${{ matrix.target }}
           ARCHIVE_FILE=$ARCHIVE_NAME.zip
 
-          curl -LsSfO https://github.com/etiennebacher/jarl/releases/latest/download/$ARCHIVE_FILE
+          curl -LsSfO https://github.com/etiennebacher/jarl/releases/download/${{ inputs.tag }}/$ARCHIVE_FILE
           unzip $ARCHIVE_FILE
           mkdir -p bundled/bin/
           mv jarl.exe bundled/bin/jarl.exe

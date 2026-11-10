@@ -1,11 +1,12 @@
 use air_workspace::resolve::PathResolver;
 use jarl_core::discovery::{
-    discover_r_file_paths, discover_settings, excluded_by_settings,
-    should_exclude_file_based_on_settings, validate_exclude_patterns,
+    DiscoveredSettings, discover_r_file_paths, discover_settings, excluded_by_settings,
+    parse_settings, should_exclude_file_based_on_settings, validate_exclude_patterns,
 };
 use jarl_core::library_paths::is_r_available;
 use jarl_core::package_cache::{PackageCache, any_file_references_packages, find_r_project_root};
 use jarl_core::rule_set::Rule;
+use jarl_core::toml::parse_config_overrides;
 use jarl_core::{
     config::ArgsConfig,
     config::build_config,
@@ -27,7 +28,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
 
-use crate::args::CheckCommand;
+use crate::args::{CheckCommand, ConfigArgument};
 use crate::output_format::{self, GithubEmitter, print_notes, print_summary, print_warnings};
 use crate::statistics::print_statistics;
 use crate::status::ExitStatus;
@@ -67,8 +68,42 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         None => args.files.clone(),
     };
 
-    let discovered = discover_settings(&files)?;
-    let single_config = discovered.len() == 1;
+    let mut config_file = None;
+    let mut overrides = Vec::new();
+    for config in &args.config {
+        match config {
+            ConfigArgument::File(_) if config_file.is_some() => {
+                return Err(anyhow::anyhow!(
+                    "`--config` can be a path to a configuration file only once."
+                ));
+            }
+            ConfigArgument::File(path) => config_file = Some(air_fs::normalize_path(path)),
+            ConfigArgument::Override(table) => overrides.push(table.clone()),
+        }
+    }
+
+    // A `--config` file, or overrides that no `jarl.toml` picks up, aren't tied
+    // to a directory: their relative paths are resolved from the working
+    // directory, and they apply to all files, even those outside of it.
+    let root = cwd.clone().unwrap_or_default();
+    let mut discovered = match &config_file {
+        Some(path) => vec![DiscoveredSettings {
+            directory: root.clone(),
+            settings: parse_settings(path, &root, &overrides)?,
+            config_path: Some(path.clone()),
+        }],
+        None => discover_settings(&files, &overrides)?,
+    };
+    let settings_apply_everywhere = config_file.is_some() || discovered.is_empty();
+    if discovered.is_empty() && !overrides.is_empty() {
+        discovered.push(DiscoveredSettings {
+            directory: root.clone(),
+            settings: parse_config_overrides("", &overrides, &root)?,
+            config_path: None,
+        });
+    }
+    // No need to tell which config was used when it was passed explicitly.
+    let single_config = discovered.len() == 1 && config_file.is_none();
 
     for mut ds in discovered {
         if args.no_default_exclude {
@@ -145,9 +180,12 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     // checked with the settings from the nearest jarl.toml.
     let mut groups: HashMap<Option<PathBuf>, Vec<PathBuf>> = HashMap::new();
     for path in paths {
-        let key = resolver
-            .resolve(&path)
-            .map(|item| item.path().to_path_buf());
+        let item = if settings_apply_everywhere {
+            resolver.items().first()
+        } else {
+            resolver.resolve(&path)
+        };
+        let key = item.map(|item| item.path().to_path_buf());
         groups.entry(key).or_default().push(path);
     }
 
@@ -163,7 +201,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
             .and_then(|dir| resolver.items().iter().find(|item| item.path() == dir))
             .map(|item| item.value());
 
-        let config = build_config(&check_config, settings, group_paths.clone())?;
+        let mut config = build_config(&check_config, settings, group_paths.clone())?;
 
         if !config.rules_to_apply.has_package_specific_rules() {
             file_results.extend(run_check(config, stdin.as_ref()));
@@ -193,14 +231,12 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         }
 
         let r_pkg_names = config.rules_to_apply.pkg_names_from_category();
-        drop(config);
 
         // Skip the expensive Rscript call if no file in this group actually
         // references any of the target packages. In that case, strip the
         // package-specific rules since they can't produce meaningful results
         // without a PackageCache.
         if !any_file_references_packages(&group_paths, &r_pkg_names) {
-            let mut config = build_config(&check_config, settings, group_paths)?;
             config.rules_to_apply = config
                 .rules_to_apply
                 .filter(|r| !r.categories().iter().any(|c| c.is_package_specific()));

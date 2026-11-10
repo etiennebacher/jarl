@@ -13,7 +13,7 @@ Checks whether the index symbol in a `for` loop is already used in a parent
 In nested loops, using the same index symbol for several loops can lead to
 unexpected and incorrect results.
 
-This rules doesn't have an automatic fix.
+This rule doesn't have an automatic fix.
 
 ## Example
 
@@ -25,6 +25,7 @@ for (x in 1:3) {
 }
 ```
 
+Use instead:
 ```r
 for (x_outer in 1:3) {
   for (x_inner in 1:4) {

@@ -6,6 +6,7 @@ use air_r_syntax::RCall;
 use crate::lints::base::all_equal::all_equal::all_equal;
 use crate::lints::base::any_duplicated::any_duplicated::any_duplicated;
 use crate::lints::base::any_is_na::any_is_na::any_is_na;
+use crate::lints::base::apply_paste::apply_paste::apply_paste;
 use crate::lints::base::class_equals::class_equals::class_identical;
 use crate::lints::base::condition_call::condition_call::condition_call;
 use crate::lints::base::condition_message::condition_message::condition_message;
@@ -22,6 +23,7 @@ use crate::lints::base::list2df::list2df::list2df;
 use crate::lints::base::literal_coercion::literal_coercion::literal_coercion;
 use crate::lints::base::matrix_apply::matrix_apply::matrix_apply;
 use crate::lints::base::missing_argument::missing_argument::missing_argument;
+use crate::lints::base::null_list::null_list::null_list;
 use crate::lints::base::outer_negation::outer_negation::outer_negation;
 use crate::lints::base::redundant_ifelse::redundant_ifelse::redundant_ifelse;
 use crate::lints::base::rep_times_ignored::rep_times_ignored::rep_times_ignored;
@@ -68,6 +70,9 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::AnyIsNa) {
         checker.report_diagnostic(any_is_na(r_expr, fn_name)?);
     }
+    if checker.is_rule_enabled(Rule::ApplyPaste) {
+        checker.report_diagnostic(apply_paste(r_expr, fn_name, ns_prefix)?);
+    }
     if checker.is_rule_enabled(Rule::ClassEquals) {
         checker.report_diagnostic(class_identical(r_expr, fn_name)?);
     }
@@ -78,7 +83,10 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
         checker.report_diagnostic(condition_message(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::DownloadFile) {
-        checker.report_diagnostic(download_file(r_expr, fn_name)?);
+        checker.report_diagnostic(download_file(r_expr, fn_name, ns_prefix)?);
+    }
+    if checker.is_rule_enabled(Rule::EmptyList) {
+        checker.report_diagnostic(null_list(r_expr, fn_name, ns_prefix)?);
     }
     if checker.is_rule_enabled(Rule::DuplicatedArguments) {
         checker.report_diagnostic(duplicated_arguments(r_expr, checker)?);
@@ -117,7 +125,7 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
         checker.report_diagnostic(missing_argument(r_expr, fn_name, checker)?);
     }
     if checker.is_rule_enabled(Rule::OuterNegation) {
-        checker.report_diagnostic(outer_negation(r_expr)?);
+        checker.report_diagnostic(outer_negation(r_expr, fn_name, ns_prefix)?);
     }
     if checker.is_rule_enabled(Rule::RedundantIfelse) {
         checker.report_diagnostic(redundant_ifelse(r_expr, fn_name)?);

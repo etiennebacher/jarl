@@ -134,6 +134,17 @@
             "null"
           ]
         },
+        "ignore-roxygen": {
+          "title": "Rules to ignore in roxygen examples",
+          "description": "A list of rules (or rule groups) that are not checked in R code found in\nroxygen2 `@examples` and `@examplesIf` sections. These rules are still\nchecked in the rest of the file.\n\nFor example:\n\n```toml\n[lint]\nignore-roxygen = [\"unused_object\"]\n```",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
         "assignment": {
           "title": "Options for the `assignment` rule",
           "description": "Use `operator` to specify which assignment operator to enforce.\nValid values are `\"<-\"` (the default) and `\"=\"`.",
@@ -170,12 +181,36 @@
             }
           ]
         },
+        "function_return": {
+          "title": "Options for the `function_return` rule",
+          "description": "Use `mode` to choose the preferred return style in functions. Valid\nvalues are `\"implicit\"` (default) and `\"explicit\"`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FunctionReturnOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "if_not_else": {
           "title": "Options for the `if_not_else` rule",
           "description": "Use `skipped-functions` to fully replace the default list of functions\nwhose negated calls are allowed as an `if`/`ifelse()` condition. Use\n`extend-skipped-functions` to add to the default list.\nSpecifying both is an error.",
           "anyOf": [
             {
               "$ref": "#/$defs/IfNotElseOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "if_switch": {
+          "title": "Options for the `if_switch` rule",
+          "description": "Use `max-branches` to set the number of equality branches from which an\n`if`/`else` chain is reported.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IfSwitchOptions"
             },
             {
               "type": "null"
@@ -369,6 +404,19 @@
       },
       "additionalProperties": false
     },
+    "FunctionReturnOptions": {
+      "description": "<!-- docs: start -->\nThe `mode` option takes a single value (`\"implicit\"` or `\"explicit\"`)\nindicating the preferred return style in functions. If `mode = \"implicit\"`,\nthen any `return()` call in a terminal position of a function will be\nreported. If `mode = \"explicit\"`, then any terminal expression that isn't\nwrapped in `return()` (or in a function that stops execution, such as\n`stop()`) will be reported.\n\n### Default values\n\n```toml\nmode = \"implicit\"\n```\n\n### TOML settings\n\n```toml\n[lint]\n...\n\n[lint.function_return]\n# Require explicit `return()` calls instead\nmode = \"explicit\"\n```\n<!-- docs: end -->",
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
     "IfNotElseOptions": {
       "description": "<!-- docs: start -->\nUse `skipped-functions` to fully replace the default list of functions whose\nnegated calls are allowed as an `if`/`ifelse()` condition (e.g. `!is.null(x)`).\nUse `extend-skipped-functions` to add to the default list. Specifying both is an\nerror.\n\nFunction names in `skipped-functions` or `extend-skipped-functions` also match\nnamespaced calls, e.g. `skipped-functions = [\"is.null\"]` will allow `is.null()`\nand `base::is.null()`.\n\n### Default values\n\n```toml\nskipped-functions = [\n    \"is.null\",\n    \"is.na\",\n    \"missing\"\n]\n```\n\n### TOML settings\n\n```toml\n[lint]\n...\n\n[lint.if_not_else]\n# Also allow a negated `is.data.frame()` call in the condition.\nextend-skipped-functions = [\"is.data.frame\"]\n```\n<!-- docs: end -->",
       "type": "object",
@@ -390,6 +438,21 @@
           "items": {
             "type": "string"
           }
+        }
+      },
+      "additionalProperties": false
+    },
+    "IfSwitchOptions": {
+      "description": "<!-- docs: start -->\nUse `max-branches` to set the number of equality branches (`if` and\n`else if` conditions) from which an `if`/`else` chain is reported. It must\nbe at least 2.\n\n### Default values\n\n```toml\nmax-branches = 4\n```\n\n### TOML settings\n\n```toml\n[lint]\n...\n\n[lint.if_switch]\nmax-branches = 5\n```\n<!-- docs: end -->",
+      "type": "object",
+      "properties": {
+        "max-branches": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0
         }
       },
       "additionalProperties": false

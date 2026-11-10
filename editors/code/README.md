@@ -18,9 +18,15 @@ See the website: https://jarl.etiennebacher.com/
 
 ## Changelog
 
-## Development
+### Unreleased
 
-Jarl now publishes diagnostics when opening a file, not just when saving it.
+- Removed the setting `jarl.syncFileSettingsWithClient`, which had no effect.
+
+### 0.0.14
+
+- Jarl now publishes diagnostics when opening a file, not just when saving it.
+
+- This version bundles Jarl 0.7.1.
 
 ### 0.0.13
 

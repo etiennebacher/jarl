@@ -1,7 +1,6 @@
 use crate::diagnostic::*;
 use crate::rule_set::Rule;
-use crate::utils::{get_arg_by_position, node_contains_comments};
-use crate::utils_ast::AstNodeExt;
+use crate::utils::{get_arg, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -22,94 +21,182 @@ use biome_rowan::AstNode;
 /// efficient since it only has to invert one value instead of all values inside
 /// the function call.
 ///
+/// This rule has an automated fix marked unsafe because `any()` and `all()` coerce the
+/// input to logical with a warning while `!` would error, e.g. `any(!"a")` is an error but
+/// `!all("a")` returns `NA` with a warning.
+///
 /// ## Example
 ///
 /// ```r
 /// any(!x)
 /// all(!x)
+/// any(!x, na.rm = TRUE)
 /// ```
 ///
 /// Use instead:
 /// ```r
 /// !all(x)
 /// !any(x)
+/// !all(x, na.rm = TRUE)
 /// ```
 /// <!-- docs: end -->
-pub fn outer_negation(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    // We don't want to report calls like `!any(x)`, just `any(x)`
-    if ast.parent_is_bang_unary() {
-        return Ok(None);
-    }
+pub fn outer_negation(
+    ast: &RCall,
+    fn_name: &str,
+    ns_prefix: Option<&str>,
+) -> anyhow::Result<Option<Diagnostic>> {
+    let replacement_function = match fn_name {
+        "any" => "all",
+        "all" => "any",
+        _ => return Ok(None),
+    };
 
     let function = ast.function()?;
-    let function_name = function.to_trimmed_string();
-
-    if function_name != "all" && function_name != "any" {
-        return Ok(None);
+    let name_range = match &function {
+        AnyRExpression::RIdentifier(_) => function.syntax().text_trimmed_range(),
+        AnyRExpression::RNamespaceExpression(namespace) if ns_prefix == Some("base::") => {
+            namespace.right()?.syntax().text_trimmed_range()
+        }
+        _ => return Ok(None),
     };
 
-    let args = ast.arguments()?.items();
-
-    // Only check calls with exactly one argument
-    let first_arg = unwrap_or_return_none!(get_arg_by_position(&args, 1));
-
-    // Ensure there's not more than one argument (e.g. skip `any(!x, y)`).
-    if get_arg_by_position(&args, 2).is_some() {
+    // A pipe can supply additional data that is not negated. Do not rewrite
+    // its right-hand call, even when that call is wrapped in parentheses.
+    let mut node = ast.syntax().clone();
+    while let Some(parent) = node
+        .parent()
+        .filter(|parent| RParenthesizedExpression::can_cast(parent.kind()))
+    {
+        node = parent;
+    }
+    if let Some(binary) = node.parent().and_then(RBinaryExpression::cast)
+        && binary.right()?.syntax() == &node
+        && matches!(
+            binary.operator()?.text_trimmed(),
+            "|>" | "%>%" | "%!>%" | "%T>%" | "%<>%"
+        )
+    {
         return Ok(None);
     }
 
-    let arg_value = unwrap_or_return_none!(first_arg.value());
-    let unary_expr = unwrap_or_return_none!(arg_value.as_r_unary_expression());
-    let operator = unwrap_or_return_none!(unary_expr.operator().ok());
-    if operator.kind() != RSyntaxKind::BANG {
+    // Check if there is an outer negation into the call, so !any(!x) becomes all(x).
+    let negation = node
+        .parent()
+        .and_then(RUnaryExpression::cast)
+        .filter(|unary| {
+            unary
+                .operator()
+                .is_ok_and(|operator| operator.kind() == RSyntaxKind::BANG)
+        });
+
+    // `...` stops positional matching, so only an exact name binds to na.rm.
+    // Duplicate na.rm names make get_arg() return None, leaving both arguments
+    // in the data count below so the call is skipped.
+    let na_rm = get_arg(ast, &["...", "na.rm"], "na.rm");
+    let mut data = None;
+    for arg in ast.arguments()?.items() {
+        let arg = arg?;
+        let value = unwrap_or_return_none!(arg.value());
+        if na_rm
+            .as_ref()
+            .is_some_and(|control| control.syntax() == arg.syntax())
+        {
+            continue;
+        }
+        if data.replace(value).is_some() {
+            return Ok(None);
+        }
+    }
+
+    let mut value = unwrap_or_return_none!(data);
+    let data_range = value.syntax().text_trimmed_range();
+    while let AnyRExpression::RParenthesizedExpression(paren) = value {
+        value = paren.body()?;
+    }
+    let unary = unwrap_or_return_none!(value.as_r_unary_expression());
+    if unary.operator()?.kind() != RSyntaxKind::BANG {
+        return Ok(None);
+    }
+    let mut operand = unary.argument()?;
+    // Leave tidy evaluation's !! and !!! alone, but allow !-x and !+x.
+    if let AnyRExpression::RUnaryExpression(inner) = &operand
+        && inner.operator()?.kind() == RSyntaxKind::BANG
+    {
         return Ok(None);
     }
 
-    // Get the expression after the negation operator
-    // Skip the BANG token to get the actual expression
-    let negated_expr = arg_value
-        .syntax()
-        .children()
-        .find(|child| child.kind() != RSyntaxKind::BANG);
-
-    let expr = unwrap_or_return_none!(negated_expr);
-
-    // It looks like the first (and only) child of R_UNARY_EXPRESSION is what
-    // comes after "!". So we don't need to check that this is indeed using the
-    // BANG operator because it's the only R_UNARY_EXPRESSION available.
-
-    // Don't report consecutive unary expressions (e.g., `any(!!x)`)
-    if expr.kind() == RSyntaxKind::R_UNARY_EXPRESSION {
-        return Ok(None);
+    // Strip surrounding parentheses, except those that keep `=` an assignment
+    // or prevent `...` from expanding into several arguments.
+    while let AnyRExpression::RParenthesizedExpression(paren) = &operand {
+        let body = paren.body()?;
+        if matches!(body, AnyRExpression::RDots(_))
+            || matches!(&body, AnyRExpression::RBinaryExpression(binary)
+                if binary.operator()?.kind() == RSyntaxKind::EQUAL)
+        {
+            break;
+        }
+        operand = body;
     }
 
-    let content = expr.text_trimmed().to_string();
-
-    let (replacement_function, msg, suggestion) = match function_name.as_str() {
-        "any" => (
-            "all",
-            "`any(!x)` may be hard to read.",
-            "Use `!all(x)` instead.",
+    // Group the new negation when this call is an operand, so e.g.
+    // any(!x) + 2 becomes (!all(x)) + 2.
+    let needs_parentheses = match ast.syntax().parent().and_then(AnyRExpression::cast) {
+        Some(AnyRExpression::RBinaryExpression(binary)) => !matches!(
+            binary.operator()?.kind(),
+            RSyntaxKind::ASSIGN
+                | RSyntaxKind::SUPER_ASSIGN
+                | RSyntaxKind::ASSIGN_RIGHT
+                | RSyntaxKind::SUPER_ASSIGN_RIGHT
+                | RSyntaxKind::EQUAL
         ),
-        "all" => (
-            "any",
-            "`all(!x)` may be hard to read.",
-            "Use `!any(x)` instead.",
-        ),
-        _ => unreachable!(),
+        Some(
+            AnyRExpression::RUnaryExpression(_)
+            | AnyRExpression::RExtractExpression(_)
+            | AnyRExpression::RSubset(_)
+            | AnyRExpression::RSubset2(_)
+            | AnyRExpression::RCall(_),
+        ) => true,
+        _ => false,
     };
 
-    let fix = format!("!{}({})", replacement_function, content);
-    let range = ast.syntax().text_trimmed_range();
-    let diagnostic = Diagnostic::new(
+    let call_range = ast.syntax().text_trimmed_range();
+    let (outer, old_bang, new_bang) = match &negation {
+        Some(negation) => (negation.syntax(), "!", ""),
+        None => (ast.syntax(), "", "!"),
+    };
+    let range = outer.text_trimmed_range();
+    // Edit just the callee and negated expression to retain argument names,
+    // order, formatting, and the original namespace qualifier.
+    let mut edits = vec![
+        Edit::replacement(name_range, replacement_function.to_string()),
+        Edit::replacement(data_range, operand.to_trimmed_string()),
+    ];
+    if negation.is_some() {
+        // Drop the outer `!` and any parentheses around the call.
+        edits.push(Edit::deletion(TextRange::new(
+            range.start(),
+            call_range.start(),
+        )));
+        edits.push(Edit::deletion(TextRange::new(
+            call_range.end(),
+            range.end(),
+        )));
+    } else if needs_parentheses {
+        edits.push(Edit::insertion(range.start(), "(!".to_string()));
+        edits.push(Edit::insertion(range.end(), ")".to_string()));
+    } else {
+        edits.push(Edit::insertion(range.start(), "!".to_string()));
+    }
+
+    Ok(Some(Diagnostic::new(
         ViolationData::new(
             Rule::OuterNegation,
-            msg.to_string(),
-            Some(suggestion.to_string()),
+            format!("`{old_bang}{fn_name}(!...)` may be hard to read."),
+            Some(format!(
+                "Use `{new_bang}{replacement_function}(...)` instead."
+            )),
         ),
         range,
-        Fix::new(range, fix, node_contains_comments(ast.syntax())),
-    );
-
-    Ok(Some(diagnostic))
+        Fix::from_edits(edits, node_contains_comments(outer)),
+    )))
 }

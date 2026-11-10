@@ -1,5 +1,6 @@
 # This workflow triggers the update in the docs and the release. This allows
-# the current "dev" docs to be automatically moved to "stable".
+# the current "dev" docs to be automatically moved to "stable". Stable releases
+# are also published to PyPI, the VS Code Marketplace, and OpenVSX.
 
 name: Release workflow to run
 
@@ -119,4 +120,21 @@ jobs:
               workflow_id: 'release-pypi.yml',
               ref: context.ref,
               inputs: { version, dry_run: 'false' }
+            });
+
+  vscode:
+    needs: release
+    # Do not trigger on alpha binaries release
+    if: ${{ !contains(inputs.tag, '-') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v9
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'release-vscode.yml',
+              ref: context.ref,
+              inputs: { tag: '${{ inputs.tag }}' }
             });

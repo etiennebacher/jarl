@@ -13,6 +13,7 @@ on:
       - .github/scripts/process_lint_ci.R
       - crates/**/src/**
       - crates/**/Cargo.toml
+      - Cargo.lock
       - "!crates/jarl-lsp/**"
 
 # Ensure that modifying the PR body while the workflow is running doesn't

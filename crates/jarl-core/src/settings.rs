@@ -24,6 +24,7 @@ pub struct LinterSettings {
     pub default_exclude: Option<bool>,
     pub check_roxygen: Option<bool>,
     pub fix_roxygen: Option<bool>,
+    pub ignore_roxygen: Option<Vec<String>>,
     pub fixable: Option<Vec<String>>,
     pub unfixable: Option<Vec<String>>,
     pub rule_options: ResolvedRuleOptions,

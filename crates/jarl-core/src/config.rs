@@ -86,6 +86,8 @@ pub struct Config {
     pub check_roxygen: bool,
     /// Whether to apply autofixes to roxygen examples
     pub fix_roxygen: bool,
+    /// Rules that are not checked in roxygen `@examples` sections
+    pub ignore_roxygen: HashSet<Rule>,
     /// Resolved per-rule options (wrapped in Arc to avoid expensive clones)
     pub rule_options: Arc<ResolvedRuleOptions>,
     /// Shared cache of installed R package metadata for package-specific rules.
@@ -165,6 +167,17 @@ pub fn build_config(
         .and_then(|s| s.linter.fix_roxygen)
         .unwrap_or(false);
 
+    let ignore_roxygen = toml_settings
+        .and_then(|s| s.linter.ignore_roxygen.as_ref())
+        .map(|names| {
+            resolve_rule_name_set(
+                names.iter().map(String::as_str),
+                "field `ignore-roxygen` in 'jarl.toml'",
+            )
+        })
+        .transpose()?
+        .unwrap_or_default();
+
     let per_file_ignores = toml_settings
         .map(|s| s.linter.per_file_ignores.clone())
         .unwrap_or_default();
@@ -183,6 +196,7 @@ pub fn build_config(
         fixable: fixable_toml,
         check_roxygen,
         fix_roxygen,
+        ignore_roxygen,
         rule_options: Arc::new(rule_options),
         package_cache: None,
         per_file_ignores,

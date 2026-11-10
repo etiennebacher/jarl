@@ -3,7 +3,6 @@ use crate::rule_set::Rule;
 use crate::utils::{Formals, get_arg, get_function_name, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
-use jarl_semantic::strings::get_string_literal_contents;
 
 const FORMALS_NCHAR: Formals = &["x"];
 
@@ -65,12 +64,14 @@ pub fn nzchar(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
 
     let left_is_empty_string = left
         .as_any_r_value()
-        .and_then(|value| get_string_literal_contents(&value.to_trimmed_string()))
-        .is_some_and(|content| content.is_empty());
+        .and_then(|value| value.as_r_string_value().cloned())
+        .and_then(|s| s.inner_string_text().ok())
+        .is_some_and(|content| content.text().is_empty());
     let right_is_empty_string = right
         .as_any_r_value()
-        .and_then(|value| get_string_literal_contents(&value.to_trimmed_string()))
-        .is_some_and(|content| content.is_empty());
+        .and_then(|value| value.as_r_string_value().cloned())
+        .and_then(|s| s.inner_string_text().ok())
+        .is_some_and(|content| content.text().is_empty());
 
     if (left_is_empty_string && right_is_empty_string)
         || (!left_is_empty_string && !right_is_empty_string)

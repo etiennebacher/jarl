@@ -1,0 +1,27 @@
+---
+source: crates/jarl-core/src/lints/base/null_list/mod.rs
+expression: "get_unsafe_fixed_text_with_cache(vec![\"lapply(x, function(x) NULL # comment\\n)\",\n\"lapply(\\n  # comment\\n  x,\\n  function(x) NULL\\n)\",], \"null_list\", &NS,)"
+---
+OLD:
+====
+lapply(x, function(x) NULL # comment
+)
+NEW:
+====
+lapply(x, function(x) NULL # comment
+)
+
+OLD:
+====
+lapply(
+  # comment
+  x,
+  function(x) NULL
+)
+NEW:
+====
+lapply(
+  # comment
+  x,
+  function(x) NULL
+)
