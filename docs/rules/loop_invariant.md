@@ -6,8 +6,9 @@
 ## What it does
 
 Reports assignments in the body of a `for` loop whose value is the same at
-every iteration, because it doesn't depend on the loop variable or on any
-object modified in the loop.
+every iteration. It also reports invariant calls whose result is subset using
+`[` or `[[` with a changing loop value. The reported assignment values and
+calls don't depend on the loop variable or on any object modified in the loop.
 
 This rule is conservative: it only reports top-level assignments whose
 value is built from a known set of base R functions that have no side
@@ -38,5 +39,22 @@ Use instead:
 n <- nrow(data)
 for (i in seq_along(files)) {
   out[[i]] <- process(files[i], n)
+}
+```
+
+The rule also reports invariant calls that are subset using the loop variable:
+
+```r
+for (i in seq_len(ncol(data))) {
+  x <- as.matrix(data)[, i]
+}
+```
+
+Compute the matrix once, then subset it in the loop:
+
+```r
+data_matrix <- as.matrix(data)
+for (i in seq_len(ncol(data))) {
+  x <- data_matrix[, i]
 }
 ```

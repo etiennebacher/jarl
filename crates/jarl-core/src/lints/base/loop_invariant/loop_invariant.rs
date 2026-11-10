@@ -11,6 +11,7 @@ use std::collections::HashSet;
 
 pub struct LoopInvariant {
     name: String,
+    suggestion: &'static str,
 }
 
 /// <!-- docs: start -->
@@ -19,8 +20,10 @@ pub struct LoopInvariant {
 /// ## What it does
 ///
 /// Reports assignments in the body of a `for` loop whose value is the same at
-/// every iteration, because it doesn't depend on the loop variable or on any
-/// object modified in the loop.
+/// every iteration. It also reports invariant calls whose result is subset
+/// using `[` or `[[` with a changing loop value. The reported assignment
+/// values and calls don't depend on the loop variable or on any object
+/// modified in the loop.
 ///
 /// This rule is conservative: it only reports top-level assignments whose
 /// value is built from a known set of base R functions that have no side
@@ -53,6 +56,23 @@ pub struct LoopInvariant {
 ///   out[[i]] <- process(files[i], n)
 /// }
 /// ```
+///
+/// It also reports invariant calls that are subset using the loop variable:
+///
+/// ```r
+/// for (i in seq_len(ncol(data))) {
+///   x <- as.matrix(data)[, i]
+/// }
+/// ```
+///
+/// Compute the matrix once, then subset it in the loop:
+///
+/// ```r
+/// data_matrix <- as.matrix(data)
+/// for (i in seq_len(ncol(data))) {
+///   x <- data_matrix[, i]
+/// }
+/// ```
 /// <!-- docs: end -->
 impl Violation for LoopInvariant {
     fn rule(&self) -> Rule {
@@ -67,7 +87,7 @@ impl Violation for LoopInvariant {
     }
 
     fn suggestion(&self) -> Option<String> {
-        Some("Move this assignment before the loop.".to_string())
+        Some(self.suggestion.to_string())
     }
 }
 
@@ -321,18 +341,125 @@ pub fn loop_invariant(
         }
     }
 
-    Ok(candidates
+    let mut diagnostics: Vec<Diagnostic> = candidates
         .into_iter()
         .zip(invariant)
         .filter(|(_, invariant)| *invariant)
         .map(|(candidate, _)| {
             Diagnostic::new(
-                LoopInvariant { name: candidate.name },
+                LoopInvariant {
+                    name: candidate.name,
+                    suggestion: "Move this assignment before the loop.",
+                },
                 candidate.range,
                 Fix::empty(),
             )
         })
-        .collect())
+        .collect();
+
+    // A call can be invariant even when the full assignment isn't: for
+    // example, `x <- as.matrix(data)[, i]` recomputes the matrix for each
+    // value of `i`, although the subset result changes. Report the call so
+    // the caller can compute it once and keep the varying subset in the loop.
+    for statement in &statements {
+        let Some(binary) = statement.as_r_binary_expression() else {
+            continue;
+        };
+        let Ok(value) = (match binary.operator().ok().map(|op| op.kind()) {
+            Some(RSyntaxKind::ASSIGN | RSyntaxKind::EQUAL) => binary.right(),
+            Some(RSyntaxKind::ASSIGN_RIGHT) => binary.left(),
+            _ => continue,
+        }) else {
+            continue;
+        };
+        for node in value.syntax().descendants() {
+            let (function, indices) = if let Some(subset) = RSubset::cast(node.clone()) {
+                let Ok(arguments) = subset.arguments() else {
+                    continue;
+                };
+                let indices = arguments
+                    .items()
+                    .iter()
+                    .filter_map(|item| item.as_ref().ok()?.value())
+                    .collect::<Vec<_>>();
+                (subset.function(), indices)
+            } else if let Some(subset) = RSubset2::cast(node) {
+                let Ok(arguments) = subset.arguments() else {
+                    continue;
+                };
+                let indices = arguments
+                    .items()
+                    .iter()
+                    .filter_map(|item| item.as_ref().ok()?.value())
+                    .collect::<Vec<_>>();
+                (subset.function(), indices)
+            } else {
+                continue;
+            };
+            let Ok(function) = function else {
+                continue;
+            };
+            let Some(call) = function.as_r_call() else {
+                continue;
+            };
+            let call_range = call.syntax().text_trimmed_range();
+            let index_changes = indices.iter().any(|index| {
+                semantic.uses(scope).iter().any(|(use_id, use_site)| {
+                    index
+                        .syntax()
+                        .text_trimmed_range()
+                        .contains_range(use_site.range())
+                        && semantic.reaching_definitions(scope, use_id).any(
+                            |(def_scope, def_id)| {
+                                loop_range
+                                    .contains_range(semantic.definitions(def_scope)[def_id].range())
+                            },
+                        )
+                })
+            });
+            if !index_changes
+                || pure_callees(&AnyRExpression::RCall(call.clone()), semantic).is_none()
+            {
+                continue;
+            }
+            let call_value = call.syntax().text_trimmed_range();
+            if !reads_are_invariant_range(call_value, scope, loop_range, semantic, &mutated) {
+                continue;
+            }
+            diagnostics.push(Diagnostic::new(
+                LoopInvariant {
+                    name: call.syntax().text_trimmed().to_string(),
+                    suggestion: "Compute this value before the loop.",
+                },
+                call_range,
+                Fix::empty(),
+            ));
+        }
+    }
+
+    Ok(diagnostics)
+}
+
+fn reads_are_invariant_range(
+    range: TextRange,
+    scope: ScopeId,
+    loop_range: TextRange,
+    semantic: &SemanticIndex,
+    mutated: &HashSet<String>,
+) -> bool {
+    semantic
+        .uses(scope)
+        .iter()
+        .filter(|(_, use_site)| range.contains_range(use_site.range()))
+        .all(|(use_id, use_site)| {
+            let name = semantic.symbols(scope).symbol(use_site.symbol()).name();
+            !mutated.contains(name)
+                && semantic
+                    .reaching_definitions(scope, use_id)
+                    .all(|(def_scope, def_id)| {
+                        !loop_range.contains_range(semantic.definitions(def_scope)[def_id].range())
+                    })
+        })
 }
 
 /// Names modified in place in the loop body (`x[i] <- `, `names(x) <- `,
