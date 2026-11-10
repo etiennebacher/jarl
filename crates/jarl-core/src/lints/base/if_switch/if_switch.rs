@@ -13,25 +13,19 @@ use biome_rowan::AstNode;
 /// expression to a string with `==`, e.g.
 /// `if (x == "a") 1 else if (x == "b") 2 else if (x == "c") 3`.
 ///
-/// A chain is only reported if it has at least `max-branches` comparisons (4
-/// by default), if every condition is a `==` comparison of the same expression
-/// with a non-empty string, and if it isn't itself part of a longer chain.
-///
 /// ## Why is this bad?
 ///
-/// `switch()` is clearer than repeated `if`/`else` tests on the same value. It
-/// is also faster: its evaluation time doesn't depend on the number of
-/// branches, while an `if`/`else` chain evaluates each condition in turn.
+/// `switch()` is clearer than repeated `if`/`else` tests on the same value.
 ///
-/// The fix wraps the compared expression in `as.character()`. Without it,
-/// `switch()` would select numbers and logicals by position, not by name:
-/// `switch(3, a = "x", b = "y", c = "z")` returns `"z"` (the third branch),
-/// whereas `3 == "c"` is `FALSE`. Factors would likewise be matched by their
+/// This rule has an unsafe automatic fix which wraps the compared expression
+/// in `as.character()`. Without it, `switch()` would select numbers and logicals
+/// by position, not by name, e.g. `switch(3, a = "x", b = "y", c = "z")` returns
+/// `"z"` (the third branch). Factors would likewise be matched by their
 /// integer codes instead of their labels.
 ///
-/// This rule has an unsafe automatic fix because `NA` values make an `if` chain
-/// error, but `switch()` silently falls back to the default (or returns an
-/// invisible `NULL`). `NA_character_` even matches a branch named `"NA"`.
+/// This fix is unsafe because `NA` values make an `if` chain error, but `switch()`
+/// silently falls back to the default (or returns an invisible `NULL`).
+/// `NA_character_` even matches a branch named `"NA"`.
 ///
 /// Empty strings are not reported because `switch()` cannot have an empty
 /// string as an argument name.
