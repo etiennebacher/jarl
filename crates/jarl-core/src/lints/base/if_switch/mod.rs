@@ -58,7 +58,11 @@ mod tests {
             None,
         );
         // Not enough branches
-        expect_no_lint("if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3", rule, None);
+        expect_no_lint(
+            "if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3",
+            rule,
+            None,
+        );
         expect_no_lint("if (x == 'a') 1 else if (x == 'b') 2", rule, None);
         expect_no_lint("if (x == 'a') 1 else if (x == 'b') 2 else 3", rule, None);
         expect_no_lint("if (x == 'a') 1 else if (x == R'(b)') 2 else 3", rule, None);
