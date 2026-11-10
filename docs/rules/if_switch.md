@@ -43,7 +43,7 @@ be at least 2.
 ### Default values
 
 ```toml
-max-branches = 3
+max-branches = 4
 ```
 
 ### TOML settings
@@ -53,7 +53,7 @@ max-branches = 3
 ...
 
 [lint.if_switch]
-max-branches = 4
+max-branches = 5
 ```
 
 ## Examples

@@ -1,4 +1,4 @@
-const DEFAULT_MAX_BRANCHES: usize = 3;
+const DEFAULT_MAX_BRANCHES: usize = 4;
 
 /// <!-- docs: start -->
 /// Use `max-branches` to set the number of equality branches (`if` and
@@ -8,7 +8,7 @@ const DEFAULT_MAX_BRANCHES: usize = 3;
 /// ### Default values
 ///
 /// ```toml
-/// max-branches = 3
+/// max-branches = 4
 /// ```
 ///
 /// ### TOML settings
@@ -18,7 +18,7 @@ const DEFAULT_MAX_BRANCHES: usize = 3;
 /// ...
 ///
 /// [lint.if_switch]
-/// max-branches = 4
+/// max-branches = 5
 /// ```
 /// <!-- docs: end -->
 #[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]

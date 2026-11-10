@@ -443,7 +443,7 @@
       "additionalProperties": false
     },
     "IfSwitchOptions": {
-      "description": "<!-- docs: start -->\nUse `max-branches` to set the number of equality branches (`if` and\n`else if` conditions) from which an `if`/`else` chain is reported. It must\nbe at least 2.\n\n### Default values\n\n```toml\nmax-branches = 3\n```\n\n### TOML settings\n\n```toml\n[lint]\n...\n\n[lint.if_switch]\nmax-branches = 4\n```\n<!-- docs: end -->",
+      "description": "<!-- docs: start -->\nUse `max-branches` to set the number of equality branches (`if` and\n`else if` conditions) from which an `if`/`else` chain is reported. It must\nbe at least 2.\n\n### Default values\n\n```toml\nmax-branches = 4\n```\n\n### TOML settings\n\n```toml\n[lint]\n...\n\n[lint.if_switch]\nmax-branches = 5\n```\n<!-- docs: end -->",
       "type": "object",
       "properties": {
         "max-branches": {
