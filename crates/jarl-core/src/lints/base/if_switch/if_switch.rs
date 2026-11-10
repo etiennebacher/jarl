@@ -13,7 +13,7 @@ use biome_rowan::AstNode;
 /// expression to a string with `==`, e.g.
 /// `if (x == "a") 1 else if (x == "b") 2 else if (x == "c") 3`.
 ///
-/// A chain is only reported if it has at least `max-branches` comparisons (3
+/// A chain is only reported if it has at least `max-branches` comparisons (4
 /// by default), if every condition is a `==` comparison of the same expression
 /// with a non-empty string, and if it isn't itself part of a longer chain.
 ///

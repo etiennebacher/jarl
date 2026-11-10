@@ -33,21 +33,21 @@ mod tests {
         // Non-character conditions
         expect_no_lint("if (x == 1) 1 else 2", rule, None);
         expect_no_lint(
-            "if (x == 1) 1 else if (x == 2) 2 else if (x == 3) 3",
+            "if (x == 1) 1 else if (x == 2) 2 else if (x == 3) 3 else if (x == 4) 4",
             rule,
             None,
         );
         // `!=` anywhere in the chain
         expect_no_lint("if (x == 'a') 1 else if (x != 'b') 2 else 3", rule, None);
         expect_no_lint(
-            "if (x == 'a') 1 else if (x == 'b') 2 else if (x != 'c') 3",
+            "if (x == 'a') 1 else if (x == 'b') 2 else if (x != 'c') 3 else if (x == 'd') 4",
             rule,
             None,
         );
         // Several variables
         expect_no_lint("if (x == 'a') 1 else if (y == 'b') 2 else 3", rule, None);
         expect_no_lint(
-            "if (x == 'a') 1 else if (x == 'b') 2 else if (y == 'c') 3",
+            "if (x == 'a') 1 else if (x == 'b') 2 else if (y == 'c') 3 else if (x == 'd') 4",
             rule,
             None,
         );
@@ -58,22 +58,23 @@ mod tests {
             None,
         );
         // Not enough branches
+        expect_no_lint("if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3", rule, None);
         expect_no_lint("if (x == 'a') 1 else if (x == 'b') 2", rule, None);
         expect_no_lint("if (x == 'a') 1 else if (x == 'b') 2 else 3", rule, None);
         expect_no_lint("if (x == 'a') 1 else if (x == R'(b)') 2 else 3", rule, None);
         // Empty strings can't be used in switch()
         expect_no_lint(
-            "if (x == '') 1 else if (x == 'a') 2 else if (x == 'b') 3",
+            "if (x == '') 1 else if (x == 'a') 2 else if (x == 'b') 3 else if (x == 'c') 4",
             rule,
             None,
         );
         expect_no_lint(
-            "if (x == \"\") 1 else if (x == \"a\") 2 else if (x == \"b\") 3",
+            "if (x == \"\") 1 else if (x == \"a\") 2 else if (x == \"b\") 3 else if (x == \"c\") 4",
             rule,
             None,
         );
         expect_no_lint(
-            "if (x == 'a') 1 else if (x == '') 2 else if (x == 'b') 3",
+            "if (x == 'a') 1 else if (x == '') 2 else if (x == 'b') 3 else if (x == 'c') 4",
             rule,
             None,
         );
@@ -88,7 +89,7 @@ mod tests {
             None,
         );
         expect_no_lint(
-            "if (x == R\"()\") 1 else if (x == R\"{}\") 2 else if (x == R\"[]\") 3",
+            "if (x == R\"()\") 1 else if (x == R\"{}\") 2 else if (x == R\"[]\") 3 else if (x == R\"()\") 4",
             rule,
             None,
         );
@@ -100,13 +101,13 @@ mod tests {
         );
         // Both sides are strings
         expect_no_lint(
-            "if ('a' == 'a') 1 else if ('a' == 'b') 2 else if ('a' == 'c') 3",
+            "if ('a' == 'a') 1 else if ('a' == 'b') 2 else if ('a' == 'c') 3 else if ('a' == 'd') 4",
             rule,
             None,
         );
         // Non-binary condition
         expect_no_lint(
-            "if (x) 1 else if (x == 'b') 2 else if (x == 'c') 3",
+            "if (x) 1 else if (x == 'b') 2 else if (x == 'c') 3 else if (x == 'd') 4",
             rule,
             None,
         );
@@ -117,13 +118,13 @@ mod tests {
     #[test]
     fn test_lint_if_switch() {
         assert_snapshot!(
-            snapshot_lint("if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3"),
+            snapshot_lint("if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3 else if (x == 'd') 4"),
             @"
         warning: if_switch
          --> <test>:1:1
           |
-        1 | if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3
-          | --------------------------------------------------------- Repeated `if`/`else if` equality tests on the same value.
+        1 | if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3 else if (x == 'd') 4
+          | ------------------------------------------------------------------------------ Repeated `if`/`else if` equality tests on the same value.
           |
           = help: Use `switch()` instead.
         Found 1 error.
@@ -131,13 +132,13 @@ mod tests {
         );
         // With raw strings
         assert_snapshot!(
-            snapshot_lint("if (x == 'a') 1 else if (x == r'(b)') 2 else if (x == R'--[c]--') 3"),
+            snapshot_lint("if (x == 'a') 1 else if (x == r'(b)') 2 else if (x == R'--[c]--') 3 else if (x == 'd') 4"),
             @"
         warning: if_switch
          --> <test>:1:1
           |
-        1 | if (x == 'a') 1 else if (x == r'(b)') 2 else if (x == R'--[c]--') 3
-          | ------------------------------------------------------------------- Repeated `if`/`else if` equality tests on the same value.
+        1 | if (x == 'a') 1 else if (x == r'(b)') 2 else if (x == R'--[c]--') 3 else if (x == 'd') 4
+          | ---------------------------------------------------------------------------------------- Repeated `if`/`else if` equality tests on the same value.
           |
           = help: Use `switch()` instead.
         Found 1 error.
@@ -145,13 +146,13 @@ mod tests {
         );
         // String on the left
         assert_snapshot!(
-            snapshot_lint("if ('a' == x) 1 else if (x == 'b') 2 else if ('c' == x) 3"),
+            snapshot_lint("if ('a' == x) 1 else if (x == 'b') 2 else if ('c' == x) 3 else if (x == 'd') 4"),
             @"
         warning: if_switch
          --> <test>:1:1
           |
-        1 | if ('a' == x) 1 else if (x == 'b') 2 else if ('c' == x) 3
-          | --------------------------------------------------------- Repeated `if`/`else if` equality tests on the same value.
+        1 | if ('a' == x) 1 else if (x == 'b') 2 else if ('c' == x) 3 else if (x == 'd') 4
+          | ------------------------------------------------------------------------------ Repeated `if`/`else if` equality tests on the same value.
           |
           = help: Use `switch()` instead.
         Found 1 error.
@@ -159,13 +160,13 @@ mod tests {
         );
         // Expressions as subject
         assert_snapshot!(
-            snapshot_lint("if (foo(x) == 'a') 1 else if (foo(x) == 'b') 2 else if (foo(x) == 'c') 3"),
+            snapshot_lint("if (foo(x) == 'a') 1 else if (foo(x) == 'b') 2 else if (foo(x) == 'c') 3 else if (foo(x) == 'd') 4"),
             @"
         warning: if_switch
          --> <test>:1:1
           |
-        1 | if (foo(x) == 'a') 1 else if (foo(x) == 'b') 2 else if (foo(x) == 'c') 3
-          | ------------------------------------------------------------------------ Repeated `if`/`else if` equality tests on the same value.
+        1 | if (foo(x) == 'a') 1 else if (foo(x) == 'b') 2 else if (foo(x) == 'c') 3 else if (foo(x) == 'd') 4
+          | -------------------------------------------------------------------------------------------------- Repeated `if`/`else if` equality tests on the same value.
           |
           = help: Use `switch()` instead.
         Found 1 error.
@@ -173,14 +174,14 @@ mod tests {
         );
         // Comments and whitespace in the subject
         assert_snapshot!(
-            snapshot_lint("if (foo(x) == 'a') 1 else if (foo(x # comment\n) == 'b') 2 else if (foo( x ) == 'c') 3"),
+            snapshot_lint("if (foo(x) == 'a') 1 else if (foo(x # comment\n) == 'b') 2 else if (foo( x ) == 'c') 3 else if (foo(x) == 'd') 4"),
             @"
         warning: if_switch
          --> <test>:1:1
           |
         1 | / if (foo(x) == 'a') 1 else if (foo(x # comment
-        2 | | ) == 'b') 2 else if (foo( x ) == 'c') 3
-          | |_______________________________________- Repeated `if`/`else if` equality tests on the same value.
+        2 | | ) == 'b') 2 else if (foo( x ) == 'c') 3 else if (foo(x) == 'd') 4
+          | |_________________________________________________________________- Repeated `if`/`else if` equality tests on the same value.
           |
           = help: Use `switch()` instead.
         Found 1 error.
@@ -202,13 +203,13 @@ mod tests {
         );
         // With a final else
         assert_snapshot!(
-            snapshot_lint("if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3 else 4"),
+            snapshot_lint("if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3 else if (x == 'd') 4 else 5"),
             @"
         warning: if_switch
          --> <test>:1:1
           |
-        1 | if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3 else 4
-          | ---------------------------------------------------------------- Repeated `if`/`else if` equality tests on the same value.
+        1 | if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3 else if (x == 'd') 4 else 5
+          | ------------------------------------------------------------------------------------- Repeated `if`/`else if` equality tests on the same value.
           |
           = help: Use `switch()` instead.
         Found 1 error.
@@ -227,6 +228,8 @@ mod tests {
     do_b()
   } else if (x == 'c') {
     do_c()
+  } else if (x == 'd') {
+    do_d()
   }
   if (y == 'A') {
     do_A()
@@ -234,6 +237,8 @@ mod tests {
     do_B()
   } else if (y == 'C') {
     do_C()
+  } else if (y == 'D') {
+    do_D()
   }
   if (z1 == 'a') {
     do_a()
@@ -241,6 +246,8 @@ mod tests {
     do_b()
   } else if (z3 == 'c') {
     do_c()
+  } else if (x == 'd') {
+    do_d()
   }
   if (a == '1') {
     do_1()
@@ -248,33 +255,35 @@ mod tests {
     do_2()
   } else if (a == '') {
     do_blank()
+  } else if (a == '3') {
+    do_3()
   }
 }"
             ),
             @"
         warning: if_switch
-         --> <test>:2:3
-          |
-        2 | /   if (x == 'a') {
-        3 | |     do_a()
-        4 | |   } else if (x == 'b') {
-        5 | |     do_b()
-        6 | |   } else if (x == 'c') {
-        7 | |     do_c()
-        8 | |   }
-          | |___- Repeated `if`/`else if` equality tests on the same value.
-          |
-          = help: Use `switch()` instead.
-        warning: if_switch
-          --> <test>:9:3
+          --> <test>:2:3
            |
-         9 | /   if (y == 'A') {
-        10 | |     do_A()
-        11 | |   } else if (y == 'B') {
-        12 | |     do_B()
-        13 | |   } else if (y == 'C') {
-        14 | |     do_C()
-        15 | |   }
+         2 | /   if (x == 'a') {
+         3 | |     do_a()
+         4 | |   } else if (x == 'b') {
+         5 | |     do_b()
+        ...  |
+         9 | |     do_d()
+        10 | |   }
+           | |___- Repeated `if`/`else if` equality tests on the same value.
+           |
+           = help: Use `switch()` instead.
+        warning: if_switch
+          --> <test>:11:3
+           |
+        11 | /   if (y == 'A') {
+        12 | |     do_A()
+        13 | |   } else if (y == 'B') {
+        14 | |     do_B()
+        ...  |
+        18 | |     do_D()
+        19 | |   }
            | |___- Repeated `if`/`else if` equality tests on the same value.
            |
            = help: Use `switch()` instead.
@@ -289,17 +298,17 @@ mod tests {
             "fix_output",
             get_unsafe_fixed_text(
                 vec![
-                    "if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3",
-                    "if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3 else 4",
-                    "if ('a' == x) 1 else if (x == 'b') 2 else if ('c' == x) 3",
-                    "if (foo(x) == 'a') 1 else if (foo( x ) == 'b') 2 else if (foo(x) == 'c') 3",
-                    "if (x == 'a') {\n  do_a()\n} else if (x == 'b') {\n  do_b()\n} else if (x == 'c') {\n  do_c()\n} else {\n  stop('no')\n}",
-                    "y <- if (x == 'a') z <- 1 else if (x == 'b') z <- 2 else if (x == 'c') z <- 3",
+                    "if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3 else if (x == 'd') 4",
+                    "if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3 else if (x == 'd') 4 else 5",
+                    "if ('a' == x) 1 else if (x == 'b') 2 else if ('c' == x) 3 else if (x == 'd') 4",
+                    "if (foo(x) == 'a') 1 else if (foo( x ) == 'b') 2 else if (foo(x) == 'c') 3 else if (foo(x) == 'd') 4",
+                    "if (x == 'a') {\n  do_a()\n} else if (x == 'b') {\n  do_b()\n} else if (x == 'c') {\n  do_c()\n} else if (x == 'd') {\n  do_d()\n} else {\n  stop('no')\n}",
+                    "y <- if (x == 'a') z <- 1 else if (x == 'b') z <- 2 else if (x == 'c') z <- 3 else if (x == 'd') z <- 4",
                     // No fix
-                    "if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3 # comment\n",
-                    "if (x == 'a') # comment\n  1 else if (x == 'b') 2 else if (x == 'c') 3",
-                    "if (x == 'a') y = 1 else if (x == 'b') y = 2 else if (x == 'c') y = 3",
-                    "if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3 else y = 4",
+                    "if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3 else if (x == 'd') 4 # comment\n",
+                    "if (x == 'a') # comment\n  1 else if (x == 'b') 2 else if (x == 'c') 3 else if (x == 'd') 4",
+                    "if (x == 'a') y = 1 else if (x == 'b') y = 2 else if (x == 'c') y = 3 else if (x == 'd') y = 4",
+                    "if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3 else if (x == 'd') 4 else y = 5",
                 ],
                 "if_switch",
             )
@@ -358,7 +367,7 @@ mod tests {
         );
         assert_snapshot!(
             ResolvedIfSwitchOptions::resolve(None).unwrap().max_branches,
-            @"3"
+            @"4"
         );
     }
 }
