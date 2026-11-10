@@ -4,6 +4,7 @@
 
 ### New features
 
+
 * New rules:
 
   * `apply_paste` (#563)
