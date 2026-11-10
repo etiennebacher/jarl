@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-core/src/lints/base/if_switch/mod.rs
-expression: "get_unsafe_fixed_text(vec![\"if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3 else if (x == 'd') 4\",\n\"if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3 else if (x == 'd') 4 else 5\",\n\"if ('a' == x) 1 else if (x == 'b') 2 else if ('c' == x) 3 else if (x == 'd') 4\",\n\"if (foo(x) == 'a') 1 else if (foo( x ) == 'b') 2 else if (foo(x) == 'c') 3 else if (foo(x) == 'd') 4\",\n\"if (x == 'a') {\\n  do_a()\\n} else if (x == 'b') {\\n  do_b()\\n} else if (x == 'c') {\\n  do_c()\\n} else if (x == 'd') {\\n  do_d()\\n} else {\\n  stop('no')\\n}\",\n\"y <- if (x == 'a') z <- 1 else if (x == 'b') z <- 2 else if (x == 'c') z <- 3 else if (x == 'd') z <- 4\",\n\"if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3 else if (x == 'd') 4 # comment\\n\",\n\"if (x == 'a') # comment\\n  1 else if (x == 'b') 2 else if (x == 'c') 3 else if (x == 'd') 4\",\n\"if (x == 'a') y = 1 else if (x == 'b') y = 2 else if (x == 'c') y = 3 else if (x == 'd') y = 4\",\n\"if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3 else if (x == 'd') 4 else y = 5\",],\n\"if_switch\",)"
+expression: "get_unsafe_fixed_text(vec![\"if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3 else if (x == 'd') 4\",\n\"if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3 else if (x == 'd') 4 else 5\",\n\"if ('a' == x) 1 else if (x == 'b') 2 else if ('c' == x) 3 else if (x == 'd') 4\",\n\"if (foo(x) == 'a') 1 else if (foo( x ) == 'b') 2 else if (foo(x) == 'c') 3 else if (foo(x) == 'd') 4\",\n\"if (x == 'a') {\\n  do_a()\\n} else if (x == 'b') {\\n1 + 1\\n  do_b()\\n} else if (x == 'c') {\\n  do_c()\\n} else if (x == 'd') {\\n1 + 1\\n  do_d()\\n} else {\\n  stop('no')\\n}\",\n\"y <- if (x == 'a') z <- 1 else if (x == 'b') z <- 2 else if (x == 'c') z <- 3 else if (x == 'd') z <- 4\",\n\"if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3 else if (x == 'd') 4 # comment\\n\",\n\"if (x == 'a') # comment\\n  1 else if (x == 'b') 2 else if (x == 'c') 3 else if (x == 'd') 4\",\n\"if (x == 'a') y = 1 else if (x == 'b') y = 2 else if (x == 'c') y = 3 else if (x == 'd') y = 4\",\n\"if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3 else if (x == 'd') 4 else y = 5\",],\n\"if_switch\",)"
 ---
 OLD:
 ====
@@ -35,10 +35,12 @@ OLD:
 if (x == 'a') {
   do_a()
 } else if (x == 'b') {
+1 + 1
   do_b()
 } else if (x == 'c') {
   do_c()
 } else if (x == 'd') {
+1 + 1
   do_d()
 } else {
   stop('no')
@@ -51,12 +53,14 @@ switch(
   do_a()
 },
   'b' = {
+1 + 1
   do_b()
 },
   'c' = {
   do_c()
 },
   'd' = {
+1 + 1
   do_d()
 },
   {

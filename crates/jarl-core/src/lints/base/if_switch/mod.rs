@@ -306,7 +306,7 @@ mod tests {
                     "if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3 else if (x == 'd') 4 else 5",
                     "if ('a' == x) 1 else if (x == 'b') 2 else if ('c' == x) 3 else if (x == 'd') 4",
                     "if (foo(x) == 'a') 1 else if (foo( x ) == 'b') 2 else if (foo(x) == 'c') 3 else if (foo(x) == 'd') 4",
-                    "if (x == 'a') {\n  do_a()\n} else if (x == 'b') {\n  do_b()\n} else if (x == 'c') {\n  do_c()\n} else if (x == 'd') {\n  do_d()\n} else {\n  stop('no')\n}",
+                    "if (x == 'a') {\n  do_a()\n} else if (x == 'b') {\n1 + 1\n  do_b()\n} else if (x == 'c') {\n  do_c()\n} else if (x == 'd') {\n1 + 1\n  do_d()\n} else {\n  stop('no')\n}",
                     "y <- if (x == 'a') z <- 1 else if (x == 'b') z <- 2 else if (x == 'c') z <- 3 else if (x == 'd') z <- 4",
                     // No fix
                     "if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3 else if (x == 'd') 4 # comment\n",
