@@ -40,6 +40,9 @@
 
 ### Bug fixes
 
+* Fix `download_file` handling of binary URL suffixes, string literals, namespaces,
+  and ignored `mode` arguments with external download methods (#786, @Yousa-Mirage).
+
 * Fix `comparison_negation` precedence and tidy-evaluation handling, detect nested
   parentheses and unparenthesized comparisons, and provide safe fixes (#787,
   @Yousa-Mirage).
