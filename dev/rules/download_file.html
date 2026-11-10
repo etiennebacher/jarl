@@ -958,18 +958,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="what-it-does" class="level2">
 <h2 class="anchored" data-anchor-id="what-it-does">What it does</h2>
-<p>Checks for usage of <code>download.file()</code> with <code>mode = "a"</code> or <code>mode = "w"</code>.</p>
+<p>Checks for missing or non-binary <code>mode</code> arguments in <code>download.file()</code>, and for <code>mode</code> arguments ignored by <code>method = "curl"</code> or <code>method = "wget"</code>.</p>
 </section>
 <section id="why-is-this-bad" class="level2">
 <h2 class="anchored" data-anchor-id="why-is-this-bad">Why is this bad?</h2>
-<p><code>mode = "a"</code> or <code>mode = "w"</code> can generate broken files on Windows. <code>download.file()</code> documentation recommends using <code>mode = "wb"</code> and <code>mode = "a"</code> instead. If <code>method = "curl"</code> or <code>method = "wget"</code>, no mode should be provided as it will be ignored.</p>
+<p>Text modes <code>"w"</code> and <code>"a"</code> can corrupt binary downloads on Windows. Use <code>"wb"</code> or <code>"ab"</code> instead. With the external <code>curl</code> and <code>wget</code> methods, <code>mode</code> is ignored and should be omitted.</p>
+<p>When <code>mode</code> is missing, literal URLs ending in <code>.gz</code>, <code>.bz2</code>, <code>.xz</code>, <code>.tgz</code>, <code>.zip</code>, <code>.jar</code>, <code>.rda</code>, <code>.rds</code>, or <code>.RData</code> are exempt because R automatically uses binary mode for them on Windows. The check is case-sensitive and uses the URL after percent-decoding, not the destination filename. Explicit text modes are still reported for these URLs.</p>
 </section>
 <section id="example" class="level2">
 <h2 class="anchored" data-anchor-id="example">Example</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">download.file</span>(<span class="at">x =</span> my_url)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">download.file</span>(<span class="at">x =</span> my_url, <span class="at">mode =</span> <span class="st">"w"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">download.file</span>(url, destfile)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">download.file</span>(url, destfile, <span class="at">mode =</span> <span class="st">"a"</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">download.file</span>(url, destfile, <span class="at">method =</span> <span class="st">"curl"</span>, <span class="at">mode =</span> <span class="st">"wb"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Use instead:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">download.file</span>(<span class="at">x =</span> my_url, <span class="at">mode =</span> <span class="st">"wb"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">download.file</span>(url, destfile, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">download.file</span>(url, destfile, <span class="at">mode =</span> <span class="st">"ab"</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">download.file</span>(url, destfile, <span class="at">method =</span> <span class="st">"curl"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="references" class="level2">
 <h2 class="anchored" data-anchor-id="references">References</h2>
