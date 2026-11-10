@@ -457,7 +457,7 @@ declare_rules! {
     IfSwitch => {
         name: "if_switch",
         categories: [Read],
-        default: Enabled,
+        default: Disabled,
         fix: Unsafe,
         min_r_version: None,
     },
