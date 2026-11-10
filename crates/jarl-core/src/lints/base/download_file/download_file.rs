@@ -4,12 +4,10 @@ use crate::utils::{Formals, get_arg};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
-// The order of `download.file()`'s arguments
 const FORMALS_DOWNLOAD_FILE: Formals = &[
     "url", "destfile", "method", "quiet", "mode", "cacheOK", "extra", "headers",
 ];
 
-// These are the suffixes that indicate a binary file on Windows.
 const WINDOWS_BINARY_SUFFIXES: &[&str] = &[
     ".gz", ".bz2", ".xz", ".tgz", ".zip", ".jar", ".rda", ".rds", ".RData",
 ];
@@ -91,7 +89,7 @@ pub fn download_file(
             Some(_) => binary_mode_message,
         }
     } else {
-        // R checks the decoded URL suffix only when mode is missing.
+        // R checks the decoded URL suffix only when mode is missing (on Windows only).
         if let Some(url) = get_arg(ast, FORMALS_DOWNLOAD_FILE, "url")
             .and_then(|arg| arg.value())
             .and_then(literal_string)
