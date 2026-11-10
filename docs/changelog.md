@@ -9,6 +9,10 @@
   * `apply_paste` (#563)
   * `assignment_on_if_no_else` (#605, @christopherkenny)
   * `function_return` (#750)
+  * `if_switch` (#812)
+  * `list_comparison` (#572, @Yousa-Mirage)
+  * `null_list` (#785, @JosephBARBIERDARNAL)
+  * `terminal_close` (#811)
   * `todo_comment` (#739, @Yousa-Mirage)
 
 * Improved rules:
@@ -30,14 +34,22 @@
 * New option `ignore-roxygen` in `jarl.toml` to ignore some rules only in
   roxygen `@examples` and `@examplesIf` sections (#780).
 
+* New CLI argument `--config` to use a specific configuration file instead of
+  the discovered ones, or to override some options of the configuration, e.g.
+  `--config "lint.select = ['any_is_na']"` (#804).
+
 ### Bug fixes
 
 * Fix `download_file` handling of binary URL suffixes, string literals, namespaces,
   and ignored `mode` arguments with external download methods (#786, @Yousa-Mirage).
 
+* Fix `comparison_negation` precedence and tidy-evaluation handling, detect nested
+  parentheses and unparenthesized comparisons, and provide safe fixes (#787,
+  @Yousa-Mirage).
+
 * Fix `outer_negation` handling of operator precedence, pipes, and `na.rm`,
-  and detect parenthesized and namespace-qualified calls. Its fix is now 
-  unsafe because it can change warnings and errors for inputs that are not 
+  and detect parenthesized and namespace-qualified calls. Its fix is now
+  unsafe because it can change warnings and errors for inputs that are not
   logical (#779, @Yousa-Mirage).
 
 * `for_loop_index` now detects reused variables in nested expressions,

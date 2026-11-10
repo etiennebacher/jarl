@@ -47,6 +47,7 @@ fn test_must_pass_path() -> anyhow::Result<()> {
           --statistics                     Show counts for every rule with at least one violation.
           --add-jarl-ignore[=<REASON>]     Automatically insert a `# jarl-ignore` comment to suppress all violations.
                                            The default reason can be customized with `--add-jarl-ignore="my_reason"`.
+          --config <CONFIG_OPTION>         Either a path to a TOML configuration file, which is used instead of the discovered one, or a TOML `<KEY> = <VALUE>` pair overriding an option of the configuration, e.g. `--config "lint.select = ['any_is_na']"`. Can be passed several times, but only once with a path.
       -h, --help                           Print help (see a summary with '-h')
 
     Global options:

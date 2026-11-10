@@ -304,7 +304,7 @@ declare_rules! {
         name: "comparison_negation",
         categories: [Read],
         default: Enabled,
-        fix: Unsafe,
+        fix: Safe,
         min_r_version: None,
     },
     ConditionCall => {
@@ -368,6 +368,13 @@ declare_rules! {
         categories: [Susp],
         default: Enabled,
         fix: None,
+        min_r_version: None,
+    },
+    EmptyList => {
+        name: "null_list",
+        categories: [Perf],
+        default: Enabled,
+        fix: Unsafe,
         min_r_version: None,
     },
     EqualsNa => {
@@ -447,6 +454,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    IfSwitch => {
+        name: "if_switch",
+        categories: [Read],
+        default: Disabled,
+        fix: Unsafe,
+        min_r_version: None,
+    },
     ImplicitAssignment => {
         name: "implicit_assignment",
         categories: [Read],
@@ -503,6 +517,13 @@ declare_rules! {
         default: Enabled,
         fix: Safe,
         min_r_version: Some((4, 0, 0)),
+    },
+    ListComparison => {
+        name: "list_comparison",
+        categories: [Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
     },
     LiteralCoercion => {
         name: "literal_coercion",
@@ -670,6 +691,13 @@ declare_rules! {
         categories: [Read],
         default: Enabled,
         fix: Safe,
+        min_r_version: None,
+    },
+    TerminalClose => {
+        name: "terminal_close",
+        categories: [Susp],
+        default: Enabled,
+        fix: None,
         min_r_version: None,
     },
     TodoComment => {

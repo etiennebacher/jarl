@@ -8,8 +8,6 @@
 //! `info.is_definition_used(scope, def_id, def)` rather than walking the
 //! semantic index themselves.
 
-pub mod strings;
-
 use std::collections::HashSet;
 
 use air_r_parser::RParserOptions;
@@ -18,7 +16,7 @@ use air_r_syntax::{
     RIfStatement, RStringValue, RSyntaxKind, RSyntaxNode,
 };
 use biome_rowan::{AstNode, AstSeparatedList, SyntaxNodeCast, TextRange, TextSize};
-use oak_core::syntax_ext::{AnyRSelectorExt, RIdentifierExt, RStringValueExt};
+use oak_core::syntax_ext::{AnyRSelectorExt, RIdentifierExt};
 use oak_semantic::DefinitionId;
 use oak_semantic::effects::BoundArguments;
 use oak_semantic::semantic_index::{
@@ -485,8 +483,7 @@ impl<'a> SemanticInfo<'a> {
         if !self.package_available(package) {
             return;
         }
-        let Some(content) = strings::get_string_literal_contents(&node.text_trimmed().to_string())
-        else {
+        let Some(content) = string_literal_value(node) else {
             return;
         };
         // The read happens where the string sits, so identifiers inside it
@@ -565,9 +562,7 @@ impl<'a> SemanticInfo<'a> {
             if value.kind() != RSyntaxKind::R_STRING_VALUE {
                 continue;
             }
-            let Some(content) =
-                strings::get_string_literal_contents(&value.text_trimmed().to_string())
-            else {
+            let Some(content) = string_literal_value(value) else {
                 continue;
             };
             let read_range = value.text_trimmed_range();
@@ -1258,7 +1253,7 @@ fn named_string_arg(args: &[RArgument], name: &str) -> Option<String> {
     if node.kind() != RSyntaxKind::R_STRING_VALUE {
         return None;
     }
-    strings::get_string_literal_contents(&node.text_trimmed().to_string())
+    string_literal_value(node)
 }
 
 /// Packages whose functions interpolate `{...}` in their string arguments.
@@ -1392,7 +1387,11 @@ fn argument_name_is(arg: &RArgument, name: &str) -> bool {
 }
 
 fn string_literal_value(node: &RSyntaxNode) -> Option<String> {
-    node.clone().cast::<RStringValue>()?.string_text()
+    node.clone()
+        .cast::<RStringValue>()?
+        .inner_string_text()
+        .ok()
+        .map(|t| t.text().to_string())
 }
 
 /// True if the value assigned by this binary assignment is a function

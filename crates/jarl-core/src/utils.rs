@@ -7,7 +7,7 @@ use air_r_syntax::{
 };
 use anyhow::{Result, anyhow};
 use biome_rowan::{AstNode, AstNodeList, AstSeparatedList, Direction};
-use oak_core::syntax_ext::{RIdentifierExt, RStringValueExt};
+use oak_core::syntax_ext::RIdentifierExt;
 use oak_semantic::effects::BoundArguments;
 pub use oak_semantic::effects::Formals;
 use std::collections::HashMap;
@@ -149,7 +149,9 @@ pub fn get_arg_by_name(args: &RArgumentList, name: &str) -> Option<RArgument> {
 fn argument_name(arg: &RArgument) -> Option<String> {
     match arg.name_clause()?.name().ok()? {
         AnyRArgumentName::RIdentifier(ident) => Some(ident.name_text()),
-        AnyRArgumentName::RStringValue(s) => s.string_text(),
+        AnyRArgumentName::RStringValue(s) => {
+            s.inner_string_text().ok().map(|t| t.text().to_string())
+        }
         _ => None,
     }
 }

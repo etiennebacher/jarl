@@ -40,9 +40,11 @@ updates:
       prefix: build
       prefix-development: chore(rust)
     groups:
+      # Major updates are intentionally ungrouped so each gets its own PR
       rust:
-        patterns:
-          - '*'
+        update-types:
+          - minor
+          - patch
 
   # VS Code / Positron extension
   - package-ecosystem: npm
@@ -60,10 +62,17 @@ updates:
       # Matches the Node version shipped with VS Code
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
+      # Updated only when `engines.vscode`'s bundled Node version changes,
+      # as p-queue v10 requires Node 22, but `engines.vscode` `^1.91.0` only
+      # requires Node 20
+      - dependency-name: 'p-queue'
+        update-types: ['version-update:semver-major']
     commit-message:
       prefix: build
       prefix-development: chore(vscode)
     groups:
+      # Major updates are intentionally ungrouped so each gets its own PR
       vscode:
-        patterns:
-          - '*'
+        update-types:
+          - minor
+          - patch
