@@ -10,7 +10,7 @@ repository = "https://github.com/etiennebacher/jarl/"
 license-file = "LICENSE.md"
 
 [workspace.dependencies]
-aether_path = { git = "https://github.com/posit-dev/ark", branch = "feature/advance-air-and-biome" }
+aether_path = { git = "https://github.com/posit-dev/ark", rev = "d2d011b55a5b23dcc1dc181bd10bea65e4bd55a5" }
 air_fs = { package = "fs", git = "https://github.com/posit-dev/air", rev = "9b7627a0e05511a9052ea569e88cf8192474b85f" }
 air_r_parser = { git = "https://github.com/posit-dev/air", rev = "9b7627a0e05511a9052ea569e88cf8192474b85f" }
 air_r_syntax = { git = "https://github.com/posit-dev/air", rev = "9b7627a0e05511a9052ea569e88cf8192474b85f" }
@@ -29,12 +29,12 @@ insta = { version = "1.47.2", features = ["filters", "yaml"] }
 jarl-core = { path = "crates/jarl-core" }
 jarl-lsp = { path = "crates/jarl-lsp" }
 jarl-semantic = { path = "crates/jarl-semantic" }
-oak_core = { git = "https://github.com/posit-dev/ark", branch = "feature/advance-air-and-biome" }
-oak_db = { git = "https://github.com/posit-dev/ark", branch = "feature/advance-air-and-biome" }
-oak_index_vec = { git = "https://github.com/posit-dev/ark", branch = "feature/advance-air-and-biome" }
-oak_package_metadata = { git = "https://github.com/posit-dev/ark", branch = "feature/advance-air-and-biome" }
-oak_scan = { git = "https://github.com/posit-dev/ark", branch = "feature/advance-air-and-biome" }
-oak_semantic = { git = "https://github.com/posit-dev/ark", branch = "feature/advance-air-and-biome" }
+oak_core = { git = "https://github.com/posit-dev/ark", rev = "d2d011b55a5b23dcc1dc181bd10bea65e4bd55a5" }
+oak_db = { git = "https://github.com/posit-dev/ark", rev = "d2d011b55a5b23dcc1dc181bd10bea65e4bd55a5" }
+oak_index_vec = { git = "https://github.com/posit-dev/ark", rev = "d2d011b55a5b23dcc1dc181bd10bea65e4bd55a5" }
+oak_package_metadata = { git = "https://github.com/posit-dev/ark", rev = "d2d011b55a5b23dcc1dc181bd10bea65e4bd55a5" }
+oak_scan = { git = "https://github.com/posit-dev/ark", rev = "d2d011b55a5b23dcc1dc181bd10bea65e4bd55a5" }
+oak_semantic = { git = "https://github.com/posit-dev/ark", rev = "d2d011b55a5b23dcc1dc181bd10bea65e4bd55a5" }
 percent-encoding = "2.3"
 rayon = "1.12.0"
 regex = { version = "1.13.1", default-features = false, features = ["std"] }
