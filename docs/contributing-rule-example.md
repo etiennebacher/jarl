@@ -32,7 +32,7 @@ In particular, rules that are only about formatting (spaces before parentheses, 
 You may know the most common cases of this rule, but there might exist many corner cases making its implementation difficult.
 Take a look at the relevant test file in the [`lintr` test suite](https://github.com/r-lib/lintr/tree/main/tests/testthat) to know more about those corner cases.
 
-Additionally, Jarl uses [tree-sitter](https://tree-sitter.github.io/tree-sitter/) under the hood to parse and navigate the Abstract Syntax Tree (AST) of the code.
+Additionally, Jarl works by parsing and navigating the Abstract Syntax Tree (AST) of the code.
 Having an idea of what this AST looks like is important when implementing the rule.
 I suggest creating a small test R file containing one or two examples of code that violate this rule.
 If you have the Air extension installed, you can do the command "Air: View Syntax Tree" to display the AST next to the code.
