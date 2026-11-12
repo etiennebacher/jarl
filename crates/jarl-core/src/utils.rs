@@ -388,6 +388,10 @@ pub fn get_nested_functions_content(
 /// any(is.na(x)) # comment 2
 /// ```
 pub fn node_contains_comments(node: &RSyntaxNode) -> bool {
+    if !node.has_comments_descendants() {
+        return false;
+    }
+
     let first_token = node.first_token();
     let last_token = node.last_token();
 
