@@ -10,15 +10,16 @@ repository = "https://github.com/etiennebacher/jarl/"
 license-file = "LICENSE.md"
 
 [workspace.dependencies]
-aether_path = { git = "https://github.com/posit-dev/ark" }
-air_fs = { package = "fs", git = "https://github.com/posit-dev/air", rev = "2ef1b8551d2d6a493215e110616a1b3083e5858b" }
-air_r_parser = { git = "https://github.com/posit-dev/air", rev = "2ef1b8551d2d6a493215e110616a1b3083e5858b" }
-air_r_syntax = { git = "https://github.com/posit-dev/air", rev = "2ef1b8551d2d6a493215e110616a1b3083e5858b" }
-air_workspace = { package = "workspace", git = "https://github.com/posit-dev/air", rev = "2ef1b8551d2d6a493215e110616a1b3083e5858b" }
+aether_path = { git = "https://github.com/posit-dev/ark", branch = "feature/advance-air-and-biome" }
+air_fs = { package = "fs", git = "https://github.com/posit-dev/air", rev = "9b7627a0e05511a9052ea569e88cf8192474b85f" }
+air_r_parser = { git = "https://github.com/posit-dev/air", rev = "9b7627a0e05511a9052ea569e88cf8192474b85f" }
+air_r_syntax = { git = "https://github.com/posit-dev/air", rev = "9b7627a0e05511a9052ea569e88cf8192474b85f" }
+air_workspace = { package = "workspace", git = "https://github.com/posit-dev/air", rev = "9b7627a0e05511a9052ea569e88cf8192474b85f" }
 anyhow = "1.0.94"
-biome_diagnostics = { git = "https://github.com/biomejs/biome", rev = "927eea3d3169214d5fb12c355f99a0ab00e10a20" }
-biome_formatter = { git = "https://github.com/biomejs/biome", rev = "927eea3d3169214d5fb12c355f99a0ab00e10a20" }
-biome_rowan = { git = "https://github.com/biomejs/biome", rev = "927eea3d3169214d5fb12c355f99a0ab00e10a20" }
+biome_diagnostics = { git = "https://github.com/biomejs/biome", rev = "8c43bc0b620e0db4ec841ae20756acedcead9599" }
+biome_formatter = { git = "https://github.com/biomejs/biome", rev = "8c43bc0b620e0db4ec841ae20756acedcead9599" }
+biome_rowan = { git = "https://github.com/biomejs/biome", rev = "8c43bc0b620e0db4ec841ae20756acedcead9599" }
+biome_suppression = { git = "https://github.com/biomejs/biome", rev = "8c43bc0b620e0db4ec841ae20756acedcead9599" }
 clap = { version = "4.6.0", features = ["derive"] }
 clap_complete = { version = "4.5.66", features = ["unstable-dynamic"] }
 colored = "3.1.1"
@@ -28,12 +29,12 @@ insta = { version = "1.47.2", features = ["filters", "yaml"] }
 jarl-core = { path = "crates/jarl-core" }
 jarl-lsp = { path = "crates/jarl-lsp" }
 jarl-semantic = { path = "crates/jarl-semantic" }
-oak_core = { git = "https://github.com/posit-dev/ark" }
-oak_db = { git = "https://github.com/posit-dev/ark" }
-oak_index_vec = { git = "https://github.com/posit-dev/ark" }
-oak_package_metadata = { git = "https://github.com/posit-dev/ark" }
-oak_scan = { git = "https://github.com/posit-dev/ark" }
-oak_semantic = { git = "https://github.com/posit-dev/ark" }
+oak_core = { git = "https://github.com/posit-dev/ark", branch = "feature/advance-air-and-biome" }
+oak_db = { git = "https://github.com/posit-dev/ark", branch = "feature/advance-air-and-biome" }
+oak_index_vec = { git = "https://github.com/posit-dev/ark", branch = "feature/advance-air-and-biome" }
+oak_package_metadata = { git = "https://github.com/posit-dev/ark", branch = "feature/advance-air-and-biome" }
+oak_scan = { git = "https://github.com/posit-dev/ark", branch = "feature/advance-air-and-biome" }
+oak_semantic = { git = "https://github.com/posit-dev/ark", branch = "feature/advance-air-and-biome" }
 percent-encoding = "2.3"
 rayon = "1.12.0"
 regex = { version = "1.13.1", default-features = false, features = ["std"] }
