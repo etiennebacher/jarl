@@ -9,7 +9,7 @@ Checks for usage of `paste(deparse(x), collapse = " ")`.
 ## Why is this bad?
 
 Since R 4.0.0, it is possible to do `paste(deparse(x), collapse = " ")`
-with `deparse1(x)`, which is more efficient and easier to read.
+with `deparse1(x)`, which is easier to read.
 
 This rule comes with an unsafe fix because `deparse1()`'s default
 `width.cutoff` (500) differs from `deparse()`'s (60), so the two calls

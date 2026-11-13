@@ -317,7 +317,7 @@ declare_rules! {
     },
     Deparse1 => {
         name: "deparse1",
-        categories: [Perf, Read],
+        categories: [Read],
         default: Enabled,
         fix: Unsafe,
         min_r_version: Some((4, 0, 0)),
