@@ -4,7 +4,7 @@ use biome_rowan::{AstNode, AstSeparatedList, TextSize, WalkEvent};
 use oak_core::syntax_ext::RIdentifierExt;
 
 /// A length or scalar check can make a negated variable safe in an enclosing
-/// `if` branch. Only trust it while the same variable still holds its value.
+/// `if` branch or `while` body. Only trust it while the variable holds its value.
 pub(super) fn has_nonempty_guard(unary: &RUnaryExpression) -> anyhow::Result<bool> {
     let Some(identifier) = unparenthesized(unary.argument()?)?
         .as_r_identifier()
@@ -22,8 +22,43 @@ pub(super) fn has_nonempty_guard(unary: &RUnaryExpression) -> anyhow::Result<boo
             break;
         }
 
-        // A later iteration can reach this use after a write below it. When
-        // the guard is outside a loop, check its whole body for such writes.
+        let guard = match AnyRExpression::cast_ref(&ancestor) {
+            Some(AnyRExpression::RIfStatement(statement)) => {
+                let condition = statement.condition()?;
+                let consequence = statement.consequence()?;
+                if consequence.range().contains(position) {
+                    Some((condition, consequence, true))
+                } else if let Some(else_clause) = statement.else_clause()
+                    && let alternative = else_clause.alternative()?
+                    && alternative.range().contains(position)
+                {
+                    Some((condition, alternative, false))
+                } else {
+                    None
+                }
+            }
+            Some(AnyRExpression::RWhileStatement(statement)) => {
+                let body = statement.body()?;
+                // The condition protects the body, not uses inside itself.
+                if body.range().contains(position) {
+                    Some((statement.condition()?, body, true))
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        };
+
+        if let Some((condition, branch, truth)) = guard
+            && condition_proves_nonempty(condition.clone(), &name, truth)?
+            && !has_write(condition.syntax(), &name, condition.range().end())?
+            && !has_write(branch.syntax(), &name, end)?
+        {
+            return Ok(true);
+        }
+
+        // `while` rechecks its own condition on each iteration. Only guards
+        // outside a loop must account for writes after the use in its body.
         if matches!(
             ancestor.kind(),
             RSyntaxKind::R_FOR_STATEMENT
@@ -31,30 +66,6 @@ pub(super) fn has_nonempty_guard(unary: &RUnaryExpression) -> anyhow::Result<boo
                 | RSyntaxKind::R_REPEAT_STATEMENT
         ) {
             end = ancestor.text_trimmed_range().end();
-        }
-
-        let Some(if_statement) = RIfStatement::cast(ancestor) else {
-            continue;
-        };
-        let condition = if_statement.condition()?;
-        let consequence = if_statement.consequence()?;
-        let (branch, truth) = if consequence.range().contains(position) {
-            (consequence, true)
-        } else if let Some(else_clause) = if_statement.else_clause()
-            && let alternative = else_clause.alternative()?
-            && alternative.range().contains(position)
-        {
-            (alternative, false)
-        } else {
-            // The check has not completed when the use is in the condition.
-            continue;
-        };
-
-        if condition_proves_nonempty(condition.clone(), &name, truth)?
-            && !has_write(condition.syntax(), &name, condition.range().end())?
-            && !has_write(branch.syntax(), &name, end)?
-        {
-            return Ok(true);
         }
     }
     Ok(false)
@@ -69,6 +80,8 @@ fn condition_proves_nonempty(
     truth: bool,
 ) -> anyhow::Result<bool> {
     match unparenthesized(condition)? {
+        // A length of zero cannot enter the true branch of `if (length(idx))`.
+        AnyRExpression::RCall(call) => Ok(truth && is_index_length(&call, name)?),
         AnyRExpression::RUnaryExpression(unary)
             if unary.operator()?.kind() == RSyntaxKind::BANG =>
         {
@@ -135,6 +148,11 @@ fn comparison_excludes_empty(
     let AnyRExpression::RCall(call) = expression else {
         return Ok(false);
     };
+    Ok(empty_result != truth && is_index_length(call, name)?)
+}
+
+/// Recognize the length of this variable, including `base::length(x = idx)`.
+fn is_index_length(call: &RCall, name: &str) -> anyhow::Result<bool> {
     let function = call.function()?;
     if get_function_name(function.clone()) != "length"
         || !matches!(
@@ -152,8 +170,7 @@ fn comparison_excludes_empty(
     };
     Ok(unparenthesized(argument)?
         .as_r_identifier()
-        .is_some_and(|identifier| identifier.name_text() == name)
-        && empty_result != truth)
+        .is_some_and(|identifier| identifier.name_text() == name))
 }
 
 fn unparenthesized(mut expression: AnyRExpression) -> anyhow::Result<AnyRExpression> {

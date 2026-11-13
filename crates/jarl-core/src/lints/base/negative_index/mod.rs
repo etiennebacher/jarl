@@ -113,6 +113,99 @@ mod tests {
     }
 
     #[test]
+    fn test_no_lint_negative_index_while_and_length() {
+        for code in [
+            "if (length(idx)) x[-idx]",
+            "if (!length(idx)) NULL else x[-idx]",
+            "if ((base::length(x = (idx))) && verbose) x[-idx]",
+            "while (length(idx)) x[-idx]",
+            "while (length(idx) > 0) { x[-idx]; idx <- f() }",
+            "while (n > 1) { if (verbose) x[-n]; n <- f() }",
+            "while (length(idx)) { for (i in 1:3) x[-idx]; idx <- f() }",
+        ] {
+            expect_no_lint(code, "negative_index", None);
+        }
+    }
+
+    #[test]
+    fn test_lint_negative_index_while_and_length() {
+        assert_snapshot!(snapshot_lint("if (length(idx)) NULL else x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:30
+          |
+        1 | if (length(idx)) NULL else x[-idx]
+          |                              ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("if (length(idx) || verbose) x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:31
+          |
+        1 | if (length(idx) || verbose) x[-idx]
+          |                               ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("while (length(idx) >= 0) x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:28
+          |
+        1 | while (length(idx) >= 0) x[-idx]
+          |                            ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint(
+            "while (length(idx)) {
+  idx <- f()
+  x[-idx]
+}"
+        ), @"
+        warning: negative_index
+         --> <test>:3:5
+          |
+        3 |   x[-idx]
+          |     ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        // The condition has not established its result while it is evaluated.
+        assert_snapshot!(snapshot_lint("while (length(idx) > length(x[-idx])) {}"), @"
+        warning: negative_index
+         --> <test>:1:31
+          |
+        1 | while (length(idx) > length(x[-idx])) {}
+          |                               ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        // An inner loop can reuse a changed index before the while condition runs again.
+        assert_snapshot!(snapshot_lint(
+            "while (length(idx)) {
+  for (i in 1:3) {
+    x[-idx]
+    idx <- f()
+  }
+}"
+        ), @"
+        warning: negative_index
+         --> <test>:3:7
+          |
+        3 |     x[-idx]
+          |       ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+    }
+
+    #[test]
     fn test_lint_negative_index_guards() {
         // These checks do not rule out an empty index in the selected branch.
         assert_snapshot!(snapshot_lint("if (length(idx) >= 0) x[-idx]"), @"
