@@ -25,6 +25,8 @@ An earlier check that exits with `return()`, `stop()`, `next`, or `break`
 when the index is empty also protects subsequent uses in the same block.
 Checks such as `if (any(idx > 0))` and `stopifnot(length(idx) > 0)` are also
 recognized. `stopifnot(idx > 0)` does not exclude empty indices.
+A preceding numeric literal assignment, such as `idx <- 1`, also establishes
+nonemptiness if the variable is unchanged before use.
 Other runtime values and indirect checks are not inferred.
 
 No automatic fix is provided. Handle empty indices explicitly or use a

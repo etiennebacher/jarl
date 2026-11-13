@@ -6,8 +6,8 @@ use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList, TextSize, WalkEvent};
 use oak_core::syntax_ext::RIdentifierExt;
 
-/// A length or scalar check can make a negated variable safe in an enclosing
-/// branch or after an early exit. Only trust it while the variable holds its value.
+/// A check or numeric assignment can establish that a negated variable is
+/// nonempty. Only trust that evidence while the variable holds its value.
 pub(super) fn has_nonempty_guard(unary: &RUnaryExpression) -> anyhow::Result<bool> {
     let AnyRExpression::RIdentifier(identifier) = unparenthesized(unary.argument()?)? else {
         return Ok(false);
@@ -123,6 +123,7 @@ fn has_preceding_guard(
             let guarded = match unparenthesized(expression.clone())? {
                 AnyRExpression::RIfStatement(statement) => is_early_exit_guard(&statement, name)?,
                 AnyRExpression::RCall(call) => is_stopifnot_guard(&call, name)?,
+                AnyRExpression::RBinaryExpression(binary) => is_numeric_assignment(&binary, name)?,
                 _ => false,
             };
             if guarded {
@@ -134,6 +135,36 @@ fn has_preceding_guard(
         }
     }
     Ok(false)
+}
+
+/// A direct local assignment establishes nonemptiness on every path reaching
+/// the next statement. Conditional writes and replacement assignments cannot
+/// establish this fact; the caller still treats them as invalidating writes.
+fn is_numeric_assignment(binary: &RBinaryExpression, name: &str) -> anyhow::Result<bool> {
+    let (target, value) = match binary.operator()?.kind() {
+        RSyntaxKind::ASSIGN | RSyntaxKind::EQUAL => (binary.left()?, binary.right()?),
+        RSyntaxKind::ASSIGN_RIGHT => (binary.right()?, binary.left()?),
+        _ => return Ok(false),
+    };
+    let AnyRExpression::RIdentifier(identifier) = target else {
+        return Ok(false);
+    };
+    Ok(identifier.name_text() == name && is_numeric_literal(value)?)
+}
+
+/// Only scalar numeric literals establish this fact, without evaluating calls
+/// or arithmetic. Inspect the syntax so decimal and hexadecimal forms agree.
+fn is_numeric_literal(expression: AnyRExpression) -> anyhow::Result<bool> {
+    match unparenthesized(expression)? {
+        AnyRExpression::AnyRValue(AnyRValue::RIntegerValue(_) | AnyRValue::RDoubleValue(_)) => {
+            Ok(true)
+        }
+        AnyRExpression::RUnaryExpression(unary) => Ok(matches!(
+            unary.operator()?.kind(),
+            RSyntaxKind::PLUS | RSyntaxKind::MINUS
+        ) && is_numeric_literal(unary.argument()?)?),
+        _ => Ok(false),
+    }
 }
 
 /// The surviving branch must establish nonemptiness and preserve the variable.

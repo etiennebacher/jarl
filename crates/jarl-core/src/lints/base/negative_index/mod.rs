@@ -73,6 +73,153 @@ mod tests {
     }
 
     #[test]
+    fn test_no_lint_negative_index_numeric_assignment() {
+        for code in [
+            "idx <- 1; x[-idx]",
+            "idx = -2L; x[-idx]",
+            "1.5 -> idx; x[-idx]",
+            "idx <- (+(-((1)))); x[-idx]",
+            "idx <- 0x2L; x[-idx]",
+            "idx <- 0; x[-idx]",
+            "`my idx` <- 1; x[-`my idx`]",
+            "if (flag) { idx <- 1; x[-idx] }",
+            "idx <- 1; if (flag) x[-idx]",
+            "idx <- f(); idx <- 1; x[-idx]",
+            "idx <- 1; other <- NULL; x[-idx]",
+            "idx <- 1; f <- function() idx <- NULL; x[-idx]",
+            "function() { idx <- 1; x[-idx] }",
+            "idx <- 1; idx <- x[-idx]",
+            "while (running) { idx <- 1; x[-idx]; idx <- integer() }",
+        ] {
+            expect_no_lint(code, "negative_index", None);
+        }
+    }
+
+    #[test]
+    fn test_lint_negative_index_numeric_assignment() {
+        assert_snapshot!(snapshot_lint("idx <- 1; idx <- get_indices(); x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:35
+          |
+        1 | idx <- 1; idx <- get_indices(); x[-idx]
+          |                                   ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("if (flag) idx <- 1; x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:23
+          |
+        1 | if (flag) idx <- 1; x[-idx]
+          |                       ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("idx <- 1; if (flag) { idx <- NULL; x[-idx] }"), @"
+        warning: negative_index
+         --> <test>:1:38
+          |
+        1 | idx <- 1; if (flag) { idx <- NULL; x[-idx] }
+          |                                      ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("idx <- 1; while (running) { x[-idx]; idx <- integer() }"), @"
+        warning: negative_index
+         --> <test>:1:31
+          |
+        1 | idx <- 1; while (running) { x[-idx]; idx <- integer() }
+          |                               ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("idx <- 1; for (idx in indices) x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:34
+          |
+        1 | idx <- 1; for (idx in indices) x[-idx]
+          |                                  ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("idx <- 1; f <- function() x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:29
+          |
+        1 | idx <- 1; f <- function() x[-idx]
+          |                             ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("idx <- 1; length(idx) <- 0; x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:31
+          |
+        1 | idx <- 1; length(idx) <- 0; x[-idx]
+          |                               ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("idx[1] <- 1; x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:16
+          |
+        1 | idx[1] <- 1; x[-idx]
+          |                ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("idx <<- 1; x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:14
+          |
+        1 | idx <<- 1; x[-idx]
+          |              ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("1 ->> idx; x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:14
+          |
+        1 | 1 ->> idx; x[-idx]
+          |              ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("idx <- length(x); x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:21
+          |
+        1 | idx <- length(x); x[-idx]
+          |                     ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("idx <- 1 + 1; x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:17
+          |
+        1 | idx <- 1 + 1; x[-idx]
+          |                 ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+    }
+
+    #[test]
     fn test_no_lint_negative_index_guarded() {
         for code in [
             "if (length(idx) > 0) x[-idx]",
