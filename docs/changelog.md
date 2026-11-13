@@ -6,7 +6,7 @@
 
 * New rules:
 
-  * `negative_index` (#771, @Yousa-Mirage).
+  * `negative_index`, with support for nonempty `if` guards (#771, @Yousa-Mirage).
   * `apply_paste` (#563)
   * `assignment_on_if_no_else` (#605, @christopherkenny)
   * `function_return` (#750)

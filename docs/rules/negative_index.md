@@ -17,8 +17,10 @@ If `idx` is empty, `x[-idx]` selects no elements instead of keeping all of
 `x`. This can happen with `x[-which(condition)]` when nothing matches.
 
 This rule also reports expressions such as `x[-1 * idx]`, `x[c(-1, -idx)]`,
-and `x[-2 * 3]`. It does not determine whether an index is actually empty or
-whether a surrounding condition already checks its length.
+and `x[-2 * 3]`. A directly negated variable is allowed inside an `if` branch
+whose condition establishes that it is nonempty, such as `if (length(idx) > 0)` or
+`if (n > 1)`, with no intervening assignment to that variable.
+Other runtime values and indirect checks are not inferred.
 
 No automatic fix is provided. Handle empty indices explicitly or use a
 logical index when possible.
