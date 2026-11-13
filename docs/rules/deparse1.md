@@ -1,5 +1,5 @@
 # deparse1
-::: {.callout-note title="Added in 0.6.1" .low-opacity}
+::: {.callout-note title="Added in 0.8.0" .low-opacity}
 :::
 
 ## What it does

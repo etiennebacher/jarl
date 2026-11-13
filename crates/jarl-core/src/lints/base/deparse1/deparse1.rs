@@ -5,7 +5,7 @@ use air_r_syntax::*;
 
 pub struct Deparse1;
 
-/// Version added: 0.6.1
+/// Version added: 0.8.0
 ///
 /// ## What it does
 ///
