@@ -9,7 +9,6 @@ use rustc_hash::FxHashSet;
 use std::path::Path;
 use std::path::PathBuf;
 
-use crate::fs;
 use crate::fs::has_r_extension;
 use crate::fs::has_rmd_extension;
 use crate::settings::Settings;
@@ -53,8 +52,11 @@ fn get_user_config_dir() -> Option<PathBuf> {
 /// - Walk up its ancestors until the user config directory, looking for a `jarl.toml`
 /// - If no config found in ancestors, fall back to checking the user config directory
 /// - If `path` is a directory, also walk down into it to find any nested `jarl.toml`s
-pub fn discover_settings<P: AsRef<Path>>(paths: &[P]) -> anyhow::Result<Vec<DiscoveredSettings>> {
-    let paths: Vec<PathBuf> = paths.iter().map(fs::normalize_path).collect();
+pub fn discover_settings<P: AsRef<Path>>(
+    paths: &[P],
+    overrides: &[toml::Table],
+) -> anyhow::Result<Vec<DiscoveredSettings>> {
+    let paths: Vec<PathBuf> = paths.iter().map(air_fs::normalize_path).collect();
 
     let mut seen = FxHashSet::default();
     let mut discovered_settings = Vec::with_capacity(paths.len());
@@ -72,8 +74,8 @@ pub fn discover_settings<P: AsRef<Path>>(paths: &[P]) -> anyhow::Result<Vec<Disc
                 break;
             }
 
-            if let Some(toml) = find_jarl_toml_in_directory(ancestor) {
-                let settings = parse_settings(&toml, ancestor)?;
+            if let Some(toml) = find_jarl_toml_in_directory(ancestor)? {
+                let settings = parse_settings(&toml, ancestor, overrides)?;
                 discovered_settings.push(DiscoveredSettings {
                     directory: ancestor.to_path_buf(),
                     settings,
@@ -95,9 +97,9 @@ pub fn discover_settings<P: AsRef<Path>>(paths: &[P]) -> anyhow::Result<Vec<Disc
         if !found_config
             && let Some(ref config_dir) = user_config_dir
             && seen.insert(config_dir.as_path())
-            && let Some(toml) = find_jarl_toml_in_directory(config_dir)
+            && let Some(toml) = find_jarl_toml_in_directory(config_dir)?
         {
-            let settings = parse_settings(&toml, config_dir)?;
+            let settings = parse_settings(&toml, config_dir, overrides)?;
             discovered_settings.push(DiscoveredSettings {
                 directory: config_dir.clone(),
                 settings,
@@ -116,7 +118,12 @@ pub fn discover_settings<P: AsRef<Path>>(paths: &[P]) -> anyhow::Result<Vec<Disc
 
     for path in &paths {
         if path.is_dir() {
-            discover_nested_settings(path, &mut already_found, &mut discovered_settings)?;
+            discover_nested_settings(
+                path,
+                overrides,
+                &mut already_found,
+                &mut discovered_settings,
+            )?;
         }
     }
 
@@ -126,6 +133,7 @@ pub fn discover_settings<P: AsRef<Path>>(paths: &[P]) -> anyhow::Result<Vec<Disc
 /// Walk down into `root`, collecting any nested `jarl.toml` files not yet in `already_found`.
 fn discover_nested_settings(
     root: &Path,
+    overrides: &[toml::Table],
     already_found: &mut FxHashSet<PathBuf>,
     discovered_settings: &mut Vec<DiscoveredSettings>,
 ) -> anyhow::Result<()> {
@@ -161,9 +169,9 @@ fn discover_nested_settings(
             continue;
         }
 
-        if let Some(toml) = find_jarl_toml_in_directory(path) {
+        if let Some(toml) = find_jarl_toml_in_directory(path)? {
             already_found.insert(path.to_path_buf());
-            let settings = parse_settings(&toml, path)?;
+            let settings = parse_settings(&toml, path, overrides)?;
             discovered_settings.push(DiscoveredSettings {
                 directory: path.to_path_buf(),
                 settings,
@@ -175,12 +183,17 @@ fn discover_nested_settings(
     Ok(())
 }
 
-/// Parse [Settings] from a given `jarl.toml`
+/// Parse [Settings] from a given `jarl.toml`, with the `--config` `overrides`
+/// taking precedence over its options.
 // TODO(hierarchical): Allow for an `extends` option in `jarl.toml`, which will make things
 // more complex, but will be very useful once we support hierarchical configuration as a
 // way of "inheriting" most top level configuration while slightly tweaking it in a nested directory.
-fn parse_settings(toml: &Path, root_directory: &Path) -> anyhow::Result<Settings> {
-    let options = parse_jarl_toml(toml)?;
+pub fn parse_settings(
+    toml: &Path,
+    root_directory: &Path,
+    overrides: &[toml::Table],
+) -> anyhow::Result<Settings> {
+    let options = parse_jarl_toml(toml, overrides)?;
     let settings = options
         .into_settings(root_directory)
         .map_err(|err| anyhow::anyhow!("Invalid configuration in {}:\n{err}", toml.display()))?;
@@ -188,6 +201,56 @@ fn parse_settings(toml: &Path, root_directory: &Path) -> anyhow::Result<Settings
 }
 
 type DiscoveredFiles = Vec<Result<PathBuf, ignore::Error>>;
+
+/// Build a matcher reporting [`ignore::Match::Ignore`] for paths matching any
+/// of `patterns`, relative to `root`.
+///
+/// `Override` spells "exclude" as a negated pattern, hence the `!` prefix.
+/// Invalid patterns are warned about and skipped. Returns `None` when there is
+/// nothing to match against.
+pub fn exclude_matcher<S: AsRef<str>>(
+    root: &Path,
+    patterns: &[S],
+) -> Option<ignore::overrides::Override> {
+    if patterns.is_empty() {
+        return None;
+    }
+    let mut builder = ignore::overrides::OverrideBuilder::new(root);
+    for pattern in patterns {
+        let pattern = pattern.as_ref();
+        if let Err(e) = builder.add(&format!("!{pattern}")) {
+            tracing::warn!("Failed to add exclude pattern '{}': {}", pattern, e);
+        }
+    }
+    builder.build().ok()
+}
+
+/// Build a matcher reporting [`ignore::Match::Whitelist`] for paths matching
+/// any of `patterns`, relative to `root`.
+///
+/// A trailing `/` means "this directory", which as a file pattern has to be
+/// spelled `dir/**`.
+pub fn include_matcher<S: AsRef<str>>(
+    root: &Path,
+    patterns: &[S],
+) -> Option<ignore::overrides::Override> {
+    if patterns.is_empty() {
+        return None;
+    }
+    let mut builder = ignore::overrides::OverrideBuilder::new(root);
+    for pattern in patterns {
+        let pattern = pattern.as_ref();
+        let file_pattern = if pattern.ends_with('/') {
+            format!("{pattern}**")
+        } else {
+            pattern.to_string()
+        };
+        if let Err(e) = builder.add(&file_pattern) {
+            tracing::warn!("Failed to add include pattern '{}': {}", pattern, e);
+        }
+    }
+    builder.build().ok()
+}
 
 /// Whether `relative` is excluded by `overrides`, considering the path itself
 /// and all of its parent directories.
@@ -198,7 +261,7 @@ type DiscoveredFiles = Vec<Result<PathBuf, ignore::Error>>;
 /// but the exclude post-filters run over already-collected files where no
 /// pruning happens, so each ancestor directory must be tested too. This mirrors
 /// `Gitignore::matched_path_or_any_parents`, which `Override` does not expose.
-fn excluded_with_parents(overrides: &ignore::overrides::Override, relative: &Path) -> bool {
+pub fn excluded_with_parents(overrides: &ignore::overrides::Override, relative: &Path) -> bool {
     if matches!(overrides.matched(relative, false), ignore::Match::Ignore(_)) {
         return true;
     }
@@ -240,7 +303,7 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
     use_linter_settings: bool,
     no_default_exclude: bool,
 ) -> DiscoveredFiles {
-    let paths: Vec<PathBuf> = paths.iter().map(fs::normalize_path).collect();
+    let paths: Vec<PathBuf> = paths.iter().map(air_fs::normalize_path).collect();
 
     let Some((first_path, paths)) = paths.split_first() else {
         // No paths provided
@@ -296,18 +359,8 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
             patterns.extend_from_slice(DEFAULT_EXCLUDE_PATTERNS);
         }
 
-        // If we have patterns, create an override and add it to the builder
-        if !patterns.is_empty() {
-            let mut override_builder = ignore::overrides::OverrideBuilder::new(root);
-            for pattern in patterns {
-                // Add as negation pattern (exclude)
-                if let Err(e) = override_builder.add(&format!("!{pattern}")) {
-                    tracing::warn!("Failed to add exclude pattern '{}': {}", pattern, e);
-                }
-            }
-            if let Ok(overrides) = override_builder.build() {
-                builder.overrides(overrides);
-            }
+        if let Some(overrides) = exclude_matcher(root, &patterns) {
+            builder.overrides(overrides);
         }
     }
 
@@ -334,13 +387,7 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
     // cannot be matched relative to the `R` directory.
     if !cli_exclude.is_empty() {
         let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-        let mut override_builder = ignore::overrides::OverrideBuilder::new(&cwd);
-        for pattern in cli_exclude {
-            if let Err(e) = override_builder.add(&format!("!{pattern}")) {
-                tracing::warn!("Failed to add exclude pattern '{}': {}", pattern, e);
-            }
-        }
-        if let Ok(overrides) = override_builder.build() {
+        if let Some(overrides) = exclude_matcher(&cwd, cli_exclude) {
             files.retain(|result| {
                 let Ok(path) = result else {
                     return true;
@@ -372,45 +419,24 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
 
             // Exclude filter: remove files matching any exclude pattern
             if let Some(exclude_patterns) = &settings.linter.exclude
-                && !exclude_patterns.is_empty()
+                && let Some(overrides) = exclude_matcher(root, exclude_patterns)
             {
-                let mut override_builder = ignore::overrides::OverrideBuilder::new(root);
-                for pattern in exclude_patterns {
-                    if let Err(e) = override_builder.add(&format!("!{pattern}")) {
-                        tracing::warn!("Failed to add exclude pattern '{}': {}", pattern, e);
-                    }
-                }
-                if let Ok(overrides) = override_builder.build() {
-                    let relative = path.strip_prefix(root).unwrap_or(path.as_path());
-                    if excluded_with_parents(&overrides, relative) {
-                        return false;
-                    }
+                let relative = path.strip_prefix(root).unwrap_or(path.as_path());
+                if excluded_with_parents(&overrides, relative) {
+                    return false;
                 }
             }
 
             // Include filter: if set, only keep files matching at least one pattern
             if let Some(include_patterns) = &settings.linter.include
-                && !include_patterns.is_empty()
+                && let Some(overrides) = include_matcher(root, include_patterns)
             {
-                let mut override_builder = ignore::overrides::OverrideBuilder::new(root);
-                for pattern in include_patterns {
-                    let file_pattern = if pattern.ends_with('/') {
-                        format!("{}**", pattern)
-                    } else {
-                        pattern.clone()
-                    };
-                    if let Err(e) = override_builder.add(&file_pattern) {
-                        tracing::warn!("Failed to add include pattern '{}': {}", pattern, e);
-                    }
-                }
-                if let Ok(overrides) = override_builder.build() {
-                    let relative = path.strip_prefix(root).unwrap_or(path.as_path());
-                    if !matches!(
-                        overrides.matched(relative, false),
-                        ignore::Match::Whitelist(_)
-                    ) {
-                        return false;
-                    }
+                let relative = path.strip_prefix(root).unwrap_or(path.as_path());
+                if !matches!(
+                    overrides.matched(relative, false),
+                    ignore::Match::Whitelist(_)
+                ) {
+                    return false;
                 }
             }
 
@@ -544,4 +570,70 @@ impl Drop for FilesVisitor<'_> {
             files.append(&mut self.files);
         }
     }
+}
+
+/// Check if a file should be excluded based on settings from jarl.toml
+///
+/// Honours the `exclude`, `default-exclude` and `include` options. The matching
+/// itself is delegated to `jarl_core::discovery` so that the LSP and
+/// `jarl check` exclude exactly the same files.
+///
+/// # Arguments
+/// * `file_path` - The path to the file to check
+/// * `resolver` - The path resolver containing the discovered settings
+///
+/// # Returns
+/// `true` if the file should be excluded from linting, `false` otherwise
+pub fn should_exclude_file_based_on_settings(
+    file_path: &Path,
+    resolver: &PathResolver<Settings>,
+) -> bool {
+    // Exclude patterns are anchored at the directory of the config they come
+    // from, so the nearest config wins. `resolve()` misses the user-level config
+    // directory, which is never an ancestor of the file, hence the fallback.
+    let Some(settings_item) = resolver
+        .resolve(file_path)
+        .or_else(|| resolver.items().first())
+    else {
+        // No settings found, don't exclude
+        return false;
+    };
+
+    excluded_by_settings(file_path, settings_item.value(), settings_item.path())
+}
+
+/// Whether `path` is filtered out by the `exclude`, `default-exclude` and
+/// `include` patterns of `settings`, whose configuration directory is `root`.
+///
+/// The matchers come from `jarl_core::discovery`, which is what makes the LSP
+/// and `jarl check` exclude the same files: one set of glob semantics, provided
+/// by the `ignore` crate.
+pub fn excluded_by_settings(path: &Path, settings: &Settings, root: &Path) -> bool {
+    let relative = path.strip_prefix(root).unwrap_or(path);
+
+    let mut exclude: Vec<&str> = Vec::new();
+    if let Some(patterns) = &settings.linter.exclude {
+        exclude.extend(patterns.iter().map(String::as_str));
+    }
+    if settings.linter.default_exclude.unwrap_or(true) {
+        exclude.extend_from_slice(DEFAULT_EXCLUDE_PATTERNS);
+    }
+    if let Some(overrides) = exclude_matcher(root, &exclude)
+        && excluded_with_parents(&overrides, relative)
+    {
+        return true;
+    }
+
+    // If `include` is set, only files matching at least one pattern are linted.
+    if let Some(patterns) = &settings.linter.include
+        && let Some(overrides) = include_matcher(root, patterns)
+        && !matches!(
+            overrides.matched(relative, false),
+            ignore::Match::Whitelist(_)
+        )
+    {
+        return true;
+    }
+
+    false
 }

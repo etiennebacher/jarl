@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-core/src/lints/base/seq2/mod.rs
-expression: "get_fixed_text(vec![\"seq(length(\\n # a comment \\nfoo(x)))\",], \"any_is_na\",\nNone)"
+expression: "get_fixed_text(vec![\"seq(length(\\n # a comment \\nfoo(x)))\",\n\"seq_len(length(\\n # a comment \\nfoo(x)))\",], \"seq2\", None)"
 ---
 OLD:
 ====
@@ -10,5 +10,16 @@ foo(x)))
 NEW:
 ====
 seq(length(
+ # a comment 
+foo(x)))
+
+OLD:
+====
+seq_len(length(
+ # a comment 
+foo(x)))
+NEW:
+====
+seq_len(length(
  # a comment 
 foo(x)))

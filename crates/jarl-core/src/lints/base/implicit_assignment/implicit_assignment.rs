@@ -1,10 +1,12 @@
 use crate::check::Checker;
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::get_function_name;
 use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.17
 ///
 /// ## What it does
@@ -44,6 +46,7 @@ use biome_rowan::AstNode;
 /// See:
 ///
 /// - [https://style.tidyverse.org/syntax.html#assignment](https://style.tidyverse.org/syntax.html#assignment)
+/// <!-- docs: end -->
 pub fn implicit_assignment(
     ast: &RBinaryExpression,
     checker: &Checker,
@@ -79,12 +82,12 @@ pub fn implicit_assignment(
     //   x <- 1
     // })
     // ```
-    // so we set `ancestor_is_arg = false` if an RBracedExpressions is a closer
+    // so we set `ancestor_is_arg = false` if an RBracedStatements is a closer
     // ancestor.
     let ancestor_is_arg = {
         let mut result = false;
         for ancestor in ast.syntax().ancestors() {
-            if RBracedExpressions::can_cast(ancestor.kind()) {
+            if RBracedStatements::can_cast(ancestor.kind()) {
                 // Found braced expressions first, so skip
                 result = false;
                 break;
@@ -132,7 +135,7 @@ pub fn implicit_assignment(
 
         if !in_if_body && !in_else_body {
             for ancestor in ast.syntax().ancestors() {
-                if RBracedExpressions::can_cast(ancestor.kind()) {
+                if RBracedStatements::can_cast(ancestor.kind()) {
                     // Found braced expressions first, so skip
                     result = false;
                     break;
@@ -152,7 +155,7 @@ pub fn implicit_assignment(
 
         if !in_while_body {
             for ancestor in ast.syntax().ancestors() {
-                if RBracedExpressions::can_cast(ancestor.kind()) {
+                if RBracedStatements::can_cast(ancestor.kind()) {
                     // Found braced expressions first, so skip
                     result = false;
                     break;
@@ -172,7 +175,7 @@ pub fn implicit_assignment(
 
         if !in_for_body {
             for ancestor in ast.syntax().ancestors() {
-                if RBracedExpressions::can_cast(ancestor.kind()) {
+                if RBracedStatements::can_cast(ancestor.kind()) {
                     // Found braced expressions first, so skip
                     result = false;
                     break;
@@ -204,7 +207,7 @@ pub fn implicit_assignment(
 
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
-        ViolationData::new("implicit_assignment".to_string(), msg.to_string(), None),
+        ViolationData::new(Rule::ImplicitAssignment, msg.to_string(), None),
         range,
         Fix::empty(),
     );

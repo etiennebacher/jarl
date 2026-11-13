@@ -1,20 +1,16 @@
-import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
+import * as vscode from "vscode";
 
-import { JARL_EXTENSION_ID, EXTENSION_ROOT_DIR } from "../constants";
+import { EXTENSION_ROOT_DIR, JARL_EXTENSION_ID } from "../constants";
+import { createRandomFile, withFileEditor } from "./editor-utils";
 
-// The test folder contains a default workspace configuration with formatting
-// settings that apply to our tests
+// The test folder is the test workspace. Its `jarl.toml` overrides the one at
+// the repo root, which excludes `**/test/**` from linting.
 export const TEST_PATH = path.join(EXTENSION_ROOT_DIR, "src", "test");
-export const SNAPSHOT_PATH = path.join(TEST_PATH, "snapshots");
 
 export function testPath(file: string): string {
 	return path.join(TEST_PATH, file);
-}
-
-export function snapshotPath(file: string): string {
-	return path.join(SNAPSHOT_PATH, file);
 }
 
 export function extension() {
@@ -25,10 +21,6 @@ export function extension() {
 	}
 
 	return extension;
-}
-
-export function api() {
-	return extension().exports;
 }
 
 export function internalApi() {
@@ -46,20 +38,34 @@ export async function waitLsp() {
 	await internalApi().ctx.lsp.start();
 }
 
+// The server reads `jarl.toml` on every lint, so documents opened in `run`
+// pick up `content`
 export async function withToml(
 	content: string,
 	run: () => Promise<void>,
 ): Promise<void> {
-	const createdToml: Promise<void> =
-		internalApi().ctx.lsp.waitForSettingsNotification();
-
 	const tomlPath = testPath("jarl.toml");
+	const original = fs.readFileSync(tomlPath, "utf8");
 	fs.writeFileSync(tomlPath, content);
 
 	try {
-		await createdToml;
 		await run();
 	} finally {
-		fs.unlinkSync(tomlPath);
+		fs.writeFileSync(tomlPath, original);
+	}
+}
+
+// Files must live in the test workspace for the server to find `jarl.toml`
+export async function withFile(
+	contents: string,
+	fileExtension: string,
+	run: (editor: vscode.TextEditor, doc: vscode.TextDocument) => Promise<void>,
+): Promise<void> {
+	const uri = await createRandomFile(contents, fileExtension, TEST_PATH);
+
+	try {
+		await withFileEditor(uri.fsPath, run);
+	} finally {
+		fs.unlinkSync(uri.fsPath);
 	}
 }

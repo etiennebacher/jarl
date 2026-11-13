@@ -1,11 +1,14 @@
+use crate::utils::StatementsExt;
 use std::collections::{HashMap, HashSet};
 
 use crate::checker::Checker;
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use air_r_syntax::*;
 use anyhow::anyhow;
 use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.8
 ///
 /// ## What it does
@@ -27,12 +30,13 @@ use biome_rowan::AstNode;
 /// ```r
 /// list(x = 1, x = 2)
 /// ```
+/// <!-- docs: end -->
 pub fn duplicated_arguments(ast: &RCall, checker: &Checker) -> anyhow::Result<Option<Diagnostic>> {
     let RCallFields { function, arguments } = ast.as_fields();
 
     let fun_name = match function? {
         AnyRExpression::AnyRValue(x) => x.into_syntax().text_trimmed().to_string(),
-        AnyRExpression::RBracedExpressions(x) => x
+        AnyRExpression::RBracedStatements(x) => x
             .expressions()
             .into_iter()
             .map(|x| x.to_string())
@@ -47,6 +51,7 @@ pub fn duplicated_arguments(ast: &RCall, checker: &Checker) -> anyhow::Result<Op
         AnyRExpression::RNamespaceExpression(x) => {
             x.right()?.into_syntax().text_trimmed().to_string()
         }
+        AnyRExpression::RDots(x) => x.into_syntax().text_trimmed().to_string(),
         AnyRExpression::RNextExpression(_) => "next".to_string(),
         AnyRExpression::RParenthesizedExpression(x) => {
             x.body()?.into_syntax().text_trimmed().to_string()
@@ -99,7 +104,7 @@ pub fn duplicated_arguments(ast: &RCall, checker: &Checker) -> anyhow::Result<Op
         let range = ast.syntax().text_trimmed_range();
         let diagnostic = Diagnostic::new(
             ViolationData::new(
-                "duplicated_arguments".to_string(),
+                Rule::DuplicatedArguments,
                 [
                     "Avoid duplicated arguments in function calls. Duplicated argument(s): ",
                     &duplicated_arg_names

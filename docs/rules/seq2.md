@@ -1,11 +1,13 @@
 # seq2
+
 ::: {.callout-note title="Added in 0.2.0" .low-opacity}
 :::
 
 ## What it does
 
 Checks for `seq(length(...))`, `seq(nrow(...))`, `seq(ncol(...))`,
-`seq(NROW(...))`, `seq(NCOL(...))`. See also [seq](https://jarl.etiennebacher.com/rules/seq).
+`seq(NROW(...))`, `seq(NCOL(...))`, `seq_len(length(...))`.
+See also [seq](https://jarl.etiennebacher.com/rules/seq).
 
 ## Why is this bad?
 
@@ -25,6 +27,10 @@ for (i in seq(nrow(data))) {
 for (i in seq(length(data))) {
   print("hi")
 }
+
+for (i in seq_len(length(data))) {
+  print("hi")
+}
 ```
 
 Use instead:
@@ -34,6 +40,10 @@ for (i in seq_len(nrow(data))) {
 }
 
 for (i in seq_along(data)) {
+  print("hi")
+}
+
+for (i in seq_along(data)){
   print("hi")
 }
 ```

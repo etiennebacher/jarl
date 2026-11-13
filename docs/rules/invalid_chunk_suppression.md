@@ -1,4 +1,5 @@
 # invalid_chunk_suppression
+
 ::: {.callout-note title="Added in 0.5.0" .low-opacity}
 :::
 

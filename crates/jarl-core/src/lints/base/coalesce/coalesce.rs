@@ -1,8 +1,11 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
+use crate::utils::StatementsExt;
 use crate::utils::{get_function_name, node_contains_comments};
 use air_r_syntax::*;
-use biome_rowan::{AstNode, AstNodeList};
+use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.19
 ///
 /// ## What it does
@@ -61,9 +64,10 @@ use biome_rowan::{AstNode, AstNodeList};
 /// x %||% y # (in both cases)
 /// ```
 ///
-/// ## Reference
+/// ## References
 ///
 /// See `?Control`
+/// <!-- docs: end -->
 pub fn coalesce(ast: &RIfStatement) -> anyhow::Result<Option<Diagnostic>> {
     let condition = ast.condition()?;
     let consequence = ast.consequence()?;
@@ -177,17 +181,16 @@ pub fn coalesce(ast: &RIfStatement) -> anyhow::Result<Option<Diagnostic>> {
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "coalesce".to_string(),
+            Rule::Coalesce,
             msg,
             Some("Use `x %||% y` instead.".to_string()),
         ),
         range,
-        Fix {
-            content: fix_content.clone(),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()) || skip_fix,
-        },
+        Fix::new(
+            range,
+            fix_content.clone(),
+            node_contains_comments(ast.syntax()) || skip_fix,
+        ),
     );
 
     Ok(Some(diagnostic))
@@ -195,7 +198,7 @@ pub fn coalesce(ast: &RIfStatement) -> anyhow::Result<Option<Diagnostic>> {
 
 // Check if an expression has multiple statements
 fn has_multiple_expressions(input: &AnyRExpression) -> bool {
-    if let Some(braced) = input.as_r_braced_expressions() {
+    if let Some(braced) = input.as_r_braced_statements() {
         let expressions = braced.expressions();
         expressions.len() > 1
     } else {
@@ -205,7 +208,7 @@ fn has_multiple_expressions(input: &AnyRExpression) -> bool {
 
 // Extract single expression from braced expressions, or return the expression as-is
 fn extract_single_expression(input: &AnyRExpression) -> String {
-    if let Some(braced) = input.as_r_braced_expressions() {
+    if let Some(braced) = input.as_r_braced_statements() {
         let expressions: Vec<_> = braced.expressions().into_iter().collect();
         if expressions.len() == 1 {
             // Single expression in braces, extract it

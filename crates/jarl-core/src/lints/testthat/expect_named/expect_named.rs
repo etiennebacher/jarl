@@ -1,11 +1,17 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{
-    get_arg_by_name_then_position, get_function_name, get_function_namespace_prefix,
-    node_contains_comments,
+    Formals, get_arg, get_function_name, get_function_namespace_prefix, node_contains_comments,
 };
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// Omits `tolerance`, `info`, `label` and `expected.label`, which follow `...`.
+/// Shared with `expect_identical()`, whose first two formals are the same.
+const FORMALS_EXPECT_EQUAL: Formals = &["object", "expected"];
+const FORMALS_NAMES: Formals = &["x"];
+
+/// <!-- docs: start -->
 /// Version added: 0.2.0
 ///
 /// ## What it does
@@ -33,16 +39,15 @@ use biome_rowan::AstNode;
 /// expect_named(x, "a")
 /// expect_named(x, c("a", "b"))
 /// ```
+/// <!-- docs: end -->
 pub fn expect_named(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     // Only check expect_equal and expect_identical
     if fn_name != "expect_equal" && fn_name != "expect_identical" {
         return Ok(None);
     }
 
-    let args = ast.arguments()?.items();
-
-    let object = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "object", 1));
-    let expected = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "expected", 2));
+    let object = unwrap_or_return_none!(get_arg(ast, FORMALS_EXPECT_EQUAL, "object"));
+    let expected = unwrap_or_return_none!(get_arg(ast, FORMALS_EXPECT_EQUAL, "expected"));
 
     let object_value = unwrap_or_return_none!(object.value());
     let expected_value = unwrap_or_return_none!(expected.value());
@@ -75,8 +80,7 @@ pub fn expect_named(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnos
     }
 
     // Extract the argument to names()
-    let names_args = names_arg.arguments()?.items();
-    let names_x_arg = unwrap_or_return_none!(get_arg_by_name_then_position(&names_args, "x", 1));
+    let names_x_arg = unwrap_or_return_none!(get_arg(names_arg, FORMALS_NAMES, "x"));
     let names_x_value = unwrap_or_return_none!(names_x_arg.value());
 
     let x_text = names_x_value.to_trimmed_text();
@@ -88,7 +92,7 @@ pub fn expect_named(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnos
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "expect_named".to_string(),
+            Rule::TestthatExpectNamed,
             format!(
                 "`expect_named(x, n)` is better than `{}(names(x), n)`.",
                 fn_name
@@ -96,12 +100,11 @@ pub fn expect_named(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnos
             Some("Use `expect_named(x, n)` instead.".to_string()),
         ),
         range,
-        Fix {
-            content: format!("{}expect_named({}, {})", namespace_prefix, x_text, n_text),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(
+            range,
+            format!("{}expect_named({}, {})", namespace_prefix, x_text, n_text),
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))

@@ -1,13 +1,17 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{
-    get_arg_by_name, get_arg_by_name_then_position, get_function_name,
-    get_nested_functions_content, node_contains_comments,
+    Formals, get_arg, get_arg_by_name, get_function_name, get_nested_functions_content,
+    node_contains_comments,
 };
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+const FORMALS_WHICH: Formals = &["x", "arr.ind", "useNames"];
+
 pub struct WhichGrepl;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.8
 ///
 /// ## What it does
@@ -41,9 +45,10 @@ pub struct WhichGrepl;
 /// ## References
 ///
 /// See `?grep`
+/// <!-- docs: end -->
 impl Violation for WhichGrepl {
-    fn name(&self) -> String {
-        "which_grepl".to_string()
+    fn rule(&self) -> Rule {
+        Rule::WhichGrepl
     }
     fn body(&self) -> String {
         "`which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.".to_string()
@@ -58,10 +63,8 @@ pub fn which_grepl(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnost
         return Ok(None);
     }
 
-    let arguments = ast.arguments()?.items();
-
     // Handle `which(grepl(...))`, including a named `x` argument to `which()`.
-    let direct_content = if let Some(argument) = get_arg_by_name_then_position(&arguments, "x", 1)
+    let direct_content = if let Some(argument) = get_arg(ast, FORMALS_WHICH, "x")
         && let Some(value) = argument.value()
         && let Some(inner_call) = value.as_r_call()
         && get_function_name(inner_call.function()?) == "grepl"
@@ -110,11 +113,10 @@ pub fn which_grepl(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnost
     Ok(Some(Diagnostic::new(
         WhichGrepl,
         range,
-        Fix {
-            content: replacement.clone(),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(&outer_syntax),
-        },
+        Fix::new(
+            range,
+            replacement.clone(),
+            node_contains_comments(&outer_syntax),
+        ),
     )))
 }

@@ -11,6 +11,7 @@ use crate::lints::base::equals_nan::equals_nan::equals_nan;
 use crate::lints::base::equals_null::equals_null::equals_null;
 use crate::lints::base::implicit_assignment::implicit_assignment::implicit_assignment;
 use crate::lints::base::is_numeric::is_numeric::is_numeric;
+use crate::lints::base::list_comparison::list_comparison::list_comparison;
 use crate::lints::base::nested_pipe::nested_pipe::nested_pipe;
 use crate::lints::base::nzchar::nzchar::nzchar;
 use crate::lints::base::pipe_consistency::pipe_consistency::pipe_consistency;
@@ -18,7 +19,9 @@ use crate::lints::base::pipe_return::pipe_return::pipe_return;
 use crate::lints::base::redundant_equals::redundant_equals::redundant_equals;
 use crate::lints::base::seq::seq::seq;
 use crate::lints::base::string_boundary::string_boundary::string_boundary;
+use crate::lints::base::undesirable_operator::undesirable_operator::undesirable_operator_binary;
 use crate::lints::base::vector_logic::vector_logic::vector_logic;
+use crate::lints::base::yoda_condition::yoda_condition::yoda_condition;
 
 pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::AnyIsNa) {
@@ -54,6 +57,9 @@ pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> a
     if checker.is_rule_enabled(Rule::IsNumeric) {
         checker.report_diagnostic(is_numeric(r_expr)?);
     }
+    if checker.is_rule_enabled(Rule::ListComparison) {
+        checker.report_diagnostic(list_comparison(r_expr)?);
+    }
     if checker.is_rule_enabled(Rule::NestedPipe) {
         checker.report_diagnostic(nested_pipe(r_expr, checker)?);
     }
@@ -77,6 +83,15 @@ pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> a
     }
     if checker.is_rule_enabled(Rule::StringBoundary) {
         checker.report_diagnostic(string_boundary(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::UndesirableOperator) {
+        checker.report_diagnostic(undesirable_operator_binary(
+            r_expr,
+            &checker.rule_options.undesirable_operator,
+        )?);
+    }
+    if checker.is_rule_enabled(Rule::YodaCondition) {
+        checker.report_diagnostic(yoda_condition(r_expr)?);
     }
     Ok(())
 }

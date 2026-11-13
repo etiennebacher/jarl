@@ -1,17 +1,129 @@
 ---
 source: crates/jarl-core/src/lints/base/repeat/mod.rs
-expression: "get_fixed_text(vec![\"while (TRUE) 1 + 1\",\n\"for (i in 1:10) { while (TRUE) { if (i == 5) { break } } }\",], \"repeat\",\nNone)"
+expression: "get_fixed_text(vec![\"while (TRUE) {}\", \"while(TRUE)break\",\n\"while ((TRUE)) next\",\n\"while (((TRUE))) {\n    # Keep this body comment.\n    break\n}\",\n\"for (i in 1:10) {\n    while (TRUE) {\n        if (i == 5) break\n    }\n}\",\n\"while (TRUE) if (done) break\",\n\"# Before the loop.\nwhile (TRUE) # Between the header and body.\n    break # After the loop.\",\n\"while (TRUE)\n{\n    break\n}\",\n\"while (((TRUE))) {\n    while (TRUE) break\n    break\n}\",\n\"while ( # After the opening parenthesis.\n    TRUE\n) break\",\n\"while (TRUE # Before the closing parenthesis.\n) break\",\n\"while ((\n    # Inside extra parentheses.\n    TRUE\n)) break\",], \"repeat\",\nNone)"
 ---
 OLD:
 ====
-while (TRUE) 1 + 1
+while (TRUE) {}
 NEW:
 ====
-repeat { 1 + 1 }
+repeat {}
 
 OLD:
 ====
-for (i in 1:10) { while (TRUE) { if (i == 5) { break } } }
+while(TRUE)break
 NEW:
 ====
-for (i in 1:10) { repeat { if (i == 5) { break } } }
+repeat break
+
+OLD:
+====
+while ((TRUE)) next
+NEW:
+====
+repeat next
+
+OLD:
+====
+while (((TRUE))) {
+    # Keep this body comment.
+    break
+}
+NEW:
+====
+repeat {
+    # Keep this body comment.
+    break
+}
+
+OLD:
+====
+for (i in 1:10) {
+    while (TRUE) {
+        if (i == 5) break
+    }
+}
+NEW:
+====
+for (i in 1:10) {
+    repeat {
+        if (i == 5) break
+    }
+}
+
+OLD:
+====
+while (TRUE) if (done) break
+NEW:
+====
+repeat if (done) break
+
+OLD:
+====
+# Before the loop.
+while (TRUE) # Between the header and body.
+    break # After the loop.
+NEW:
+====
+# Before the loop.
+repeat # Between the header and body.
+    break # After the loop.
+
+OLD:
+====
+while (TRUE)
+{
+    break
+}
+NEW:
+====
+repeat
+{
+    break
+}
+
+OLD:
+====
+while (((TRUE))) {
+    while (TRUE) break
+    break
+}
+NEW:
+====
+repeat {
+    repeat break
+    break
+}
+
+OLD:
+====
+while ( # After the opening parenthesis.
+    TRUE
+) break
+NEW:
+====
+while ( # After the opening parenthesis.
+    TRUE
+) break
+
+OLD:
+====
+while (TRUE # Before the closing parenthesis.
+) break
+NEW:
+====
+while (TRUE # Before the closing parenthesis.
+) break
+
+OLD:
+====
+while ((
+    # Inside extra parentheses.
+    TRUE
+)) break
+NEW:
+====
+while ((
+    # Inside extra parentheses.
+    TRUE
+)) break

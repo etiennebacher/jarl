@@ -24,9 +24,13 @@ pub struct RCommentStyle;
 impl CommentStyle for RCommentStyle {
     type Language = RLanguage;
 
-    fn is_suppression(_text: &str) -> bool {
-        // We don't use biome's suppression tracking, so return false
-        false
+    fn suppression_kind(
+        &self,
+        _comment: &DecoratedComment<Self::Language>,
+    ) -> Option<biome_suppression::SuppressionKind> {
+        // The default recognises `# biome-ignore-all format`, which attaches
+        // the comments at the top of the file to the root node.
+        None
     }
 
     fn get_comment_kind(_comment: &SyntaxTriviaPieceComments<RLanguage>) -> CommentKind {
@@ -74,6 +78,29 @@ impl CommentStyle for RCommentStyle {
         }
 
         CommentPlacement::Default(comment)
+    }
+}
+
+/// A suppression comment that didn't suppress anything.
+///
+/// Carries what `outdated_suppression` needs to remove the suppression: the
+/// comment to report, and — for a `jarl-ignore-start`/`jarl-ignore-end` pair —
+/// the span of the region, because dropping the start comment alone would leave
+/// a dangling end comment behind.
+#[derive(Debug, Clone, Copy)]
+pub struct UnusedSuppression {
+    /// The range of the suppression comment
+    pub comment_range: TextRange,
+    /// For a start/end pair, the range from the start of the opening comment to
+    /// the end of the closing one. `None` for suppressions made of a single
+    /// comment.
+    pub region_range: Option<TextRange>,
+}
+
+impl UnusedSuppression {
+    /// A suppression made of a single comment (file, chunk or node level).
+    fn single(comment_range: TextRange) -> Self {
+        Self { comment_range, region_range: None }
     }
 }
 
@@ -375,7 +402,7 @@ impl SuppressionManager {
         // Increment nesting level when entering braced expressions (function bodies, etc.)
         let mut is_first = is_first_expression;
         for child in node.children() {
-            let child_nesting = if child.kind() == RSyntaxKind::R_BRACED_EXPRESSIONS {
+            let child_nesting = if child.kind() == RSyntaxKind::R_BRACED_STATEMENTS {
                 nesting_level + 1
             } else {
                 nesting_level
@@ -627,9 +654,7 @@ impl SuppressionManager {
 
     /// Check if a diagnostic should be suppressed, and if so, mark the suppression as used.
     fn is_diagnostic_suppressed(&mut self, diag: &Diagnostic) -> bool {
-        let Some(rule) = Rule::from_name(&diag.message.name) else {
-            return false;
-        };
+        let rule = diag.message.rule;
 
         // Check file-level suppressions
         for sup in &self.file_suppressions {
@@ -673,36 +698,39 @@ impl SuppressionManager {
         false
     }
 
-    /// Get all suppression comment ranges that were never used.
+    /// Get all suppressions that were never used.
     /// This is used to report outdated suppressions.
-    pub fn get_unused_suppressions(&self) -> Vec<TextRange> {
+    pub fn get_unused_suppressions(&self) -> Vec<UnusedSuppression> {
         let mut unused = Vec::new();
 
         // Check file-level suppressions
         for sup in &self.file_suppressions {
             if !self.used_suppressions.contains(&sup.comment_range) {
-                unused.push(sup.comment_range);
+                unused.push(UnusedSuppression::single(sup.comment_range));
             }
         }
 
         // Check chunk-level suppressions
         for sup in &self.chunk_suppressions {
             if !self.used_suppressions.contains(&sup.comment_range) {
-                unused.push(sup.comment_range);
+                unused.push(UnusedSuppression::single(sup.comment_range));
             }
         }
 
         // Check region-level suppressions
         for region in &self.skip_regions {
             if !self.used_suppressions.contains(&region.comment_range) {
-                unused.push(region.comment_range);
+                unused.push(UnusedSuppression {
+                    comment_range: region.comment_range,
+                    region_range: Some(region.range),
+                });
             }
         }
 
         // Check node-level suppressions
         for sup in &self.node_suppressions {
             if !self.used_suppressions.contains(&sup.comment_range) {
-                unused.push(sup.comment_range);
+                unused.push(UnusedSuppression::single(sup.comment_range));
             }
         }
 

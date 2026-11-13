@@ -1,3 +1,4 @@
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 use std::str::FromStr;
 
@@ -264,6 +265,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    ApplyPaste => {
+        name: "apply_paste",
+        categories: [Perf],
+        default: Enabled,
+        fix: Unsafe,
+        min_r_version: None,
+    },
     Assignment => {
         name: "assignment",
         categories: [Read],
@@ -271,12 +279,11 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
-    #[deprecated(version = "0.5.0", replacement = "undesirable_function")]
-    Browser => {
-        name: "browser",
-        categories: [Corr],
+    AssignmentOnIfNoElse => {
+        name: "assignment_on_if_no_else",
+        categories: [Susp],
         default: Enabled,
-        fix: Safe,
+        fix: None,
         min_r_version: None,
     },
     ClassEquals => {
@@ -314,6 +321,20 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    ConsecutiveSigns => {
+        name: "consecutive_signs",
+        categories: [Read, Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    CyclomaticComplexity => {
+        name: "cyclomatic_complexity",
+        categories: [Read],
+        default: Disabled,
+        fix: None,
+        min_r_version: None,
+    },
     DownloadFile => {
         name: "download_file",
         categories: [Susp],
@@ -347,6 +368,13 @@ declare_rules! {
         categories: [Susp],
         default: Enabled,
         fix: None,
+        min_r_version: None,
+    },
+    EmptyList => {
+        name: "null_list",
+        categories: [Perf],
+        default: Enabled,
+        fix: Unsafe,
         min_r_version: None,
     },
     EqualsNa => {
@@ -391,6 +419,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    FunctionReturn => {
+        name: "function_return",
+        categories: [Read],
+        default: Disabled,
+        fix: Unsafe,
+        min_r_version: None,
+    },
     Glue => {
         name: "glue",
         categories: [Corr, Susp],
@@ -419,6 +454,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    IfSwitch => {
+        name: "if_switch",
+        categories: [Read],
+        default: Disabled,
+        fix: Unsafe,
+        min_r_version: None,
+    },
     ImplicitAssignment => {
         name: "implicit_assignment",
         categories: [Read],
@@ -426,10 +468,11 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    #[deprecated(version = "0.7.0", replacement = "undesirable_operator")]
     InternalFunction => {
         name: "internal_function",
         categories: [Susp],
-        default: Enabled,
+        default: Disabled,
         fix: None,
         min_r_version: None,
     },
@@ -461,12 +504,26 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    LibraryCall => {
+        name: "library_call",
+        categories: [Read],
+        default: Disabled,
+        fix: Unsafe,
+        min_r_version: None,
+    },
     List2df => {
         name: "list2df",
         categories: [Perf, Read],
         default: Enabled,
         fix: Safe,
         min_r_version: Some((4, 0, 0)),
+    },
+    ListComparison => {
+        name: "list_comparison",
+        categories: [Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
     },
     LiteralCoercion => {
         name: "literal_coercion",
@@ -521,7 +578,7 @@ declare_rules! {
         name: "outer_negation",
         categories: [Perf, Read],
         default: Enabled,
-        fix: Safe,
+        fix: Unsafe,
         min_r_version: None,
     },
     PipeConsistency => {
@@ -589,7 +646,7 @@ declare_rules! {
     },
     Seq2 => {
         name: "seq2",
-        categories: [Susp],
+        categories: [Read, Susp],
         default: Enabled,
         fix: Safe,
         min_r_version: None,
@@ -619,7 +676,7 @@ declare_rules! {
         name: "string_boundary",
         categories: [Perf, Read],
         default: Enabled,
-        fix: Safe,
+        fix: Unsafe,
         min_r_version: None,
     },
     StringsAsFactors => {
@@ -636,6 +693,20 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    TerminalClose => {
+        name: "terminal_close",
+        categories: [Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    TodoComment => {
+        name: "todo_comment",
+        categories: [Read],
+        default: Disabled,
+        fix: None,
+        min_r_version: None,
+    },
     TrueFalseSymbol => {
         name: "true_false_symbol",
         categories: [Read],
@@ -645,6 +716,13 @@ declare_rules! {
     },
     UndesirableFunction => {
         name: "undesirable_function",
+        categories: [Corr],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    UndesirableOperator => {
+        name: "undesirable_operator",
         categories: [Corr],
         default: Enabled,
         fix: None,
@@ -678,6 +756,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    UnusedObject => {
+        name: "unused_object",
+        categories: [Corr],
+        default: Disabled,
+        fix: None,
+        min_r_version: None,
+    },
     VectorLogic => {
         name: "vector_logic",
         categories: [Perf],
@@ -690,6 +775,14 @@ declare_rules! {
         categories: [Perf, Read],
         default: Enabled,
         fix: Safe,
+        min_r_version: None,
+    },
+
+    YodaCondition => {
+        name: "yoda_condition",
+        categories: [Read],
+        default: Disabled,
+        fix: Unsafe,
         min_r_version: None,
     },
 
@@ -735,7 +828,7 @@ declare_rules! {
         name: "outdated_suppression",
         categories: [Comm],
         default: Enabled,
-        fix: None,
+        fix: Safe,
         min_r_version: None,
     },
     UnexplainedSuppression => {
@@ -845,6 +938,22 @@ declare_rules! {
         min_r_version: None,
     },
 
+}
+
+/// Serialized as the rule's string name, so a `Diagnostic` round-trips through
+/// the same identifier users write in `jarl.toml`.
+impl Serialize for Rule {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.name())
+    }
+}
+
+impl<'de> Deserialize<'de> for Rule {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let name = String::deserialize(deserializer)?;
+        Rule::from_name(&name)
+            .ok_or_else(|| serde::de::Error::custom(format!("unknown rule: {name}")))
+    }
 }
 
 /// A collection of rules

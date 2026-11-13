@@ -21,6 +21,7 @@ mod tests {
         expect_no_lint("sample(10:1, m)", "sample_int", None);
         expect_no_lint("sample(replace = TRUE, letters)", "sample_int", None);
         expect_no_lint("x$sample(1:2, 1)", "sample_int", None);
+        expect_no_lint("sample(, 1)", "sample_int", None);
     }
 
     #[test]
@@ -96,9 +97,9 @@ mod tests {
                 vec![
                     "sample(1:10, 2)",
                     "sample(1L:10L, 2)",
-                    "sample(n = 1:10, 2)",
-                    "sample(2, n = 1:10)",
-                    "sample(size = 2, n = 1:10)",
+                    "sample(x = 1:10, 2)",
+                    "sample(2, x = 1:10)",
+                    "sample(size = 2, x = 1:10)",
                     "sample(replace = TRUE, letters)",
                 ],
                 "sample_int",

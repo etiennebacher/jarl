@@ -293,7 +293,7 @@ foo <- function() {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r#"
+            @"
         warning: unreachable_code
          --> <test>:5:10
           |
@@ -304,7 +304,7 @@ foo <- function() {
           | |___- This code is in a branch that can never be executed.
           |
         Found 1 error.
-        "#
+        "
         );
     }
 
@@ -361,7 +361,8 @@ foo <- function(bar) {
         3 |     if (FALSE) {
           |  ______________-
         4 | |     1 + 1
-        ... |
+        5 | |     if (a) {
+        6 | |       2 + 2
         7 | |     }
         8 | |   } else {
           | |___- This code is in a branch that can never be executed.
@@ -484,6 +485,7 @@ foo <- function(bar) {
            |
         10 | /   while (bar) {
         11 | |     return(bar) # comment
+        12 | |     5 + 3
         ...  |
         20 | |     5 + 4
         21 | |   }

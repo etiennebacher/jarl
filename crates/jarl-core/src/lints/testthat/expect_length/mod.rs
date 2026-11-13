@@ -33,6 +33,10 @@ mod tests {
         expect_no_lint("expect_equal(length(x), length(y))", "expect_length", None);
         expect_no_lint("expect_equal(foo(x), bar(y))", "expect_length", None);
 
+        // Don't invert the logic
+        // https://github.com/etiennebacher/jarl/issues/571
+        expect_no_lint("expect_equal(1, length(x)", "expect_length", None);
+
         // Not the functions we're looking for
         expect_no_lint("expect_equal(x, 1)", "expect_length", None);
         expect_no_lint("some_other_function(length(x), n)", "expect_length", None);
@@ -85,32 +89,6 @@ mod tests {
         "
         );
         assert_snapshot!(
-            snapshot_lint("expect_equal(2, length(x))"),
-            @"
-        warning: expect_length
-         --> <test>:1:1
-          |
-        1 | expect_equal(2, length(x))
-          | -------------------------- `expect_length(x, n)` is better than `expect_equal(length(x), n)`.
-          |
-          = help: Use `expect_length(x, n)` instead.
-        Found 1 error.
-        "
-        );
-        assert_snapshot!(
-            snapshot_lint("expect_equal(2L, length(x))"),
-            @"
-        warning: expect_length
-         --> <test>:1:1
-          |
-        1 | expect_equal(2L, length(x))
-          | --------------------------- `expect_length(x, n)` is better than `expect_equal(length(x), n)`.
-          |
-          = help: Use `expect_length(x, n)` instead.
-        Found 1 error.
-        "
-        );
-        assert_snapshot!(
             snapshot_lint("expect_equal(foo(y), length(x))"),
             @"
         warning: expect_length
@@ -129,7 +107,6 @@ mod tests {
             get_fixed_text(
                 vec![
                     "expect_equal(length(x), 2L)",
-                    "expect_equal(2, length(x))",
                     "expect_equal(length(x), foo(y))",
                     "expect_equal(foo(y), length(x))",
                     "testthat::expect_equal(base::length(x), 2)",
