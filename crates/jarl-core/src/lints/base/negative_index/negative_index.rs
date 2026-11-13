@@ -80,10 +80,10 @@ pub fn negative_index(ast: &RSubset) -> anyhow::Result<Vec<Diagnostic>> {
             expression = paren.body()?;
         }
 
+        // A guard protects the whole index only for a direct negation.
+        // In `x[-n * idx]`, checking `n` does not establish `idx`'s length.
         if let AnyRExpression::RUnaryExpression(unary) = expression
             && unary.operator()?.kind() == RSyntaxKind::MINUS
-            // A guard protects the whole index only for a direct negation.
-            // In `x[-n * idx]`, checking `n` does not establish `idx`'s length.
             && (is_literal(unary.argument()?)? || has_nonempty_guard(&unary)?)
         {
             continue;
@@ -119,56 +119,56 @@ fn contains_negative(node: &RSyntaxNode) -> anyhow::Result<bool> {
             continue;
         }
 
-        match AnyRExpression::cast(node) {
-            // Comparisons and logical operators produce logical values, not
-            // negative indices: `x[x > -n]`, `x[!(-idx)]`, `x[a & -b]`.
-            Some(AnyRExpression::RBinaryExpression(binary))
-                if matches!(
-                    binary.operator()?.kind(),
-                    RSyntaxKind::EQUAL2
-                        | RSyntaxKind::NOT_EQUAL
-                        | RSyntaxKind::LESS_THAN
-                        | RSyntaxKind::LESS_THAN_OR_EQUAL_TO
-                        | RSyntaxKind::GREATER_THAN
-                        | RSyntaxKind::GREATER_THAN_OR_EQUAL_TO
-                        | RSyntaxKind::AND
-                        | RSyntaxKind::AND2
-                        | RSyntaxKind::OR
-                        | RSyntaxKind::OR2
-                ) =>
-            {
-                preorder.skip_subtree();
-            }
+        let skip_children = match AnyRExpression::cast(node) {
+            // Comparisons and logical operators produce logical indices, so
+            // negative values in their operands cannot pass through.
+            Some(AnyRExpression::RBinaryExpression(binary)) => matches!(
+                binary.operator()?.kind(),
+                RSyntaxKind::EQUAL2
+                    | RSyntaxKind::NOT_EQUAL
+                    | RSyntaxKind::LESS_THAN
+                    | RSyntaxKind::LESS_THAN_OR_EQUAL_TO
+                    | RSyntaxKind::GREATER_THAN
+                    | RSyntaxKind::GREATER_THAN_OR_EQUAL_TO
+                    | RSyntaxKind::AND
+                    | RSyntaxKind::AND2
+                    | RSyntaxKind::OR
+                    | RSyntaxKind::OR2
+            ),
             Some(AnyRExpression::RUnaryExpression(unary)) => match unary.operator()?.kind() {
-                RSyntaxKind::BANG => preorder.skip_subtree(),
-                // Visiting the outer minus first still reports `x[-which(x)]`
-                // and `x[-(x > -n)]`, even though their operands are skipped.
+                RSyntaxKind::BANG => true,
+                // Inspect the outer minus before skipping its operand, so
+                // `x[-which(x)]` and `x[-(x > -n)]` are still reported.
                 RSyntaxKind::MINUS => return Ok(true),
-                _ => {}
+                _ => false,
             },
-            Some(AnyRExpression::RCall(call)) => {
-                let function = call.function()?;
-                // Position-generating calls and `between()` do not pass negative
-                // arguments through: `x[order(-x)]`, `x[between(x, -1, 1)]`.
-                // Only assume this for unqualified calls and known namespaces.
-                let skips_negative_arguments = matches!(
-                    (
-                        get_function_name(function.clone()).as_str(),
-                        get_function_namespace_prefix(function).as_deref()
-                    ),
-                    ("which" | "order", None | Some("base::"))
-                        | ("between", None | Some("dplyr::" | "data.table::"))
-                );
-                // Literal-only `c()` calls, such as `x[c(-1, -2)]`, cannot
-                // contain runtime-dependent negative indices either.
-                if skips_negative_arguments || is_literal_c_call(&call)? {
-                    preorder.skip_subtree();
-                }
-            }
-            _ => {}
+            Some(AnyRExpression::RCall(call)) => should_skip_call(&call)?,
+            _ => false,
+        };
+        if skip_children {
+            preorder.skip_subtree();
         }
     }
     Ok(false)
+}
+
+/// Skip calls whose arguments cannot contribute runtime-dependent negative
+/// indices:
+/// - `which()` and `order()` return only positive indices
+/// - `dplyr::between()` and `data.table::between()` return only logical values
+/// - `c()` with only literal arguments returns only literal values
+fn should_skip_call(call: &RCall) -> anyhow::Result<bool> {
+    let function = call.function()?;
+    // Only assume these semantics for unqualified calls and known namespaces.
+    let skips_negative_arguments = matches!(
+        (
+            get_function_name(function.clone()).as_str(),
+            get_function_namespace_prefix(function).as_deref()
+        ),
+        ("which" | "order", None | Some("base::"))
+            | ("between", None | Some("dplyr::" | "data.table::"))
+    );
+    Ok(skips_negative_arguments || is_literal_c_call(call)?)
 }
 
 /// A `c()` made only of literals has no runtime-dependent values to warn about.

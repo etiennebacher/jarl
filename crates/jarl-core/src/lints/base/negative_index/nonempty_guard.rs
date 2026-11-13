@@ -118,6 +118,7 @@ fn has_preceding_guard(
         if expression.range().start() >= end {
             continue;
         }
+
         // Check the guard first: writes on its exiting path do not matter.
         if expression.range().end() <= position {
             let guarded = match unparenthesized(expression.clone())? {
@@ -167,8 +168,9 @@ fn is_numeric_literal(expression: AnyRExpression) -> anyhow::Result<bool> {
     }
 }
 
-/// The surviving branch must establish nonemptiness and preserve the variable.
-/// Writes in the exiting branch cannot affect code after the `if`.
+/// An early exit protects later uses when the condition on the surviving path
+/// proves nonemptiness and that path preserves the variable. Writes confined
+/// to the exiting branch cannot affect code after the `if`.
 fn is_early_exit_guard(statement: &RIfStatement, name: &str) -> anyhow::Result<bool> {
     let condition = statement.condition()?;
     if has_write(condition.syntax(), name, condition.range().end())? {
@@ -180,25 +182,28 @@ fn is_early_exit_guard(statement: &RIfStatement, name: &str) -> anyhow::Result<b
         .map(|clause| clause.alternative())
         .transpose()?;
 
-    if always_exits(consequence.clone())?
+    // Select the path that can reach the next statement. For example,
+    // `if (!length(idx)) stop("empty")` survives when the condition is false.
+    let surviving_branch = if always_exits(consequence.clone())?
         && condition_proves_nonempty(condition.clone(), name, false, false)?
     {
-        return match alternative {
-            Some(branch) => Ok(!has_write(branch.syntax(), name, branch.range().end())?),
-            None => Ok(true),
-        };
-    }
-    if let Some(alternative) = alternative
+        alternative
+    } else if let Some(alternative) = alternative
         && always_exits(alternative)?
         && condition_proves_nonempty(condition, name, true, false)?
     {
-        return Ok(!has_write(
-            consequence.syntax(),
-            name,
-            consequence.range().end(),
-        )?);
+        Some(consequence)
+    } else {
+        return Ok(false);
+    };
+
+    // A surviving branch can invalidate the check, as in
+    // `if (!length(idx)) stop("empty") else idx <- f()`.
+    // Without an else branch, the false path performs no further writes.
+    match surviving_branch {
+        Some(branch) => Ok(!has_write(branch.syntax(), name, branch.range().end())?),
+        None => Ok(true),
     }
-    Ok(false)
 }
 
 /// Require an unconditional exit from this branch. Inspect only statements
@@ -231,10 +236,9 @@ fn always_exits(expression: AnyRExpression) -> anyhow::Result<bool> {
     }
 }
 
-/// Infer only facts established by reaching this particular branch. Both sides
-/// of `&&` hold in its true branch; either side may suffice for `||`, so both
-/// must establish the fact there. Negation and `else` reverse these cases.
-/// `allow_empty` accounts for `stopifnot()`, which accepts `logical(0)`.
+/// Determine whether observing `truth` for this condition rules out an empty
+/// index. Negation reverses the required truth value. `allow_empty` distinguishes
+/// assertions such as `stopifnot(idx > 0)`, which also accept `logical(0)`.
 fn condition_proves_nonempty(
     condition: AnyRExpression,
     name: &str,
@@ -258,10 +262,17 @@ fn condition_proves_nonempty(
                 // `stopifnot()`, so their operands cannot pass as empty results.
                 let left = condition_proves_nonempty(binary.left()?, name, truth, false)?;
                 let right = condition_proves_nonempty(binary.right()?, name, truth, false)?;
-                return Ok(if (operator == RSyntaxKind::AND2) == truth {
-                    left || right
-                } else {
+                // A false && or true || can result from either operand, so
+                // both possibilities must imply nonemptiness. Otherwise one
+                // operand's proof suffices: `length(idx) > 0 && verbose`.
+                let requires_both = matches!(
+                    (operator, truth),
+                    (RSyntaxKind::AND2, false) | (RSyntaxKind::OR2, true)
+                );
+                return Ok(if requires_both {
                     left && right
+                } else {
+                    left || right
                 });
             }
 
@@ -271,8 +282,9 @@ fn condition_proves_nonempty(
     }
 }
 
-/// Compare the variable or its length with a numeric literal. Normalize the
-/// literal to the right so reversed comparisons use the same empty-value test.
+/// Recognize comparisons of the variable or its length with a numeric literal.
+/// For length comparisons, substitute zero on the original side and check
+/// whether an empty index could produce the required truth value.
 fn comparison_proves_nonempty(
     binary: &RBinaryExpression,
     name: &str,
@@ -281,30 +293,26 @@ fn comparison_proves_nonempty(
 ) -> anyhow::Result<bool> {
     let left = unparenthesized(binary.left()?)?;
     let right = unparenthesized(binary.right()?)?;
-    let mut operator = binary.operator()?.kind();
-    let (expression, number) = if let Some(number) = numeric_literal(&right) {
-        (left, number)
-    } else if let Some(number) = numeric_literal(&left) {
-        operator = match operator {
-            RSyntaxKind::LESS_THAN => RSyntaxKind::GREATER_THAN,
-            RSyntaxKind::LESS_THAN_OR_EQUAL_TO => RSyntaxKind::GREATER_THAN_OR_EQUAL_TO,
-            RSyntaxKind::GREATER_THAN => RSyntaxKind::LESS_THAN,
-            RSyntaxKind::GREATER_THAN_OR_EQUAL_TO => RSyntaxKind::LESS_THAN_OR_EQUAL_TO,
-            _ => operator,
+    let operator = binary.operator()?.kind();
+    // Preserve operand order: `length(idx) > 1` becomes `0 > 1`, while
+    // `1 < length(idx)` becomes `1 < 0`. The operator needs no reversal.
+    let (expression, left_when_empty, right_when_empty) =
+        if let Some(number) = numeric_literal(&right) {
+            (left, 0.0, number)
+        } else if let Some(number) = numeric_literal(&left) {
+            (right, number, 0.0)
+        } else {
+            return Ok(false);
         };
-        (right, number)
-    } else {
-        return Ok(false);
-    };
-    // Evaluate the comparison at length zero. A branch excludes empty indices
-    // only if this result would send execution to the other branch.
+    // An empty length must send execution away from the selected branch.
+    // This also restricts both kinds of proof to comparison operators.
     let empty_result = match operator {
-        RSyntaxKind::EQUAL2 => 0.0 == number,
-        RSyntaxKind::NOT_EQUAL => 0.0 != number,
-        RSyntaxKind::LESS_THAN => 0.0 < number,
-        RSyntaxKind::LESS_THAN_OR_EQUAL_TO => 0.0 <= number,
-        RSyntaxKind::GREATER_THAN => 0.0 > number,
-        RSyntaxKind::GREATER_THAN_OR_EQUAL_TO => 0.0 >= number,
+        RSyntaxKind::EQUAL2 => left_when_empty == right_when_empty,
+        RSyntaxKind::NOT_EQUAL => left_when_empty != right_when_empty,
+        RSyntaxKind::LESS_THAN => left_when_empty < right_when_empty,
+        RSyntaxKind::LESS_THAN_OR_EQUAL_TO => left_when_empty <= right_when_empty,
+        RSyntaxKind::GREATER_THAN => left_when_empty > right_when_empty,
+        RSyntaxKind::GREATER_THAN_OR_EQUAL_TO => left_when_empty >= right_when_empty,
         _ => return Ok(false),
     };
     // Direct vector comparisons can pass stopifnot() with an empty result.
@@ -441,12 +449,11 @@ fn has_write(node: &RSyntaxNode, name: &str, end: TextSize) -> anyhow::Result<bo
             walk.skip_subtree();
             continue;
         }
+        // A for loop assigns its index variable on each iteration, which
+        // invalidates earlier evidence even without an explicit assignment.
         if let Some(for_statement) = RForStatement::cast_ref(&node)
-            && for_statement
-                .variable()?
-                .to_trimmed_string()
-                .trim_matches('`')
-                == name
+            && let AnyRForVariable::RIdentifier(identifier) = for_statement.variable()?
+            && identifier.name_text() == name
         {
             return Ok(true);
         }
