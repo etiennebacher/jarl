@@ -46,7 +46,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | paste(deparse(x), collapse = ' ')
-          | --------------------------------- `paste(deparse(x), collapse = " ")` is inefficient and can be hard to read.
+          | --------------------------------- `paste(deparse(x), collapse = " ")` can be simplified.
           |
           = help: Use `deparse1(x)` instead.
         Found 1 error.
@@ -61,7 +61,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | paste(deparse(substitute(x)), collapse = ' ')
-          | --------------------------------------------- `paste(deparse(x), collapse = " ")` is inefficient and can be hard to read.
+          | --------------------------------------------- `paste(deparse(x), collapse = " ")` can be simplified.
           |
           = help: Use `deparse1(x)` instead.
         Found 1 error.
@@ -75,7 +75,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | paste(deparse(x, width.cutoff = 500L), collapse = ' ')
-          | ------------------------------------------------------ `paste(deparse(x), collapse = " ")` is inefficient and can be hard to read.
+          | ------------------------------------------------------ `paste(deparse(x), collapse = " ")` can be simplified.
           |
           = help: Use `deparse1(x)` instead.
         Found 1 error.
@@ -90,7 +90,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | paste(collapse = ' ', deparse(x))
-          | --------------------------------- `paste(deparse(x), collapse = " ")` is inefficient and can be hard to read.
+          | --------------------------------- `paste(deparse(x), collapse = " ")` can be simplified.
           |
           = help: Use `deparse1(x)` instead.
         Found 1 error.
@@ -105,7 +105,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | base::paste(base::deparse(x), collapse = ' ')
-          | --------------------------------------------- `paste(deparse(x), collapse = " ")` is inefficient and can be hard to read.
+          | --------------------------------------------- `paste(deparse(x), collapse = " ")` can be simplified.
           |
           = help: Use `deparse1(x)` instead.
         Found 1 error.
@@ -142,14 +142,14 @@ mod tests {
          --> <test>:2:3
           |
         2 |   paste(deparse(x), collapse = ' ')
-          |   --------------------------------- `paste(deparse(x), collapse = " ")` is inefficient and can be hard to read.
+          |   --------------------------------- `paste(deparse(x), collapse = " ")` can be simplified.
           |
           = help: Use `deparse1(x)` instead.
         warning: deparse1
          --> <test>:3:3
           |
         3 |   paste(deparse(y), collapse = ' ')
-          |   --------------------------------- `paste(deparse(x), collapse = " ")` is inefficient and can be hard to read.
+          |   --------------------------------- `paste(deparse(x), collapse = " ")` can be simplified.
           |
           = help: Use `deparse1(x)` instead.
         Found 2 errors.

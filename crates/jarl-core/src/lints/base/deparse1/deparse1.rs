@@ -42,7 +42,7 @@ impl Violation for Deparse1 {
         Rule::Deparse1
     }
     fn body(&self) -> String {
-        "`paste(deparse(x), collapse = \" \")` is inefficient and can be hard to read.".to_string()
+        "`paste(deparse(x), collapse = \" \")` can be simplified.".to_string()
     }
     fn suggestion(&self) -> Option<String> {
         Some("Use `deparse1(x)` instead.".to_string())
