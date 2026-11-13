@@ -1,5 +1,6 @@
 use crate::utils::{
-    StatementsExt, get_arg_by_position, get_function_name, get_function_namespace_prefix,
+    StatementsExt, get_arg_by_name, get_arg_by_position, get_function_name,
+    get_function_namespace_prefix,
 };
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList, TextSize, WalkEvent};
@@ -60,7 +61,7 @@ pub(super) fn has_nonempty_guard(unary: &RUnaryExpression) -> anyhow::Result<boo
         };
 
         if let Some((condition, branch, truth)) = guard
-            && condition_proves_nonempty(condition.clone(), &name, truth)?
+            && condition_proves_nonempty(condition.clone(), &name, truth, false)?
             && !has_write(condition.syntax(), &name, condition.range().end())?
             && !has_write(branch.syntax(), &name, end)?
         {
@@ -95,7 +96,10 @@ fn has_preceding_guard(
             continue;
         }
         // Check the guard first: writes on its exiting path do not matter.
-        if expression.range().end() <= position && is_early_exit_guard(expression.clone(), name)? {
+        if expression.range().end() <= position
+            && (is_early_exit_guard(expression.clone(), name)?
+                || is_stopifnot_guard(expression.clone(), name)?)
+        {
             return Ok(true);
         }
         if has_write(expression.syntax(), name, end)? {
@@ -122,7 +126,7 @@ fn is_early_exit_guard(expression: AnyRExpression, name: &str) -> anyhow::Result
         .transpose()?;
 
     if always_exits(consequence.clone())?
-        && condition_proves_nonempty(condition.clone(), name, false)?
+        && condition_proves_nonempty(condition.clone(), name, false, false)?
     {
         return match alternative {
             Some(branch) => Ok(!has_write(branch.syntax(), name, branch.range().end())?),
@@ -131,7 +135,7 @@ fn is_early_exit_guard(expression: AnyRExpression, name: &str) -> anyhow::Result
     }
     if let Some(alternative) = alternative
         && always_exits(alternative)?
-        && condition_proves_nonempty(condition, name, true)?
+        && condition_proves_nonempty(condition, name, true, false)?
     {
         return Ok(!has_write(
             consequence.syntax(),
@@ -182,26 +186,32 @@ fn always_exits(expression: AnyRExpression) -> anyhow::Result<bool> {
 /// Infer only facts established by reaching this particular branch. Both sides
 /// of `&&` hold in its true branch; either side may suffice for `||`, so both
 /// must establish the fact there. Negation and `else` reverse these cases.
+/// `allow_empty` accounts for `stopifnot()`, which accepts `logical(0)`.
 fn condition_proves_nonempty(
     condition: AnyRExpression,
     name: &str,
     truth: bool,
+    allow_empty: bool,
 ) -> anyhow::Result<bool> {
     match unparenthesized(condition)? {
         // A length of zero cannot enter the true branch of `if (length(idx))`.
-        AnyRExpression::RCall(call) => Ok(truth && is_index_length(&call, name)?),
+        AnyRExpression::RCall(call) => {
+            Ok(truth && (is_index_length(&call, name)? || is_any_guard(&call, name)?))
+        }
         AnyRExpression::RUnaryExpression(unary)
             if unary.operator()?.kind() == RSyntaxKind::BANG =>
         {
-            condition_proves_nonempty(unary.argument()?, name, !truth)
+            condition_proves_nonempty(unary.argument()?, name, !truth, allow_empty)
         }
         AnyRExpression::RBinaryExpression(binary) => {
             let operator = binary.operator()?.kind();
             let left = binary.left()?;
             let right = binary.right()?;
             if matches!(operator, RSyntaxKind::AND2 | RSyntaxKind::OR2) {
-                let left = condition_proves_nonempty(left, name, truth)?;
-                let right = condition_proves_nonempty(right, name, truth)?;
+                // Short-circuit operators always return a scalar, even inside
+                // `stopifnot()`, so their operands cannot pass as empty results.
+                let left = condition_proves_nonempty(left, name, truth, false)?;
+                let right = condition_proves_nonempty(right, name, truth, false)?;
                 return Ok(if (operator == RSyntaxKind::AND2) == truth {
                     left || right
                 } else {
@@ -214,7 +224,7 @@ fn condition_proves_nonempty(
             // If the variable itself is compared with a scalar literal, a
             // successful `if` check requires it to be nonempty in either arm.
             if let Some(number) = numeric_literal(&right) {
-                comparison_excludes_empty(&left, name, operator, number, truth)
+                comparison_excludes_empty(&left, name, operator, number, truth, allow_empty)
             } else if let Some(number) = numeric_literal(&left) {
                 let reversed = match operator {
                     RSyntaxKind::LESS_THAN => RSyntaxKind::GREATER_THAN,
@@ -223,7 +233,7 @@ fn condition_proves_nonempty(
                     RSyntaxKind::GREATER_THAN_OR_EQUAL_TO => RSyntaxKind::LESS_THAN_OR_EQUAL_TO,
                     _ => operator,
                 };
-                comparison_excludes_empty(&right, name, reversed, number, truth)
+                comparison_excludes_empty(&right, name, reversed, number, truth, allow_empty)
             } else {
                 Ok(false)
             }
@@ -238,6 +248,7 @@ fn comparison_excludes_empty(
     operator: RSyntaxKind,
     number: f64,
     truth: bool,
+    allow_empty: bool,
 ) -> anyhow::Result<bool> {
     // Evaluate the comparison at length zero. A branch excludes empty indices
     // only if this result would send execution to the other branch.
@@ -251,12 +262,86 @@ fn comparison_excludes_empty(
         _ => return Ok(false),
     };
     if let AnyRExpression::RIdentifier(identifier) = expression {
-        return Ok(identifier.name_text() == name);
+        return Ok(!allow_empty && identifier.name_text() == name);
     }
     let AnyRExpression::RCall(call) = expression else {
         return Ok(false);
     };
     Ok(empty_result != truth && is_index_length(call, name)?)
+}
+
+/// A true `any()` needs at least one true element. Only accept one data
+/// argument: another argument could make it true while this index is empty.
+fn is_any_guard(call: &RCall, name: &str) -> anyhow::Result<bool> {
+    let function = call.function()?;
+    if get_function_name(function.clone()) != "any"
+        || !matches!(
+            get_function_namespace_prefix(function).as_deref(),
+            None | Some("base::")
+        )
+    {
+        return Ok(false);
+    }
+    let arguments = call.arguments()?.items();
+    let na_rm = get_arg_by_name(&arguments, "na.rm");
+    let mut condition = None;
+    for argument in arguments {
+        let argument = argument?;
+        if na_rm
+            .as_ref()
+            .is_some_and(|na_rm| na_rm.syntax() == argument.syntax())
+        {
+            continue;
+        }
+        if condition.is_some() {
+            return Ok(false);
+        }
+        let Some(value) = argument.value() else {
+            return Ok(false);
+        };
+        condition = Some(value);
+    }
+    match condition {
+        Some(condition) => condition_proves_nonempty(condition, name, true, false),
+        None => Ok(false),
+    }
+}
+
+/// A successful assertion protects following statements only if an empty
+/// index would fail it. `stopifnot(idx > 0)` accepts empty vectors, whereas
+/// `stopifnot(length(idx) > 0)` and `stopifnot(any(idx > 0))` reject them.
+fn is_stopifnot_guard(expression: AnyRExpression, name: &str) -> anyhow::Result<bool> {
+    let AnyRExpression::RCall(call) = unparenthesized(expression)? else {
+        return Ok(false);
+    };
+    let function = call.function()?;
+    if get_function_name(function.clone()) != "stopifnot"
+        || !matches!(
+            get_function_namespace_prefix(function).as_deref(),
+            None | Some("base::")
+        )
+        || has_write(call.syntax(), name, call.range().end())?
+    {
+        return Ok(false);
+    }
+    let arguments = call.arguments()?.items();
+    // These control how assertions are evaluated; they are not ordinary
+    // assertion arguments. Do not infer facts for these call forms.
+    if ["exprs", "exprObject", "local"]
+        .iter()
+        .any(|name| get_arg_by_name(&arguments, name).is_some())
+    {
+        return Ok(false);
+    }
+    let mut guarded = false;
+    for argument in arguments {
+        let argument = argument?;
+        let Some(condition) = argument.value() else {
+            return Ok(false);
+        };
+        guarded |= condition_proves_nonempty(condition, name, true, true)?;
+    }
+    Ok(guarded)
 }
 
 /// Recognize the length of this variable, including `base::length(x = idx)`.

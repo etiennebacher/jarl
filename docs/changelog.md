@@ -6,7 +6,7 @@
 
 * New rules:
 
-  * `negative_index`, with support for nonempty guards and early exits
+  * `negative_index`, with support for nonempty guards, assertions, and early exits
     (#771, @Yousa-Mirage).
   * `apply_paste` (#563)
   * `assignment_on_if_no_else` (#605, @christopherkenny)

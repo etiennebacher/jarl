@@ -23,6 +23,8 @@ or `while` body whose condition establishes that it is nonempty, such as
 intervening assignment to that variable.
 An earlier check that exits with `return()`, `stop()`, `next`, or `break`
 when the index is empty also protects subsequent uses in the same block.
+Checks such as `if (any(idx > 0))` and `stopifnot(length(idx) > 0)` are also
+recognized. `stopifnot(idx > 0)` does not exclude empty indices.
 Other runtime values and indirect checks are not inferred.
 
 No automatic fix is provided. Handle empty indices explicitly or use a

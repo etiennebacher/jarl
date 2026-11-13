@@ -152,6 +152,205 @@ mod tests {
     }
 
     #[test]
+    fn test_no_lint_negative_index_any_and_stopifnot() {
+        for code in [
+            "if (any(idx > 0)) x[-idx]",
+            "if (base::any((0 < idx), na.rm = TRUE)) x[-idx]",
+            "if (any(na.rm = FALSE, idx > 0) && verbose) x[-idx]",
+            "if (!any(idx > 0)) NULL else x[-idx]",
+            "while (any(idx > 0)) { x[-idx]; idx <- f() }",
+            "if (!any(idx > 0)) stop('empty'); x[-idx]",
+            "stopifnot(length(idx) > 0); x[-idx]",
+            "base::stopifnot(0 < base::length(idx)); x[-idx]",
+            "stopifnot(verbose, nonempty = length(idx) != 0); x[-idx]",
+            "stopifnot(!(length(idx) == 0)); x[-idx]",
+            "stopifnot(any(idx > 0)); x[-idx]",
+            "stopifnot(length(idx) > 0 && verbose); x[-idx]",
+            "stopifnot(idx > 0 && TRUE); x[-idx]",
+            "stopifnot(length(idx) > 0); if (verbose) x[-idx]",
+            "repeat { stopifnot(length(idx) > 0); x[-idx]; idx <- f() }",
+            "stopifnot(length(idx) > 0); idx <- x[-idx]",
+        ] {
+            expect_no_lint(code, "negative_index", None);
+        }
+    }
+
+    #[test]
+    fn test_lint_negative_index_any_and_stopifnot() {
+        assert_snapshot!(snapshot_lint("if (any(idx > 0)) NULL else x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:31
+          |
+        1 | if (any(idx > 0)) NULL else x[-idx]
+          |                               ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("if (any(idx > 0, TRUE)) x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:27
+          |
+        1 | if (any(idx > 0, TRUE)) x[-idx]
+          |                           ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("if (all(idx > 0)) x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:21
+          |
+        1 | if (all(idx > 0)) x[-idx]
+          |                     ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("if (other::any(idx > 0)) x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:28
+          |
+        1 | if (other::any(idx > 0)) x[-idx]
+          |                            ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint(
+            "if (any(idx > 0)) {
+  idx <- f()
+  x[-idx]
+}"
+        ), @"
+        warning: negative_index
+         --> <test>:3:5
+          |
+        3 |   x[-idx]
+          |     ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        // Assertions accept empty logical vectors; a scalar length check is needed.
+        assert_snapshot!(snapshot_lint("stopifnot(idx > 0); x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:23
+          |
+        1 | stopifnot(idx > 0); x[-idx]
+          |                       ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("stopifnot(!(idx <= 0)); x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:27
+          |
+        1 | stopifnot(!(idx <= 0)); x[-idx]
+          |                           ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("stopifnot(idx > 0 || TRUE); x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:31
+          |
+        1 | stopifnot(idx > 0 || TRUE); x[-idx]
+          |                               ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("stopifnot(length(idx) >= 0); x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:32
+          |
+        1 | stopifnot(length(idx) >= 0); x[-idx]
+          |                                ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("other::stopifnot(length(idx) > 0); x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:38
+          |
+        1 | other::stopifnot(length(idx) > 0); x[-idx]
+          |                                      ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        // Assert only facts from ordinary arguments evaluated in this environment.
+        assert_snapshot!(snapshot_lint("stopifnot(exprs = length(idx) > 0); x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:39
+          |
+        1 | stopifnot(exprs = length(idx) > 0); x[-idx]
+          |                                       ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint(
+            "stopifnot(length(idx) > 0)
+idx <- f()
+x[-idx]"
+        ), @"
+        warning: negative_index
+         --> <test>:3:3
+          |
+        3 | x[-idx]
+          |   ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("stopifnot(length(idx) > 0, { idx <- f(); TRUE }); x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:53
+          |
+        1 | stopifnot(length(idx) > 0, { idx <- f(); TRUE }); x[-idx]
+          |                                                     ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("if (verbose) stopifnot(length(idx) > 0); x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:44
+          |
+        1 | if (verbose) stopifnot(length(idx) > 0); x[-idx]
+          |                                            ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("stopifnot(length(idx) > 0); function() x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:42
+          |
+        1 | stopifnot(length(idx) > 0); function() x[-idx]
+          |                                          ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("stopifnot(length(idx) > 0, length(x[-idx]) > 0)"), @"
+        warning: negative_index
+         --> <test>:1:37
+          |
+        1 | stopifnot(length(idx) > 0, length(x[-idx]) > 0)
+          |                                     ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+    }
+
+    #[test]
     fn test_lint_negative_index_while_and_length() {
         assert_snapshot!(snapshot_lint("if (length(idx)) NULL else x[-idx]"), @"
         warning: negative_index
