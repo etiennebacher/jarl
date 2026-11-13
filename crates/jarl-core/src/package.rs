@@ -253,14 +253,8 @@ pub fn summarize_package_info(
             // Same string, so the version costs no extra read or walk.
             minimum_r_version = Description::get_depend_r_version(&desc)
                 .ok()
-                // A DESCRIPTION can contain several constraints or an R-devel
-                // revision, so use the strictest numeric lower bound available.
-                .and_then(|versions| {
-                    versions
-                        .into_iter()
-                        .filter_map(|version| crate::config::parse_r_version(version).ok())
-                        .max()
-                });
+                .and_then(|versions| versions.first().cloned())
+                .and_then(|version| crate::config::parse_r_version(version).ok());
         }
 
         let ns_path = root.join("NAMESPACE");

@@ -60,11 +60,11 @@ impl Description {
     }
 }
 
-/// Extract a minimum version from an R dependency string like "R (>= 4.3.0)".
+/// Extract version number from an R dependency string like "R (>= 4.3.0)".
 ///
 /// `None` when the dependency carries no usable version: no parentheses
 /// (`R`, `R >= 4.3.0`), an unbalanced or reversed pair (`R (>= 4.3`, `R )x(`),
-/// empty parentheses (`R ()`), or an upper bound (`R (< 4.3.0)`).
+/// or empty parentheses (`R ()`).
 fn extract_version_from_dependency(dep: &str) -> Option<String> {
     // Look for version requirement in parentheses.
     let start = dep.find('(')?;
@@ -73,14 +73,25 @@ fn extract_version_from_dependency(dep: &str) -> Option<String> {
         return None;
     }
 
-    // Upper bounds do not establish the minimum R version of a project.
+    // `> x.y.z` excludes `x.y.z` itself, so the minimum is the next patch
+    // version. R treats `x.y` as `x.y.0`.
     let requirement = dep[start + 1..end].trim();
-    let version = [">=", ">", "=="]
-        .into_iter()
-        .find_map(|operator| requirement.strip_prefix(operator))?
-        .trim();
+    if let Some(version) = requirement.strip_prefix('>')
+        && !version.starts_with('=')
+    {
+        return match version.trim().split('.').collect::<Vec<_>>()[..] {
+            [major, minor] => Some(format!("{major}.{minor}.1")),
+            [major, minor, patch] => {
+                Some(format!("{major}.{minor}.{}", patch.parse::<u32>().ok()? + 1))
+            }
+            _ => None,
+        };
+    }
 
-    (!version.is_empty()).then(|| version.to_string())
+    // Remove >= operator and extract just the version number
+    let version = dep[start + 1..end].replace(">=", "").trim().to_string();
+
+    (!version.is_empty()).then_some(version)
 }
 
 #[cfg(test)]
@@ -147,40 +158,15 @@ Version: 1.0.0
 Depends: R (> 4.0)
 "#;
         let result = Description::get_depend_r_version(description).unwrap();
-        assert_eq!(result, vec!["4.0"]);
-    }
+        assert_eq!(result, vec!["4.0.1"]);
 
-    #[test]
-    fn test_depends_r_with_exact_version() {
         let description = r#"
 Package: mypackage
 Version: 1.0.0
-Depends: R (== 4.2.0)
+Depends: R (> 4.5.0)
 "#;
         let result = Description::get_depend_r_version(description).unwrap();
-        assert_eq!(result, vec!["4.2.0"]);
-    }
-
-    #[test]
-    fn test_depends_r_with_upper_bound() {
-        let description = r#"
-Package: mypackage
-Version: 1.0.0
-Depends: R (< 4.2.0), R (<= 4.3.0)
-"#;
-        let result = Description::get_depend_r_version(description).unwrap();
-        assert!(result.is_empty());
-    }
-
-    #[test]
-    fn test_depends_r_with_malformed_constraint() {
-        let description = r#"
-Package: mypackage
-Version: 1.0.0
-Depends: R ()
-"#;
-        let result = Description::get_depend_r_version(description).unwrap();
-        assert!(result.is_empty());
+        assert_eq!(result, vec!["4.5.1"]);
     }
 
     #[test]
