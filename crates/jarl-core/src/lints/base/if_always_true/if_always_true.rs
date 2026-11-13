@@ -5,6 +5,7 @@ use biome_rowan::AstNode;
 
 pub struct IfAlwaysTrue;
 
+/// <!-- docs: start -->
 /// Version added: 0.4.0
 ///
 /// ## What it does
@@ -42,6 +43,7 @@ pub struct IfAlwaysTrue;
 /// ```r
 /// print("always true")
 /// ```
+/// <!-- docs: end -->
 impl Violation for IfAlwaysTrue {
     fn rule(&self) -> Rule {
         Rule::IfAlwaysTrue

@@ -157,6 +157,75 @@ Depends: R (>= 4.6.0), utils, stats"#,
 }
 
 #[test]
+fn test_min_r_version_from_description_strict_lower_bound() -> anyhow::Result<()> {
+    let case = CliTest::with_file("test.R", "grep('a.*', x, value = TRUE)")?;
+
+    // grepv() only exists for R >= 4.5.0, and `> 4.5.0` guarantees 4.5.1.
+    case.write_file(
+        "DESCRIPTION",
+        r#"Package: mypackage
+Version: 1.0.0
+Depends: R (> 4.5.0)"#,
+    )?;
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: grepv
+     --> test.R:1:1
+      |
+    1 | grep('a.*', x, value = TRUE)
+      | ---------------------------- `grep(..., value = TRUE)` can be simplified.
+      |
+      = help: Use `grepv(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
+    );
+
+    // The project could be using 4.4.1, where grepv() doesn't exist.
+    case.write_file(
+        "DESCRIPTION",
+        r#"Package: mypackage
+Version: 1.0.0
+Depends: R (> 4.4.0)"#,
+    )?;
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
 fn test_min_r_version_from_description_in_package_layout() -> anyhow::Result<()> {
     let case = CliTest::with_files([
         (

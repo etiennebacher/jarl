@@ -160,6 +160,46 @@ fn test_exported_alias_not_flagged() -> anyhow::Result<()> {
 }
 
 #[test]
+fn test_export_pattern_objects_not_flagged() -> anyhow::Result<()> {
+    let case = CliTest::package_with_files([
+        ("NAMESPACE", "exportPattern(\"^public_\")\n"),
+        ("R/public.R", "public_value <- 1\n"),
+        ("R/private.R", "private_value <- 1\n"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unused_object
+     --> R/private.R:1:1
+      |
+    1 | private_value <- 1
+      | ------------- Object `private_value` is defined but never used.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
 fn test_source_cycle_terminates() -> anyhow::Result<()> {
     // `p.R` and `q.R` source each other. Resolution must terminate, and the
     // read of `k` in `p.R` still consumes `q.R`'s binding.

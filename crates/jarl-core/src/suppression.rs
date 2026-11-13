@@ -24,9 +24,13 @@ pub struct RCommentStyle;
 impl CommentStyle for RCommentStyle {
     type Language = RLanguage;
 
-    fn is_suppression(_text: &str) -> bool {
-        // We don't use biome's suppression tracking, so return false
-        false
+    fn suppression_kind(
+        &self,
+        _comment: &DecoratedComment<Self::Language>,
+    ) -> Option<biome_suppression::SuppressionKind> {
+        // The default recognises `# biome-ignore-all format`, which attaches
+        // the comments at the top of the file to the root node.
+        None
     }
 
     fn get_comment_kind(_comment: &SyntaxTriviaPieceComments<RLanguage>) -> CommentKind {
@@ -398,7 +402,7 @@ impl SuppressionManager {
         // Increment nesting level when entering braced expressions (function bodies, etc.)
         let mut is_first = is_first_expression;
         for child in node.children() {
-            let child_nesting = if child.kind() == RSyntaxKind::R_BRACED_EXPRESSIONS {
+            let child_nesting = if child.kind() == RSyntaxKind::R_BRACED_STATEMENTS {
                 nesting_level + 1
             } else {
                 nesting_level

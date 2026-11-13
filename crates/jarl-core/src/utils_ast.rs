@@ -86,46 +86,74 @@ pub trait AstNodeExt: AstNode<Language = RLanguage> {
         false
     }
 
-    /// Returns true if parent is `!!`
+    /// Returns true if parent is exactly `!!`
     fn parent_is_bang_bang(&self) -> bool {
-        if let Some(parent) = self.syntax().parent()
-            && parent.kind() == RSyntaxKind::R_UNARY_EXPRESSION
-            && let Some(prev) = self.syntax().prev_sibling_or_token()
-            && prev.kind() == RSyntaxKind::BANG
+        let Some(parent) = self.syntax().parent().and_then(RUnaryExpression::cast) else {
+            return false;
+        };
+        let Some(grandparent) = parent.syntax().parent().and_then(RUnaryExpression::cast) else {
+            return false;
+        };
+        // Return false if greatgrandparent is also a unary bang (!!!)
+        if grandparent
+            .syntax()
+            .parent()
+            .and_then(RUnaryExpression::cast)
+            .is_some_and(|outer| {
+                outer
+                    .operator()
+                    .is_ok_and(|operator| operator.kind() == RSyntaxKind::BANG)
+            })
         {
-            // Check if parent's parent is also a unary bang (double negation)
-            if let Some(grandparent) = parent.parent()
-                && grandparent.kind() == RSyntaxKind::R_UNARY_EXPRESSION
-            {
-                return true;
-            }
             return false;
         }
-        false
+
+        parent
+            .operator()
+            .is_ok_and(|operator| operator.kind() == RSyntaxKind::BANG)
+            && grandparent
+                .operator()
+                .is_ok_and(|operator| operator.kind() == RSyntaxKind::BANG)
     }
 
-    /// Returns true if parent is `!!!`
+    /// Returns true if parent is exactly `!!!`
     fn parent_is_bang_bang_bang(&self) -> bool {
-        if let Some(parent) = self.syntax().parent()
-            && parent.kind() == RSyntaxKind::R_UNARY_EXPRESSION
-            && let Some(prev) = self.syntax().prev_sibling_or_token()
-            && prev.kind() == RSyntaxKind::BANG
+        let Some(parent) = self.syntax().parent().and_then(RUnaryExpression::cast) else {
+            return false;
+        };
+        let Some(grandparent) = parent.syntax().parent().and_then(RUnaryExpression::cast) else {
+            return false;
+        };
+        let Some(greatgrandparent) = grandparent
+            .syntax()
+            .parent()
+            .and_then(RUnaryExpression::cast)
+        else {
+            return false;
+        };
+        // Return false if the fourth operator is also a bang (!!!!)
+        if greatgrandparent
+            .syntax()
+            .parent()
+            .and_then(RUnaryExpression::cast)
+            .is_some_and(|outer| {
+                outer
+                    .operator()
+                    .is_ok_and(|operator| operator.kind() == RSyntaxKind::BANG)
+            })
         {
-            // Check if parent's parent is also a unary bang
-            if let Some(grandparent) = parent.parent()
-                && grandparent.kind() == RSyntaxKind::R_UNARY_EXPRESSION
-            {
-                // Check if parent's grandparent is also a unary bang (triple negation)
-                if let Some(greatgrandparent) = grandparent.parent()
-                    && greatgrandparent.kind() == RSyntaxKind::R_UNARY_EXPRESSION
-                {
-                    return true;
-                }
-                return false;
-            }
             return false;
         }
-        false
+
+        parent
+            .operator()
+            .is_ok_and(|operator| operator.kind() == RSyntaxKind::BANG)
+            && grandparent
+                .operator()
+                .is_ok_and(|operator| operator.kind() == RSyntaxKind::BANG)
+            && greatgrandparent
+                .operator()
+                .is_ok_and(|operator| operator.kind() == RSyntaxKind::BANG)
     }
 }
 
@@ -144,7 +172,7 @@ mod tests {
     /// `find("!!x", "!x")` returns the inner unary expression.
     fn find(source: &str, text: &str) -> AnyRExpression {
         let parsed = air_r_parser::parse(source, RParserOptions::default());
-        assert!(!parsed.has_error(), "`{source}` failed to parse");
+        assert!(!parsed.has_errors(), "`{source}` failed to parse");
         parsed
             .syntax()
             .descendants()
@@ -260,8 +288,13 @@ mod tests {
     fn test_parent_is_bang_bang() {
         assert!(find("!!x", "x").parent_is_bang_bang());
         assert!(find("f(!!x)", "x").parent_is_bang_bang());
+        assert!(find("-!!x", "x").parent_is_bang_bang());
 
         assert!(!find("!x", "x").parent_is_bang_bang());
+        assert!(!find("!!!x", "x").parent_is_bang_bang());
+        assert!(!find("!!!!x", "x").parent_is_bang_bang());
+        assert!(!find("-!x", "x").parent_is_bang_bang());
+        assert!(!find("!-x", "x").parent_is_bang_bang());
         assert!(!find("x", "x").parent_is_bang_bang());
 
         // The intermediate `!x` node of `!!x` is not itself preceded by two `!`
@@ -272,9 +305,15 @@ mod tests {
     fn test_parent_is_bang_bang_bang() {
         assert!(find("!!!x", "x").parent_is_bang_bang_bang());
         assert!(find("f(!!!x)", "x").parent_is_bang_bang_bang());
+        assert!(find("-!!!x", "x").parent_is_bang_bang_bang());
 
         assert!(!find("!!x", "x").parent_is_bang_bang_bang());
+        assert!(!find("!!!!x", "x").parent_is_bang_bang_bang());
         assert!(!find("!x", "x").parent_is_bang_bang_bang());
+        assert!(!find("--!x", "x").parent_is_bang_bang_bang());
+        assert!(!find("-!!x", "x").parent_is_bang_bang_bang());
+        assert!(!find("!-!x", "x").parent_is_bang_bang_bang());
+        assert!(!find("!!-x", "x").parent_is_bang_bang_bang());
         assert!(!find("x", "x").parent_is_bang_bang_bang());
     }
 }

@@ -8,6 +8,7 @@ use biome_rowan::AstSeparatedList;
 /// Omits `simplify`, which follows `...`.
 const FORMALS_APPLY: Formals = &["X", "MARGIN", "FUN"];
 
+/// <!-- docs: start -->
 /// Version added: 0.0.16
 ///
 /// ## What it does
@@ -57,6 +58,7 @@ const FORMALS_APPLY: Formals = &["X", "MARGIN", "FUN"];
 /// ## References
 ///
 /// See `?colSums`
+/// <!-- docs: end -->
 pub fn matrix_apply(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     if fn_name != "apply" {
         return Ok(None);

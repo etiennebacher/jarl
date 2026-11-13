@@ -4,6 +4,7 @@ use crate::utils::{get_nested_functions_content, node_contains_comments};
 use air_r_syntax::*;
 pub struct LengthLevels;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.8
 ///
 /// ## What it does
@@ -29,6 +30,7 @@ pub struct LengthLevels;
 /// x <- factor(1:3)
 /// nlevels(x)
 /// ```
+/// <!-- docs: end -->
 impl Violation for LengthLevels {
     fn rule(&self) -> Rule {
         Rule::LengthLevels

@@ -1,0 +1,31 @@
+---
+source: crates/jarl-core/src/lints/base/apply_paste/mod.rs
+expression: "get_unsafe_fixed_text(vec![\"apply(test[, c(\\\"x\\\", \\\"y\\\")], 1, paste, collapse = \\\"_\\\")\",\n\"apply(x, 1L, paste, collapse = \\\"_\\\")\",\n\"apply(x, MARGIN = 1, FUN = paste, collapse = \\\"_\\\")\",\n\"apply(MARGIN = 1, FUN = paste, X = x, collapse = \\\"_\\\")\",], \"apply_paste\",)"
+---
+OLD:
+====
+apply(test[, c("x", "y")], 1, paste, collapse = "_")
+NEW:
+====
+do.call(paste, c(test[, c("x", "y")], sep = "_"))
+
+OLD:
+====
+apply(x, 1L, paste, collapse = "_")
+NEW:
+====
+do.call(paste, c(x, sep = "_"))
+
+OLD:
+====
+apply(x, MARGIN = 1, FUN = paste, collapse = "_")
+NEW:
+====
+do.call(paste, c(x, sep = "_"))
+
+OLD:
+====
+apply(MARGIN = 1, FUN = paste, X = x, collapse = "_")
+NEW:
+====
+do.call(paste, c(x, sep = "_"))

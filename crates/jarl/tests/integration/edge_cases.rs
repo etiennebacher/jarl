@@ -158,7 +158,7 @@ fn test_multibyte_fix_offsets() -> anyhow::Result<()> {
         "test.R",
         r#"# jarl-ignore seq: 原因一
 x <- 1
-# jarl-ignore browser: 原因二
+# jarl-ignore class_equals: 原因二
 y <- 2
 
 排序 <- 分数[order(分数)]
@@ -198,6 +198,46 @@ f <- function(...) {
     x@..1
     pkg::...
 }
+"#,
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+// https://github.com/etiennebacher/jarl/pull/706#discussion_r3980503004
+#[test]
+fn test_unused_object_non_ascii_rmd() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        r#"
+---
+format: html
+---
+
+```{r}
+变量 <- 1
+```
+
+Value is `r 变量`.
 "#,
     )?;
 

@@ -1,0 +1,62 @@
+---
+source: crates/jarl-core/src/lints/base/null_list/mod.rs
+expression: "get_unsafe_fixed_text(vec![\"lapply(x, function(x) NULL)\",\n\"sapply(x, function(x) NULL)\",\n\"base::lapply(x, function(x) { return(NULL) })\",\n\"lapply(FUN = function(...) NULL, X = foo$bar)\",\n\"lapply(names(x), function(x) NULL)\", \"purrr::map(x, ~NULL)\",\nr\"purrr::map(.f = \\(x) NULL, .x = 1:10)\",\n\"y <- lapply(\\n  x,\\n  function(x) NULL\\n)\",], \"null_list\",)"
+---
+OLD:
+====
+lapply(x, function(x) NULL)
+NEW:
+====
+vector("list", length(x))
+
+OLD:
+====
+sapply(x, function(x) NULL)
+NEW:
+====
+vector("list", length(x))
+
+OLD:
+====
+base::lapply(x, function(x) { return(NULL) })
+NEW:
+====
+vector("list", length(x))
+
+OLD:
+====
+lapply(FUN = function(...) NULL, X = foo$bar)
+NEW:
+====
+vector("list", length(foo$bar))
+
+OLD:
+====
+lapply(names(x), function(x) NULL)
+NEW:
+====
+vector("list", length(names(x)))
+
+OLD:
+====
+purrr::map(x, ~NULL)
+NEW:
+====
+vector("list", length(x))
+
+OLD:
+====
+purrr::map(.f = \(x) NULL, .x = 1:10)
+NEW:
+====
+vector("list", length(1:10))
+
+OLD:
+====
+y <- lapply(
+  x,
+  function(x) NULL
+)
+NEW:
+====
+y <- vector("list", length(x))

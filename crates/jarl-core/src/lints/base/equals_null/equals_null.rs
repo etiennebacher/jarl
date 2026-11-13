@@ -6,6 +6,7 @@ use biome_rowan::AstNode;
 
 pub struct EqualsNull;
 
+/// <!-- docs: start -->
 /// Version added: 0.4.0
 ///
 /// ## What it does
@@ -41,6 +42,7 @@ pub struct EqualsNull;
 /// is.null(x)
 /// is.null(y)
 /// ```
+/// <!-- docs: end -->
 impl Violation for EqualsNull {
     fn rule(&self) -> Rule {
         Rule::EqualsNull

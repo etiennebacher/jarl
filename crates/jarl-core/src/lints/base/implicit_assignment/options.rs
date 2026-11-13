@@ -23,12 +23,49 @@ const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &[
     "try",
 ];
 
-/// TOML options for `[lint.implicit_assignment]`.
+/// <!-- docs: start -->
+/// Use `skipped-functions` to fully replace the default list of functions that are
+/// allowed to contain implicit assignment. Use `extend-skipped-functions` to add to
+/// the default list. Specifying both is an error.
 ///
-/// Use `skipped-functions` to fully replace the default list of functions
-/// where implicit assignments are allowed. Use
-/// `extend-skipped-functions` to add to the default list.
-/// Specifying both is an error.
+/// Function names in `skipped-functions` or `extend-skipped-functions` also match
+/// namespaced calls, e.g. `skipped-functions = ["list2"]` will ignore `list2()` and
+/// `rlang::list2()`.
+///
+/// ### Default values
+///
+/// ```toml
+/// skipped-functions = [
+///     "alist",
+///     "expect_error",         # from {testthat}
+///     "expect_warning",       # from {testthat}
+///     "expect_message",       # from {testthat}
+///     "expect_silent",        # from {testthat}
+///     "expect_defunct",       # from {lifecycle}
+///     "expect_deprecated",    # from {lifecycle}
+///     "expect_snapshot",      # from {testthat}
+///     "expect_no_condition",  # from {testthat}
+///     "expect_no_warning",    # from {testthat}
+///     "expect_no_error",      # from {testthat}
+///     "expect_no_message",    # from {testthat}
+///     "quote",
+///     "suppressMessages",
+///     "suppressWarnings",
+///     "try"
+/// ]
+/// ```
+///
+/// ### TOML settings
+///
+/// ```toml
+/// [lint]
+/// ...
+///
+/// [lint.implicit_assignment]
+/// # Ignore implicit assignment in `list()` only.
+/// skipped-functions = ["list"]
+/// ```
+/// <!-- docs: end -->
 #[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]

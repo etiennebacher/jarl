@@ -17,6 +17,9 @@ mod tests {
         // other is.<x> calls are not suitable for expect_type in particular
         expect_no_lint("expect_true(is.data.frame(x))", "expect_type", None);
 
+        // is.null is covered by the expect_null rule
+        expect_no_lint("expect_true(is.null(x))", "expect_type", None);
+
         // expect_type(x, ...) cannot be cleanly used here:
         expect_no_lint(
             "expect_true(typeof(x) %in% c('builtin', 'closure'))",

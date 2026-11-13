@@ -73,6 +73,22 @@ fn extract_version_from_dependency(dep: &str) -> Option<String> {
         return None;
     }
 
+    // `> x.y.z` excludes `x.y.z` itself, so the minimum is the next patch
+    // version. R treats `x.y` as `x.y.0`.
+    let requirement = dep[start + 1..end].trim();
+    if let Some(version) = requirement.strip_prefix('>')
+        && !version.starts_with('=')
+    {
+        return match version.trim().split('.').collect::<Vec<_>>()[..] {
+            [major, minor] => Some(format!("{major}.{minor}.1")),
+            [major, minor, patch] => Some(format!(
+                "{major}.{minor}.{}",
+                patch.parse::<u32>().ok()? + 1
+            )),
+            _ => None,
+        };
+    }
+
     // Remove >= operator and extract just the version number
     let version = dep[start + 1..end].replace(">=", "").trim().to_string();
 
@@ -133,6 +149,25 @@ Depends: R (>= 4.2.0)
 "#;
         let result = Description::get_depend_r_version(description).unwrap();
         assert_eq!(result, vec!["4.2.0"]);
+    }
+
+    #[test]
+    fn test_depends_r_with_strict_lower_bound() {
+        let description = r#"
+Package: mypackage
+Version: 1.0.0
+Depends: R (> 4.0)
+"#;
+        let result = Description::get_depend_r_version(description).unwrap();
+        assert_eq!(result, vec!["4.0.1"]);
+
+        let description = r#"
+Package: mypackage
+Version: 1.0.0
+Depends: R (> 4.5.0)
+"#;
+        let result = Description::get_depend_r_version(description).unwrap();
+        assert_eq!(result, vec!["4.5.1"]);
     }
 
     #[test]

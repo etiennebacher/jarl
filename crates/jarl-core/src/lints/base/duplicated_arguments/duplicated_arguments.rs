@@ -1,3 +1,4 @@
+use crate::utils::StatementsExt;
 use std::collections::{HashMap, HashSet};
 
 use crate::checker::Checker;
@@ -7,6 +8,7 @@ use air_r_syntax::*;
 use anyhow::anyhow;
 use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.8
 ///
 /// ## What it does
@@ -28,12 +30,41 @@ use biome_rowan::AstNode;
 /// ```r
 /// list(x = 1, x = 2)
 /// ```
+/// <!-- docs: end -->
 pub fn duplicated_arguments(ast: &RCall, checker: &Checker) -> anyhow::Result<Option<Diagnostic>> {
     let RCallFields { function, arguments } = ast.as_fields();
 
+    // Before the function name: most calls have no named argument, so they
+    // exit here without stringifying the callee.
+    let arg_names: Vec<String> = arguments?
+        .items()
+        .into_iter()
+        .filter_map(Result::ok) // skip any Err values
+        .filter_map(|item| {
+            let fields = item.as_fields();
+            if let Some(name_clause) = &fields.name_clause
+                && let Ok(name) = name_clause.name()
+            {
+                let name = name.to_trimmed_string();
+                let name_no_quotes = name.replace(&['\'', '"', '`'][..], "");
+                if name_no_quotes.chars().count() == 0 {
+                    Some(name)
+                } else {
+                    Some(name_no_quotes)
+                }
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    if arg_names.is_empty() {
+        return Ok(None);
+    }
+
     let fun_name = match function? {
         AnyRExpression::AnyRValue(x) => x.into_syntax().text_trimmed().to_string(),
-        AnyRExpression::RBracedExpressions(x) => x
+        AnyRExpression::RBracedStatements(x) => x
             .expressions()
             .into_iter()
             .map(|x| x.to_string())
@@ -66,32 +97,6 @@ pub fn duplicated_arguments(ast: &RCall, checker: &Checker) -> anyhow::Result<Op
     let skipped = &checker.rule_options.duplicated_arguments.skipped_functions;
     let is_whitelisted_prefix = fun_name.starts_with("cli_");
     if skipped.contains(&fun_name) || is_whitelisted_prefix {
-        return Ok(None);
-    }
-
-    let arg_names: Vec<String> = arguments?
-        .items()
-        .into_iter()
-        .filter_map(Result::ok) // skip any Err values
-        .filter_map(|item| {
-            let fields = item.as_fields();
-            if let Some(name_clause) = &fields.name_clause
-                && let Ok(name) = name_clause.name()
-            {
-                let name = name.to_trimmed_string();
-                let name_no_quotes = name.replace(&['\'', '"', '`'][..], "");
-                if name_no_quotes.chars().count() == 0 {
-                    Some(name)
-                } else {
-                    Some(name_no_quotes)
-                }
-            } else {
-                None
-            }
-        })
-        .collect();
-
-    if arg_names.is_empty() {
         return Ok(None);
     }
 

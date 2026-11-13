@@ -1,4 +1,5 @@
 # unused_object
+
 ::: {.callout-note title="Added in 0.6.0" .low-opacity}
 :::
 
@@ -122,6 +123,51 @@ There are two other cases to handle:
 
 R code in `@examples` and `@examplesIf` sections is checked too, in files
 under `R/` in a package. This can be turned off with `check-roxygen`.
+
+## Configuration options
+
+The operation of the `unused_object` rule can be customised in the [configuration file](../reference/config-file.md).
+
+Use `skipped-functions` to fully replace the default list of calls whose
+directly-assigned arguments are allowed to be unused. Use
+`extend-skipped-functions` to add to the default list. Specifying both is an
+error.
+
+Function names in `skipped-functions` or `extend-skipped-functions` also match
+namespaced calls, e.g. `skipped-functions = ["expect_error"]` will allow
+`expect_error()` and `testthat::expect_error()`.
+
+Only the direct argument position counts: an assignment nested in a block or in
+a function defined inside the call is an ordinary local and is still reported.
+
+### Default values
+
+```toml
+skipped-functions = [
+    "expect_error",         # from {testthat}
+    "expect_warning",       # from {testthat}
+    "expect_message",       # from {testthat}
+    "expect_silent",        # from {testthat}
+    "expect_defunct",       # from {lifecycle}
+    "expect_deprecated",    # from {lifecycle}
+    "expect_snapshot",      # from {testthat}
+    "expect_no_condition",  # from {testthat}
+    "expect_no_warning",    # from {testthat}
+    "expect_no_error",      # from {testthat}
+    "expect_no_message"     # from {testthat}
+]
+```
+
+### TOML settings
+
+```toml
+[lint]
+...
+
+[lint.unused_object]
+# Also allow an unused assignment passed straight to `my_expect()`.
+extend-skipped-functions = ["my_expect"]
+```
 
 ## Examples
 

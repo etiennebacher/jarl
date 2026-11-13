@@ -8,6 +8,7 @@ use biome_rowan::AstNode;
 /// Shared with `expect_identical()`, whose first two formals are the same.
 const FORMALS_EXPECT_EQUAL: Formals = &["object", "expected"];
 
+/// <!-- docs: start -->
 /// Version added: 0.2.0
 ///
 /// ## What it does
@@ -36,6 +37,7 @@ const FORMALS_EXPECT_EQUAL: Formals = &["object", "expected"];
 /// expect_true(is.numeric(x))
 /// expect_false(is.character(y))
 /// ```
+/// <!-- docs: end -->
 pub fn expect_true_false(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     // Check if this is expect_equal or expect_identical
     if fn_name != "expect_equal" && fn_name != "expect_identical" {

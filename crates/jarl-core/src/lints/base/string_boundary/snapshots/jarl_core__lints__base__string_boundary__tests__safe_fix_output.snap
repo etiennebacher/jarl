@@ -1,0 +1,17 @@
+---
+source: crates/jarl-core/src/lints/base/string_boundary/mod.rs
+expression: "get_fixed_text(vec![\"substr(x, 1, 2) == 'ab'\",\n\"substring(x, nchar(x) - 1, nchar(x)) == 'ab'\",], \"string_boundary\", None)"
+---
+OLD:
+====
+substr(x, 1, 2) == 'ab'
+NEW:
+====
+substr(x, 1, 2) == 'ab'
+
+OLD:
+====
+substring(x, nchar(x) - 1, nchar(x)) == 'ab'
+NEW:
+====
+substring(x, nchar(x) - 1, nchar(x)) == 'ab'

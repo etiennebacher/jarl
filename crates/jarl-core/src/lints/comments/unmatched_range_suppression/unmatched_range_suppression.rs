@@ -2,6 +2,7 @@ use crate::diagnostic::*;
 use crate::rule_set::Rule;
 use biome_rowan::TextRange;
 
+/// <!-- docs: start -->
 /// Version added: 0.4.0
 ///
 /// ## What it does
@@ -35,6 +36,7 @@ use biome_rowan::TextRange;
 /// any(is.na(x))
 /// # jarl-ignore-end any_is_na
 /// ```
+/// <!-- docs: end -->
 pub fn unmatched_range_suppression_start(ranges: &[TextRange]) -> Vec<Diagnostic> {
     ranges
         .iter()

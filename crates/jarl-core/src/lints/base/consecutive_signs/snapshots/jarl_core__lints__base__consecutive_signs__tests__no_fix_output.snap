@@ -1,0 +1,10 @@
+---
+source: crates/jarl-core/src/lints/base/consecutive_signs/mod.rs
+expression: "get_fixed_text(vec![\"x + +y\"], \"consecutive_signs\", None)"
+---
+OLD:
+====
+x + +y
+NEW:
+====
+x + +y

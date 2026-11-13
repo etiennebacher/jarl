@@ -11,6 +11,7 @@ use biome_rowan::AstNode;
 const FORMALS_EXPECT_EQUAL: Formals = &["object", "expected"];
 const FORMALS_NAMES: Formals = &["x"];
 
+/// <!-- docs: start -->
 /// Version added: 0.2.0
 ///
 /// ## What it does
@@ -38,6 +39,7 @@ const FORMALS_NAMES: Formals = &["x"];
 /// expect_named(x, "a")
 /// expect_named(x, c("a", "b"))
 /// ```
+/// <!-- docs: end -->
 pub fn expect_named(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     // Only check expect_equal and expect_identical
     if fn_name != "expect_equal" && fn_name != "expect_identical" {

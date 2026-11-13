@@ -1247,3 +1247,253 @@ foo <- function(x) x
 
     Ok(())
 }
+
+/// The label of a diagnostic is remapped from the example's virtual source to
+/// the real file together with the diagnostic's own range.
+#[test]
+fn test_roxygen_examples_labels_are_remapped() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
+        ),
+        ("NAMESPACE", ""),
+        (
+            "R/test.R",
+            "\
+#' Title
+#' @examples
+#' x <- 1
+#' x <- if (a) 2
+foo <- function() NULL
+",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("assignment_on_if_no_else")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: assignment_on_if_no_else
+     --> R/test.R:4:4
+      |
+    3 | #' x <- 1
+      |    - `x` was last assigned here
+    4 | #' x <- if (a) 2
+      |    ^^^^^^^^^^^^^ This assignment can overwrite the previous value with `NULL` when no `if` branch is taken.
+      |
+      = help: Add a final `else` branch if `NULL` is the intended fallback, or move the assignment into the `if` branches.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// ignore-roxygen skips rules in examples only
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_roxygen_ignore_roxygen() -> anyhow::Result<()> {
+    let case = CliTest::package_with_files([
+        (
+            "R/test.R",
+            "\
+#' Title
+#' @examples
+#' any(is.na(x))
+#' zz <- 1
+foo <- function(x) any(is.na(x))
+",
+        ),
+        (
+            "jarl.toml",
+            "\
+[lint]
+ignore-roxygen = [\"any_is_na\", \"unused_object\"]
+",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> R/test.R:5:20
+      |
+    5 | foo <- function(x) any(is.na(x))
+      |                    ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_roxygen_ignore_roxygen_group() -> anyhow::Result<()> {
+    let case = CliTest::package_with_files([
+        (
+            "R/test.R",
+            "\
+#' Title
+#' @examples
+#' any(is.na(x))
+foo <- function(x) x
+",
+        ),
+        (
+            "jarl.toml",
+            "\
+[lint]
+ignore-roxygen = [\"PERF\"]
+",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_roxygen_ignore_roxygen_unknown_rule() -> anyhow::Result<()> {
+    let case = CliTest::package_with_files([
+        (
+            "R/test.R",
+            "\
+#' Title
+#' @examples
+#' any(is.na(x))
+foo <- function(x) x
+",
+        ),
+        (
+            "jarl.toml",
+            "\
+[lint]
+ignore-roxygen = [\"foo\"]
+",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Unknown rules in field `ignore-roxygen` in 'jarl.toml': foo
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_roxygen_ignore_roxygen_wrong_type() -> anyhow::Result<()> {
+    let case = CliTest::package_with_files([
+        (
+            "R/test.R",
+            "\
+#' Title
+#' @examples
+#' any(is.na(x))
+foo <- function(x) x
+",
+        ),
+        (
+            "jarl.toml",
+            "\
+[lint]
+ignore-roxygen = true
+",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 2, column 18
+      |
+    2 | ignore-roxygen = true
+      |                  ^^^^
+    invalid type: boolean `true`, expected a sequence
+    "
+    );
+
+    Ok(())
+}

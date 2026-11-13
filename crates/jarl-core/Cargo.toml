@@ -1,7 +1,7 @@
 [package]
 name = "jarl-core"
 description = "Core linting functionality for jarl R linter"
-version = "0.6.0"
+version = "0.7.1"
 authors.workspace = true
 edition.workspace = true
 license-file.workspace = true
@@ -21,6 +21,7 @@ air_r_syntax.workspace = true
 air_workspace.workspace = true
 air_fs.workspace = true
 biome_rowan.workspace = true
+biome_suppression.workspace = true
 biome_formatter.workspace = true
 biome_diagnostics.workspace = true
 
@@ -31,6 +32,7 @@ oak_db.workspace = true
 oak_package_metadata.workspace = true
 oak_scan.workspace = true
 oak_semantic.workspace = true
+percent-encoding.workspace = true
 url.workspace = true
 
 # Per-file semantic info (used by semantic-aware lints)
@@ -39,6 +41,7 @@ jarl-semantic.workspace = true
 # Serialization and data structures
 serde.workspace = true
 toml.workspace = true
+toml_edit.workspace = true
 rustc-hash.workspace = true
 strsim.workspace = true
 

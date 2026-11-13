@@ -91,8 +91,11 @@ macro_rules! declare_rule_options {
 
 declare_rule_options! {
     base::assignment => ResolvedAssignmentOptions,
+    base::cyclomatic_complexity => ResolvedCyclomaticComplexityOptions,
     base::duplicated_arguments => ResolvedDuplicatedArgumentsOptions,
+    base::function_return => ResolvedFunctionReturnOptions,
     base::if_not_else => ResolvedIfNotElseOptions,
+    base::if_switch => ResolvedIfSwitchOptions,
     base::implicit_assignment => ResolvedImplicitAssignmentOptions,
     base::missing_argument => ResolvedMissingArgumentOptions,
     base::nested_pipe => ResolvedNestedPipeOptions,
@@ -100,6 +103,7 @@ declare_rule_options! {
     base::quotes => ResolvedQuotesOptions,
     base::true_false_symbol => ResolvedTrueFalseSymbolOptions,
     base::undesirable_function => ResolvedUndesirableFunctionOptions,
+    base::undesirable_operator => ResolvedUndesirableOperatorOptions,
     base::unreachable_code => ResolvedUnreachableCodeOptions,
     base::unused_function => ResolvedUnusedFunctionOptions,
     base::unused_object => ResolvedUnusedObjectOptions,

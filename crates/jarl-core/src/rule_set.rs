@@ -265,6 +265,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    ApplyPaste => {
+        name: "apply_paste",
+        categories: [Perf],
+        default: Enabled,
+        fix: Unsafe,
+        min_r_version: None,
+    },
     Assignment => {
         name: "assignment",
         categories: [Read],
@@ -272,12 +279,11 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
-    #[deprecated(version = "0.5.0", replacement = "undesirable_function")]
-    Browser => {
-        name: "browser",
-        categories: [Corr],
+    AssignmentOnIfNoElse => {
+        name: "assignment_on_if_no_else",
+        categories: [Susp],
         default: Enabled,
-        fix: Safe,
+        fix: None,
         min_r_version: None,
     },
     ClassEquals => {
@@ -298,7 +304,7 @@ declare_rules! {
         name: "comparison_negation",
         categories: [Read],
         default: Enabled,
-        fix: Unsafe,
+        fix: Safe,
         min_r_version: None,
     },
     ConditionCall => {
@@ -313,6 +319,20 @@ declare_rules! {
         categories: [Read],
         default: Disabled,
         fix: Safe,
+        min_r_version: None,
+    },
+    ConsecutiveSigns => {
+        name: "consecutive_signs",
+        categories: [Read, Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    CyclomaticComplexity => {
+        name: "cyclomatic_complexity",
+        categories: [Read],
+        default: Disabled,
+        fix: None,
         min_r_version: None,
     },
     Deparse1 => {
@@ -357,6 +377,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    EmptyList => {
+        name: "null_list",
+        categories: [Perf],
+        default: Enabled,
+        fix: Unsafe,
+        min_r_version: None,
+    },
     EqualsNa => {
         name: "equals_na",
         categories: [Corr],
@@ -399,6 +426,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    FunctionReturn => {
+        name: "function_return",
+        categories: [Read],
+        default: Disabled,
+        fix: Unsafe,
+        min_r_version: None,
+    },
     Glue => {
         name: "glue",
         categories: [Corr, Susp],
@@ -427,6 +461,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    IfSwitch => {
+        name: "if_switch",
+        categories: [Read],
+        default: Disabled,
+        fix: Unsafe,
+        min_r_version: None,
+    },
     ImplicitAssignment => {
         name: "implicit_assignment",
         categories: [Read],
@@ -434,10 +475,11 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    #[deprecated(version = "0.7.0", replacement = "undesirable_operator")]
     InternalFunction => {
         name: "internal_function",
         categories: [Susp],
-        default: Enabled,
+        default: Disabled,
         fix: None,
         min_r_version: None,
     },
@@ -469,12 +511,26 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    LibraryCall => {
+        name: "library_call",
+        categories: [Read],
+        default: Disabled,
+        fix: Unsafe,
+        min_r_version: None,
+    },
     List2df => {
         name: "list2df",
         categories: [Perf, Read],
         default: Enabled,
         fix: Safe,
         min_r_version: Some((4, 0, 0)),
+    },
+    ListComparison => {
+        name: "list_comparison",
+        categories: [Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
     },
     LiteralCoercion => {
         name: "literal_coercion",
@@ -529,7 +585,7 @@ declare_rules! {
         name: "outer_negation",
         categories: [Perf, Read],
         default: Enabled,
-        fix: Safe,
+        fix: Unsafe,
         min_r_version: None,
     },
     PipeConsistency => {
@@ -597,7 +653,7 @@ declare_rules! {
     },
     Seq2 => {
         name: "seq2",
-        categories: [Susp],
+        categories: [Read, Susp],
         default: Enabled,
         fix: Safe,
         min_r_version: None,
@@ -627,7 +683,7 @@ declare_rules! {
         name: "string_boundary",
         categories: [Perf, Read],
         default: Enabled,
-        fix: Safe,
+        fix: Unsafe,
         min_r_version: None,
     },
     StringsAsFactors => {
@@ -644,6 +700,20 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    TerminalClose => {
+        name: "terminal_close",
+        categories: [Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    TodoComment => {
+        name: "todo_comment",
+        categories: [Read],
+        default: Disabled,
+        fix: None,
+        min_r_version: None,
+    },
     TrueFalseSymbol => {
         name: "true_false_symbol",
         categories: [Read],
@@ -653,6 +723,13 @@ declare_rules! {
     },
     UndesirableFunction => {
         name: "undesirable_function",
+        categories: [Corr],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    UndesirableOperator => {
+        name: "undesirable_operator",
         categories: [Corr],
         default: Enabled,
         fix: None,
@@ -705,6 +782,14 @@ declare_rules! {
         categories: [Perf, Read],
         default: Enabled,
         fix: Safe,
+        min_r_version: None,
+    },
+
+    YodaCondition => {
+        name: "yoda_condition",
+        categories: [Read],
+        default: Disabled,
+        fix: Unsafe,
         min_r_version: None,
     },
 

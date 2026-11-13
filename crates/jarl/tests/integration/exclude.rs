@@ -244,7 +244,7 @@ fn test_exclude_cli_arg_no_value() -> anyhow::Result<()> {
     ----- stderr -----
     error: equal sign is needed when assigning values to '--exclude=<FILES>'
 
-    Usage: jarl check [OPTIONS] <FILES>...
+    Usage: jarl check [OPTIONS] [FILES]...
 
     For more information, try '--help'.
     "
@@ -268,7 +268,7 @@ fn test_exclude_cli_arg_no_value() -> anyhow::Result<()> {
     ----- stderr -----
     error: equal sign is needed when assigning values to '--exclude=<FILES>'
 
-    Usage: jarl check [OPTIONS] <FILES>...
+    Usage: jarl check [OPTIONS] [FILES]...
 
     For more information, try '--help'.
     "

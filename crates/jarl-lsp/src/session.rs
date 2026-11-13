@@ -294,7 +294,7 @@ impl Session {
 
         // Discover settings for this file
         let file_path_str = vec![file_path.to_string_lossy().to_string()];
-        let discovered_settings = match discover_settings(&file_path_str) {
+        let discovered_settings = match discover_settings(&file_path_str, &[]) {
             Ok(settings) => settings,
             Err(_) => return false,
         };

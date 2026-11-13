@@ -4,8 +4,8 @@ use crate::utils::{get_arg_by_name, get_unnamed_args};
 use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
-use jarl_semantic::strings::get_string_literal_contents;
 
+/// <!-- docs: start -->
 /// Version added: 0.6.0
 ///
 /// ## What it does
@@ -46,6 +46,7 @@ use jarl_semantic::strings::get_string_literal_contents;
 /// ## References
 ///
 /// See `?glue::glue`
+/// <!-- docs: end -->
 pub fn glue(
     ast: &RCall,
     fn_name: &str,
@@ -81,9 +82,10 @@ pub fn glue(
     let dot = &dots[0];
     let dot_value = unwrap_or_return_none!(dot.value());
     let dot_r_value = unwrap_or_return_none!(dot_value.as_any_r_value());
-    let dot_text = unwrap_or_return_none!(get_string_literal_contents(
-        &dot_r_value.to_trimmed_string(),
-    ));
+    let dot_string = unwrap_or_return_none!(dot_r_value.as_r_string_value());
+    let dot_text = unwrap_or_return_none!(dot_string.inner_string_text().ok())
+        .text()
+        .to_string();
 
     let open_arg = get_arg_by_name(&args, ".open");
     let close_arg = get_arg_by_name(&args, ".close");
@@ -140,9 +142,10 @@ fn get_named_string_arg_text(args: &RArgumentList, name: &str) -> anyhow::Result
     let r_value = unwrap_or_return_none!(value.as_any_r_value());
     let string_value = unwrap_or_return_none!(r_value.as_r_string_value());
 
-    Ok(get_string_literal_contents(
-        &string_value.to_trimmed_string(),
-    ))
+    Ok(string_value
+        .inner_string_text()
+        .ok()
+        .map(|t| t.text().to_string()))
 }
 
 fn has_incomplete_delimiters(text: &str, open: &str, close: &str) -> bool {

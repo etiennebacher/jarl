@@ -2,9 +2,10 @@ use biome_rowan::TextRange;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
-use crate::namespace::parse_namespace_exports;
+use crate::namespace::Namespace;
 use crate::package::{FileScope, SharedFileData};
 
+/// <!-- docs: start -->
 /// Version added: 0.5.0
 ///
 /// ## What it does
@@ -20,9 +21,10 @@ use crate::package::{FileScope, SharedFileData};
 ///
 /// ## Why is this bad?
 ///
-/// An internal function that is never called is likely dead code left over from
-/// refactoring. Removing it keeps the codebase easier to understand and
-/// maintain.
+/// Functions must be documented in NAMESPACE to be exported to end users. A
+/// function that is never called nor exported is likely dead code left over
+/// from refactoring. Removing unused internal functions keeps the codebase
+/// easier to understand and maintain.
 ///
 /// ## Limitations
 ///
@@ -57,18 +59,19 @@ use crate::package::{FileScope, SharedFileData};
 /// # `check_length()` isn't exported but and isn't used anywhere, so it is
 /// # reported.
 /// ```
+/// <!-- docs: end -->
 // ## Implementation
 //
 // Operates on the already-scanned `SharedFileData` of a package rather than
 // reading its files again, and looks symbols up across files in O(1) through
 // the pre-computed frequency maps.
 //
-// `namespace_contents` maps package root paths to their NAMESPACE file
-// contents. Packages without a NAMESPACE entry are skipped.
+// `namespaces` maps package root paths to their parsed NAMESPACE file.
+// Packages without a NAMESPACE entry are skipped.
 pub(crate) fn compute_unused_from_shared(
     shared_data: &[SharedFileData],
     options: &crate::lints::base::unused_function::options::ResolvedUnusedFunctionOptions,
-    namespace_contents: &HashMap<PathBuf, String>,
+    namespaces: &HashMap<PathBuf, Namespace>,
 ) -> HashMap<PathBuf, Vec<(String, TextRange, String)>> {
     // Group by package root
     let mut packages: HashMap<&str, Vec<&SharedFileData>> = HashMap::new();
@@ -110,10 +113,10 @@ pub(crate) fn compute_unused_from_shared(
         let Some(first) = r_files.first() else {
             continue;
         };
-        let Some(ns_content) = namespace_contents.get(&first.package_root) else {
+        let Some(namespace) = namespaces.get(&first.package_root) else {
             continue;
         };
-        let namespace_exports = parse_namespace_exports(ns_content, &all_defined_name_refs);
+        let namespace_exports = namespace.exported(all_defined_name_refs.iter().copied());
 
         // Total occurrences of each symbol across all R/ files.
         let mut total_occurrences: HashMap<&str, usize> = HashMap::new();
@@ -197,7 +200,7 @@ pub(crate) fn compute_unused_from_shared(
 
                 if occurrences <= definitions && !extra_symbol_set.contains(name.as_str()) {
                     let help = format!(
-                        "Defined at {path}:{line}:{col} but never called",
+                        "Defined at {path}:{line}:{col}.",
                         path = file.rel_path.display()
                     );
                     unused.push((name.clone(), *range, help));

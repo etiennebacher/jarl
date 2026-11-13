@@ -59,13 +59,15 @@ fn write_fixture(text: &str) -> (TempDir, PathBuf) {
 
 /// Set up the resolver, optionally with custom settings.
 fn setup_resolver(file_path: &Path, settings: Option<Settings>) -> PathResolver<Settings> {
-    let mut resolver = PathResolver::new(Settings::default());
+    let mut resolver = PathResolver::new();
     match settings {
         Some(s) => {
             resolver.add(file_path.parent().unwrap(), s);
         }
         None => {
-            if let Ok(discovered) = discover_settings(&[file_path.to_string_lossy().to_string()]) {
+            if let Ok(discovered) =
+                discover_settings(&[file_path.to_string_lossy().to_string()], &[])
+            {
                 for discovery in discovered {
                     resolver.add(&discovery.directory, discovery.settings);
                 }
@@ -97,7 +99,6 @@ fn run_check(
         min_r_version: min_r_version.map(|s| s.to_string()),
         allow_dirty: false,
         allow_no_vcs: true,
-        assignment: None,
     };
 
     let resolver = setup_resolver(&temp_file, settings);
@@ -144,7 +145,6 @@ fn apply_fixes(
         min_r_version: min_r_version.map(|s| s.to_string()),
         allow_dirty: false,
         allow_no_vcs: true,
-        assignment: None,
     };
 
     let resolver = setup_resolver(&temp_file, settings);

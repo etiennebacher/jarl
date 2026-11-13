@@ -1,4 +1,5 @@
 # coalesce
+
 ::: {.callout-note title="Added in 0.0.19" .low-opacity}
 :::
 
@@ -58,6 +59,6 @@ y <- 2
 x %||% y # (in both cases)
 ```
 
-## Reference
+## References
 
 See `?Control`

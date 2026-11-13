@@ -2,7 +2,6 @@ use crate::diagnostic::*;
 use crate::rule_set::Rule;
 use crate::utils::{get_arg_by_name, get_nested_functions_content, node_contains_comments};
 use air_r_syntax::*;
-use oak_core::syntax_ext::RStringValueExt;
 
 pub struct Deparse1;
 
@@ -60,7 +59,9 @@ pub fn deparse1(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>
     let collapse_r_value = unwrap_or_return_none!(collapse_value.as_any_r_value());
     let collapse_string = unwrap_or_return_none!(collapse_r_value.as_r_string_value());
 
-    if collapse_string.string_text().as_deref() != Some(" ") {
+    let collapse_text = unwrap_or_return_none!(collapse_string.inner_string_text().ok());
+
+    if collapse_text.text() != " " {
         return Ok(None);
     }
 

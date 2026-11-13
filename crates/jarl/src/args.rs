@@ -5,7 +5,9 @@ use clap::builder::styling::{AnsiColor, Effects};
 use clap::{Parser, Subcommand};
 use clap_complete::engine::{ArgValueCompleter, CompletionCandidate};
 use jarl_core::rule_set::{Category, Rule};
+use jarl_core::toml::parse_config_overrides;
 use std::ffi::OsStr;
+use std::path::{Path, PathBuf};
 
 // Configures Clap v3-style help menu colors
 const STYLES: Styles = Styles::styled()
@@ -42,6 +44,44 @@ fn complete_rule_names(current: &OsStr) -> Vec<CompletionCandidate> {
         .collect()
 }
 
+/// A value of `--config`.
+#[derive(Clone, Debug)]
+pub enum ConfigArgument {
+    /// A configuration file replacing the discovered ones.
+    File(PathBuf),
+    /// Options overriding those of the configuration files.
+    Override(toml::Table),
+}
+
+/// A value is a configuration file if such a file exists, and a TOML override
+/// otherwise. Overrides are validated here so that an invalid one is reported
+/// as such, not as an error in each `jarl.toml`.
+fn parse_config_argument(value: &str) -> Result<ConfigArgument, String> {
+    let path = Path::new(value);
+    if path.is_file() {
+        if path.extension().is_some_and(|ext| ext == "toml") {
+            return Ok(ConfigArgument::File(path.to_path_buf()));
+        } else {
+            return Err("configuration file must be a TOML file".to_string());
+        }
+    }
+
+    match value.parse::<toml::Table>() {
+        Ok(table) if !table.is_empty() => {
+            let cwd = std::env::current_dir().unwrap_or_default();
+            parse_config_overrides(value, &[], &cwd).map_err(|err| err.to_string())?;
+            Ok(ConfigArgument::Override(table))
+        }
+        _ if path.extension().is_some_and(|ext| ext == "toml") => {
+            Err(format!("configuration file '{value}' does not exist"))
+        }
+        Ok(_) => Err("expected a path or a `<KEY> = <VALUE>` pair, got nothing".to_string()),
+        Err(err) => Err(format!(
+            "neither a path to an existing file nor a valid TOML `<KEY> = <VALUE>` pair, e.g. `\"lint.select = ['any_is_na']\"`:\n{err}"
+        )),
+    }
+}
+
 #[derive(Parser)]
 #[command(
     author,
@@ -74,10 +114,19 @@ pub(crate) enum Command {
 #[command(arg_required_else_help(true), disable_help_flag = true)]
 pub struct CheckCommand {
     #[arg(
-        required = true,
+        required_unless_present = "stdin_file_path",
+        conflicts_with = "stdin_file_path",
         help = "List of files or directories to check or fix lints, for example `jarl check .`."
     )]
     pub files: Vec<String>,
+    #[arg(
+        long,
+        value_name = "PATH",
+        conflicts_with_all = ["fix", "unsafe_fixes", "fix_only", "add_jarl_ignore"],
+        help_heading = "File selection",
+        help = "Read the code to check from stdin. The path is not read and doesn't have to exist: it is used to find the configuration and package, to apply `exclude` patterns, and as file name in diagnostics, e.g. `jarl check --stdin-file-path R/foo.R`."
+    )]
+    pub stdin_file_path: Option<String>,
     #[arg(
         long,
         value_name = "FILES",
@@ -186,13 +235,6 @@ pub struct CheckCommand {
     pub output_format: OutputFormat,
     #[arg(
         long,
-        value_enum,
-        help_heading = "Other options",
-        help = "[DEPRECATED: use `[lint.assignment]` in jarl.toml] Assignment operator to use, can be either `<-` or `=`."
-    )]
-    pub assignment: Option<String>,
-    #[arg(
-        long,
         default_value = "false",
         conflicts_with = "fix",
         conflicts_with = "unsafe_fixes",
@@ -215,6 +257,14 @@ pub struct CheckCommand {
         help = "Automatically insert a `# jarl-ignore` comment to suppress all violations.\nThe default reason can be customized with `--add-jarl-ignore=\"my_reason\"`."
     )]
     pub add_jarl_ignore: Option<String>,
+    #[arg(
+        long,
+        value_name = "CONFIG_OPTION",
+        value_parser = parse_config_argument,
+        help_heading = "Other options",
+        help = "Either a path to a TOML configuration file, which is used instead of the discovered one, or a TOML `<KEY> = <VALUE>` pair overriding an option of the configuration, e.g. `--config \"lint.select = ['any_is_na']\"`. Can be passed several times, but only once with a path."
+    )]
+    pub config: Vec<ConfigArgument>,
     // Help flag declared manually (auto flag disabled above) so it lands in the
     // "Other options" group instead of clap's default "Options" heading, which
     // would otherwise be forced to the top of the help output.
