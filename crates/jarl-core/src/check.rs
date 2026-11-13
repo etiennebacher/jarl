@@ -480,7 +480,7 @@ pub fn get_checks(
         })
         .collect();
 
-    let loc_new_lines = find_new_lines(syntax)?;
+    let loc_new_lines = find_new_lines_from_content(contents);
     let diagnostics = compute_lints_location(diagnostics, &loc_new_lines);
 
     if has_parse_errors {
@@ -518,10 +518,6 @@ fn check_expressions(
 
 /// Convert the parser's diagnostics (message + span) into the `SyntaxError`s
 /// carried by [`ParseError`], resolving each span to a (row, column) location.
-///
-/// Locations are computed against `contents` (not the parsed tree) because
-/// `find_new_lines` reads the serialized tree, which can be truncated once the
-/// parser has recovered from an error, throwing later offsets off.
 fn collect_syntax_errors(parsed: &air_r_parser::RParse, contents: &str) -> Vec<SyntaxError> {
     // `Diagnostic::location` (the trait method) is the only public accessor for
     // a `ParseDiagnostic`'s span.

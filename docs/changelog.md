@@ -65,6 +65,9 @@
 * Fix detection of backtick-quoted indices in `for_loop_dup_index`
   (#753, @Yousa-Mirage).
 
+* `duplicated_arguments` doesn't error anymore if the function name is `NULL` or
+  `NA`, which used to stop the analysis for the entire file (#816).
+
 ## 0.7.1
 
 This release doesn't contain any change compared to the 0.7.0 release found on Github.

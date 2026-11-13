@@ -38,9 +38,7 @@ use biome_rowan::AstNode;
 pub fn equals_na(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 
-    let left = left?.to_trimmed_string();
     let operator = operator?;
-    let right = right?.to_trimmed_string();
 
     let operator_is_in =
         operator.kind() == RSyntaxKind::SPECIAL && operator.text_trimmed() == "%in%";
@@ -54,6 +52,9 @@ pub fn equals_na(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> 
     {
         return Ok(None);
     };
+
+    let left = left?.to_trimmed_string();
+    let right = right?.to_trimmed_string();
 
     let na_values = [
         "NA",
