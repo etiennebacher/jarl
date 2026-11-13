@@ -9,10 +9,7 @@ use oak_core::syntax_ext::RIdentifierExt;
 /// A length or scalar check can make a negated variable safe in an enclosing
 /// branch or after an early exit. Only trust it while the variable holds its value.
 pub(super) fn has_nonempty_guard(unary: &RUnaryExpression) -> anyhow::Result<bool> {
-    let Some(identifier) = unparenthesized(unary.argument()?)?
-        .as_r_identifier()
-        .cloned()
-    else {
+    let AnyRExpression::RIdentifier(identifier) = unparenthesized(unary.argument()?)? else {
         return Ok(false);
     };
     let name = identifier.name_text();
@@ -25,46 +22,23 @@ pub(super) fn has_nonempty_guard(unary: &RUnaryExpression) -> anyhow::Result<boo
             break;
         }
 
-        // An earlier statement can exclude empty indices from every path
-        // reaching this use, as in `if (!length(idx)) return(x); x[-idx]`.
-        if let Some(statements) = RStatementList::cast_ref(&ancestor)
-            && has_preceding_guard(&statements, &name, position, end)?
-        {
-            return Ok(true);
-        }
-
-        let guard = match AnyRExpression::cast_ref(&ancestor) {
-            Some(AnyRExpression::RIfStatement(statement)) => {
-                let condition = statement.condition()?;
-                let consequence = statement.consequence()?;
-                if consequence.range().contains(position) {
-                    Some((condition, consequence, true))
-                } else if let Some(else_clause) = statement.else_clause()
-                    && let alternative = else_clause.alternative()?
-                    && alternative.range().contains(position)
-                {
-                    Some((condition, alternative, false))
-                } else {
-                    None
+        // Collect protection from enclosing conditions and earlier statements.
+        // Each checker handles its own control flow and uses the same condition
+        // and assignment analysis below.
+        let guarded = if let Some(statements) = RStatementList::cast_ref(&ancestor) {
+            has_preceding_guard(&statements, &name, position, end)?
+        } else {
+            match AnyRExpression::cast_ref(&ancestor) {
+                Some(AnyRExpression::RIfStatement(statement)) => {
+                    has_if_guard(&statement, &name, position, end)?
                 }
-            }
-            Some(AnyRExpression::RWhileStatement(statement)) => {
-                let body = statement.body()?;
-                // The condition protects the body, not uses inside itself.
-                if body.range().contains(position) {
-                    Some((statement.condition()?, body, true))
-                } else {
-                    None
+                Some(AnyRExpression::RWhileStatement(statement)) => {
+                    has_while_guard(&statement, &name, position, end)?
                 }
+                _ => false,
             }
-            _ => None,
         };
-
-        if let Some((condition, branch, truth)) = guard
-            && condition_proves_nonempty(condition.clone(), &name, truth, false)?
-            && !has_write(condition.syntax(), &name, condition.range().end())?
-            && !has_write(branch.syntax(), &name, end)?
-        {
+        if guarded {
             return Ok(true);
         }
 
@@ -82,6 +56,55 @@ pub(super) fn has_nonempty_guard(unary: &RUnaryExpression) -> anyhow::Result<boo
     Ok(false)
 }
 
+/// Use the condition's truth value for the branch containing this index.
+/// An index in the condition itself has not yet passed that check.
+fn has_if_guard(
+    statement: &RIfStatement,
+    name: &str,
+    position: TextSize,
+    end: TextSize,
+) -> anyhow::Result<bool> {
+    let consequence = statement.consequence()?;
+    if consequence.range().contains(position) {
+        return branch_is_guarded(statement.condition()?, consequence, name, true, end);
+    }
+    if let Some(else_clause) = statement.else_clause()
+        && let alternative = else_clause.alternative()?
+        && alternative.range().contains(position)
+    {
+        return branch_is_guarded(statement.condition()?, alternative, name, false, end);
+    }
+    Ok(false)
+}
+
+/// The while condition is true when entering its body on each iteration.
+fn has_while_guard(
+    statement: &RWhileStatement,
+    name: &str,
+    position: TextSize,
+    end: TextSize,
+) -> anyhow::Result<bool> {
+    let body = statement.body()?;
+    Ok(body.range().contains(position)
+        && branch_is_guarded(statement.condition()?, body, name, true, end)?)
+}
+
+/// A condition protects the selected branch only while its checked value is
+/// unchanged, including assignments performed while evaluating the condition.
+fn branch_is_guarded(
+    condition: AnyRExpression,
+    branch: AnyRExpression,
+    name: &str,
+    truth: bool,
+    end: TextSize,
+) -> anyhow::Result<bool> {
+    Ok(
+        condition_proves_nonempty(condition.clone(), name, truth, false)?
+            && !has_write(condition.syntax(), name, condition.range().end())?
+            && !has_write(branch.syntax(), name, end)?,
+    )
+}
+
 /// Look backward for a guard, stopping at a write that would invalidate it.
 /// When the use is in a loop, `end` also includes writes that affect subsequent
 /// iterations. A check after the use cannot protect it.
@@ -96,11 +119,15 @@ fn has_preceding_guard(
             continue;
         }
         // Check the guard first: writes on its exiting path do not matter.
-        if expression.range().end() <= position
-            && (is_early_exit_guard(expression.clone(), name)?
-                || is_stopifnot_guard(expression.clone(), name)?)
-        {
-            return Ok(true);
+        if expression.range().end() <= position {
+            let guarded = match unparenthesized(expression.clone())? {
+                AnyRExpression::RIfStatement(statement) => is_early_exit_guard(&statement, name)?,
+                AnyRExpression::RCall(call) => is_stopifnot_guard(&call, name)?,
+                _ => false,
+            };
+            if guarded {
+                return Ok(true);
+            }
         }
         if has_write(expression.syntax(), name, end)? {
             return Ok(false);
@@ -111,10 +138,7 @@ fn has_preceding_guard(
 
 /// The surviving branch must establish nonemptiness and preserve the variable.
 /// Writes in the exiting branch cannot affect code after the `if`.
-fn is_early_exit_guard(expression: AnyRExpression, name: &str) -> anyhow::Result<bool> {
-    let AnyRExpression::RIfStatement(statement) = unparenthesized(expression)? else {
-        return Ok(false);
-    };
+fn is_early_exit_guard(statement: &RIfStatement, name: &str) -> anyhow::Result<bool> {
     let condition = statement.condition()?;
     if has_write(condition.syntax(), name, condition.range().end())? {
         return Ok(false);
@@ -153,14 +177,7 @@ fn always_exits(expression: AnyRExpression) -> anyhow::Result<bool> {
     match unparenthesized(expression)? {
         AnyRExpression::RBreakExpression(_) | AnyRExpression::RNextExpression(_) => Ok(true),
         AnyRExpression::RCall(call) => {
-            let function = call.function()?;
-            Ok(matches!(
-                get_function_name(function.clone()).as_str(),
-                "return" | "stop"
-            ) && matches!(
-                get_function_namespace_prefix(function).as_deref(),
-                None | Some("base::")
-            ))
+            Ok(is_base_call(&call, "return")? || is_base_call(&call, "stop")?)
         }
         AnyRExpression::RBracedStatements(braced) => {
             for expression in braced.expressions() {
@@ -205,13 +222,11 @@ fn condition_proves_nonempty(
         }
         AnyRExpression::RBinaryExpression(binary) => {
             let operator = binary.operator()?.kind();
-            let left = binary.left()?;
-            let right = binary.right()?;
             if matches!(operator, RSyntaxKind::AND2 | RSyntaxKind::OR2) {
                 // Short-circuit operators always return a scalar, even inside
                 // `stopifnot()`, so their operands cannot pass as empty results.
-                let left = condition_proves_nonempty(left, name, truth, false)?;
-                let right = condition_proves_nonempty(right, name, truth, false)?;
+                let left = condition_proves_nonempty(binary.left()?, name, truth, false)?;
+                let right = condition_proves_nonempty(binary.right()?, name, truth, false)?;
                 return Ok(if (operator == RSyntaxKind::AND2) == truth {
                     left || right
                 } else {
@@ -219,37 +234,37 @@ fn condition_proves_nonempty(
                 });
             }
 
-            let left = unparenthesized(left)?;
-            let right = unparenthesized(right)?;
-            // If the variable itself is compared with a scalar literal, a
-            // successful `if` check requires it to be nonempty in either arm.
-            if let Some(number) = numeric_literal(&right) {
-                comparison_excludes_empty(&left, name, operator, number, truth, allow_empty)
-            } else if let Some(number) = numeric_literal(&left) {
-                let reversed = match operator {
-                    RSyntaxKind::LESS_THAN => RSyntaxKind::GREATER_THAN,
-                    RSyntaxKind::LESS_THAN_OR_EQUAL_TO => RSyntaxKind::GREATER_THAN_OR_EQUAL_TO,
-                    RSyntaxKind::GREATER_THAN => RSyntaxKind::LESS_THAN,
-                    RSyntaxKind::GREATER_THAN_OR_EQUAL_TO => RSyntaxKind::LESS_THAN_OR_EQUAL_TO,
-                    _ => operator,
-                };
-                comparison_excludes_empty(&right, name, reversed, number, truth, allow_empty)
-            } else {
-                Ok(false)
-            }
+            comparison_proves_nonempty(&binary, name, truth, allow_empty)
         }
         _ => Ok(false),
     }
 }
 
-fn comparison_excludes_empty(
-    expression: &AnyRExpression,
+/// Compare the variable or its length with a numeric literal. Normalize the
+/// literal to the right so reversed comparisons use the same empty-value test.
+fn comparison_proves_nonempty(
+    binary: &RBinaryExpression,
     name: &str,
-    operator: RSyntaxKind,
-    number: f64,
     truth: bool,
     allow_empty: bool,
 ) -> anyhow::Result<bool> {
+    let left = unparenthesized(binary.left()?)?;
+    let right = unparenthesized(binary.right()?)?;
+    let mut operator = binary.operator()?.kind();
+    let (expression, number) = if let Some(number) = numeric_literal(&right) {
+        (left, number)
+    } else if let Some(number) = numeric_literal(&left) {
+        operator = match operator {
+            RSyntaxKind::LESS_THAN => RSyntaxKind::GREATER_THAN,
+            RSyntaxKind::LESS_THAN_OR_EQUAL_TO => RSyntaxKind::GREATER_THAN_OR_EQUAL_TO,
+            RSyntaxKind::GREATER_THAN => RSyntaxKind::LESS_THAN,
+            RSyntaxKind::GREATER_THAN_OR_EQUAL_TO => RSyntaxKind::LESS_THAN_OR_EQUAL_TO,
+            _ => operator,
+        };
+        (right, number)
+    } else {
+        return Ok(false);
+    };
     // Evaluate the comparison at length zero. A branch excludes empty indices
     // only if this result would send execution to the other branch.
     let empty_result = match operator {
@@ -261,25 +276,21 @@ fn comparison_excludes_empty(
         RSyntaxKind::GREATER_THAN_OR_EQUAL_TO => 0.0 >= number,
         _ => return Ok(false),
     };
+    // Direct vector comparisons can pass stopifnot() with an empty result.
+    // `if` and a true `any()` require at least one result instead.
     if let AnyRExpression::RIdentifier(identifier) = expression {
         return Ok(!allow_empty && identifier.name_text() == name);
     }
     let AnyRExpression::RCall(call) = expression else {
         return Ok(false);
     };
-    Ok(empty_result != truth && is_index_length(call, name)?)
+    Ok(empty_result != truth && is_index_length(&call, name)?)
 }
 
 /// A true `any()` needs at least one true element. Only accept one data
 /// argument: another argument could make it true while this index is empty.
 fn is_any_guard(call: &RCall, name: &str) -> anyhow::Result<bool> {
-    let function = call.function()?;
-    if get_function_name(function.clone()) != "any"
-        || !matches!(
-            get_function_namespace_prefix(function).as_deref(),
-            None | Some("base::")
-        )
-    {
+    if !is_base_call(call, "any")? {
         return Ok(false);
     }
     let arguments = call.arguments()?.items();
@@ -310,18 +321,8 @@ fn is_any_guard(call: &RCall, name: &str) -> anyhow::Result<bool> {
 /// A successful assertion protects following statements only if an empty
 /// index would fail it. `stopifnot(idx > 0)` accepts empty vectors, whereas
 /// `stopifnot(length(idx) > 0)` and `stopifnot(any(idx > 0))` reject them.
-fn is_stopifnot_guard(expression: AnyRExpression, name: &str) -> anyhow::Result<bool> {
-    let AnyRExpression::RCall(call) = unparenthesized(expression)? else {
-        return Ok(false);
-    };
-    let function = call.function()?;
-    if get_function_name(function.clone()) != "stopifnot"
-        || !matches!(
-            get_function_namespace_prefix(function).as_deref(),
-            None | Some("base::")
-        )
-        || has_write(call.syntax(), name, call.range().end())?
-    {
+fn is_stopifnot_guard(call: &RCall, name: &str) -> anyhow::Result<bool> {
+    if !is_base_call(call, "stopifnot")? || has_write(call.syntax(), name, call.range().end())? {
         return Ok(false);
     }
     let arguments = call.arguments()?.items();
@@ -346,14 +347,7 @@ fn is_stopifnot_guard(expression: AnyRExpression, name: &str) -> anyhow::Result<
 
 /// Recognize the length of this variable, including `base::length(x = idx)`.
 fn is_index_length(call: &RCall, name: &str) -> anyhow::Result<bool> {
-    let function = call.function()?;
-    if get_function_name(function.clone()) != "length"
-        || !matches!(
-            get_function_namespace_prefix(function).as_deref(),
-            None | Some("base::")
-        )
-        || call.arguments()?.items().len() != 1
-    {
+    if !is_base_call(call, "length")? || call.arguments()?.items().len() != 1 {
         return Ok(false);
     }
     let Some(argument) =
@@ -364,6 +358,16 @@ fn is_index_length(call: &RCall, name: &str) -> anyhow::Result<bool> {
     Ok(unparenthesized(argument)?
         .as_r_identifier()
         .is_some_and(|identifier| identifier.name_text() == name))
+}
+
+/// Apply base semantics only to unqualified calls and known base functions.
+fn is_base_call(call: &RCall, name: &str) -> anyhow::Result<bool> {
+    let function = call.function()?;
+    Ok(get_function_name(function.clone()) == name
+        && matches!(
+            get_function_namespace_prefix(function).as_deref(),
+            None | Some("base::")
+        ))
 }
 
 fn unparenthesized(mut expression: AnyRExpression) -> anyhow::Result<AnyRExpression> {
