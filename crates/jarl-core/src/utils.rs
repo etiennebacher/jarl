@@ -5,9 +5,9 @@ use air_r_syntax::{
     RBinaryExpressionFields, RBracedStatements, RCall, RExtractExpressionFields, RRoot,
     RStatementList, RSyntaxKind, RSyntaxNode,
 };
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use biome_rowan::{AstNode, AstNodeList, AstSeparatedList, Direction};
-use oak_core::syntax_ext::{RIdentifierExt, RStringValueExt};
+use oak_core::syntax_ext::RIdentifierExt;
 use oak_semantic::effects::BoundArguments;
 pub use oak_semantic::effects::Formals;
 use std::collections::HashMap;
@@ -32,25 +32,8 @@ macro_rules! unwrap_or_return_none {
 }
 
 /// Find byte positions of newline characters in a string.
-///
-/// Used by Rmd/Qmd linting to compute line/column locations in the original
-/// file after position remapping from chunk space to file space.
 pub fn find_new_lines_from_content(content: &str) -> Vec<usize> {
     content.match_indices('\n').map(|(i, _)| i).collect()
-}
-
-/// Find the positions of the new line characters in the given AST.
-pub fn find_new_lines(ast: &RSyntaxNode) -> Result<Vec<usize>> {
-    match ast.first_child() {
-        Some(rootnode) => Ok(rootnode
-            .to_string()
-            .match_indices("\n")
-            .map(|x| x.0)
-            .collect::<Vec<usize>>()),
-        None => Err(anyhow!(
-            "Couldn't find root node. Maybe the document contains a parsing error?"
-        )),
-    }
 }
 
 /// Takes the start of the range of a Diagnostic and the indices for the new
@@ -149,7 +132,9 @@ pub fn get_arg_by_name(args: &RArgumentList, name: &str) -> Option<RArgument> {
 fn argument_name(arg: &RArgument) -> Option<String> {
     match arg.name_clause()?.name().ok()? {
         AnyRArgumentName::RIdentifier(ident) => Some(ident.name_text()),
-        AnyRArgumentName::RStringValue(s) => s.string_text(),
+        AnyRArgumentName::RStringValue(s) => {
+            s.inner_string_text().ok().map(|t| t.text().to_string())
+        }
         _ => None,
     }
 }

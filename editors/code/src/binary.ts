@@ -1,9 +1,9 @@
-import * as vscode from "vscode";
 import * as fs from "fs";
+import * as vscode from "vscode";
 import which from "which";
 
+import { BUNDLED_JARL_EXECUTABLE, JARL_BINARY_NAME } from "./constants";
 import * as output from "./output";
-import { JARL_BINARY_NAME, BUNDLED_JARL_EXECUTABLE } from "./constants";
 
 export type ExecutableStrategy = "bundled" | "environment" | "path";
 
@@ -72,7 +72,9 @@ export async function resolveJarlBinaryPath(
 		const path = jarlBinaryFromPath(executablePath);
 
 		if (path) {
-			output.log(`Using executable from \`jarl.executablePath\`: ${path}`);
+			output.log(
+				`Using executable from \`jarl.executablePath\`: ${path}`,
+			);
 			return path;
 		}
 
@@ -84,7 +86,9 @@ export async function resolveJarlBinaryPath(
 
 function jarlBinaryFromBundled(): string | undefined {
 	if (!fs.existsSync(BUNDLED_JARL_EXECUTABLE)) {
-		output.log(`Failed to find bundled executable: ${BUNDLED_JARL_EXECUTABLE}`);
+		output.log(
+			`Failed to find bundled executable: ${BUNDLED_JARL_EXECUTABLE}`,
+		);
 		return undefined;
 	}
 
@@ -119,6 +123,8 @@ function jarlBinaryFromPath(executablePath?: string): string | undefined {
 		return undefined;
 	}
 
-	output.log(`Found executable from \`jarl.executablePath\`: ${executablePath}`);
+	output.log(
+		`Found executable from \`jarl.executablePath\`: ${executablePath}`,
+	);
 	return executablePath;
 }

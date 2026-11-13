@@ -43,11 +43,8 @@ operators = [":::", "%in%"]
 # Or add to the defaults:
 extend-operators = ["%in%"]
 
-# Or add to the defaults, with an optional message:
-extend-operators = [
-  { "%notin%" = 'Use `!(x %in% y)` instead.' },
-  "$",
-]
+# Or add to the defaults, with optional messages:
+extend-operators = [{ "%notin%" = "Use `!(x %in% y)` instead." }]
 ```
 
 ## Example

@@ -5,6 +5,7 @@ use air_r_syntax::RIfStatement;
 use crate::lints::base::coalesce::coalesce::coalesce;
 use crate::lints::base::if_always_true::if_always_true::if_always_true;
 use crate::lints::base::if_not_else::if_not_else::if_not_else;
+use crate::lints::base::if_switch::if_switch::if_switch;
 use crate::lints::base::unnecessary_nesting::unnecessary_nesting::unnecessary_nesting;
 
 pub fn if_(r_expr: &RIfStatement, checker: &mut Checker) -> anyhow::Result<()> {
@@ -16,6 +17,12 @@ pub fn if_(r_expr: &RIfStatement, checker: &mut Checker) -> anyhow::Result<()> {
     }
     if checker.is_rule_enabled(Rule::IfNotElse) {
         checker.report_diagnostic(if_not_else(r_expr, checker)?);
+    }
+    if checker.is_rule_enabled(Rule::IfSwitch) {
+        checker.report_diagnostic(if_switch(
+            r_expr,
+            checker.rule_options.if_switch.max_branches,
+        )?);
     }
     if checker.is_rule_enabled(Rule::UnnecessaryNesting) {
         checker.report_diagnostic(unnecessary_nesting(r_expr)?);

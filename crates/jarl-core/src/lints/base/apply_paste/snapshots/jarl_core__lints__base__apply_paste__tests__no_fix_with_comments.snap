@@ -1,0 +1,19 @@
+---
+source: crates/jarl-core/src/lints/base/apply_paste/mod.rs
+expression: "get_unsafe_fixed_text(vec![\"# leading comment\\napply(x, 1, paste, collapse = \\\"_\\\")\",\n\"apply(x, 1, paste, collapse = \\\"_\\\") # trailing comment\",], \"apply_paste\",)"
+---
+OLD:
+====
+# leading comment
+apply(x, 1, paste, collapse = "_")
+NEW:
+====
+# leading comment
+do.call(paste, c(x, sep = "_"))
+
+OLD:
+====
+apply(x, 1, paste, collapse = "_") # trailing comment
+NEW:
+====
+do.call(paste, c(x, sep = "_")) # trailing comment

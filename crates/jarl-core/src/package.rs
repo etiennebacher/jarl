@@ -579,37 +579,3 @@ pub(crate) fn scan_r_package_paths(paths: &[PathBuf], with_symbols: bool) -> Vec
         })
         .collect()
 }
-
-/// Scan extra (non-R/) files into `SharedFileData` for tests. Assigns
-/// the correct `FileScope` based on the file path and also collects
-/// top-level assignments for R files.
-/// The `package_root` is the directory containing DESCRIPTION.
-#[cfg(test)]
-pub(crate) fn scan_extra_package_paths(
-    paths: &[PathBuf],
-    package_root: &Path,
-) -> Vec<SharedFileData> {
-    let r_dir = package_root.join("R");
-    let root_key = air_fs::relativize_path(&r_dir);
-    paths
-        .iter()
-        .filter_map(|path| {
-            let content = std::fs::read_to_string(path).ok()?;
-            let symbol_counts = scan_symbols(&content);
-            let rel_path = PathBuf::from(air_fs::relativize_path(path));
-            let scope = file_scope_from_path(path);
-            let assignments = match scope {
-                FileScope::Src => Vec::new(),
-                _ => scan_top_level_assignments(&content),
-            };
-            Some(SharedFileData {
-                root_key: root_key.clone(),
-                rel_path,
-                package_root: package_root.to_path_buf(),
-                assignments,
-                symbol_counts,
-                scope,
-            })
-        })
-        .collect()
-}

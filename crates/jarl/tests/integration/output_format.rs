@@ -583,7 +583,7 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
     1 fixable with the `--fix` option.
 
     ----- stderr -----
-    error: expected `)` but instead the file ends
+    error: Expected `)` but instead found the end of the file.
      --> test2.R:1:5
       |
     1 | any(
@@ -613,7 +613,7 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
     1 fixable with the `--fix` option.
 
     ----- stderr -----
-    Error: test2.R:1:5 expected `)` but instead the file ends
+    Error: test2.R:1:5 Expected `)` but instead found the end of the file.
     "
     );
 
@@ -669,7 +669,7 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
           "error": "Failed to parse test2.R due to syntax errors.",
           "syntax_errors": [
             {
-              "message": "expected `)` but instead the file ends",
+              "message": "Expected `)` but instead found the end of the file.",
               "range": [
                 4,
                 4
@@ -704,7 +704,7 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
     ::warning title=Jarl (any_is_na),file=test.R,line=1,col=1::test.R:1:1 [any_is_na] `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
 
     ----- stderr -----
-    Error: test2.R:1:5 expected `)` but instead the file ends
+    Error: test2.R:1:5 Expected `)` but instead found the end of the file.
     "
     );
 
@@ -721,7 +721,7 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
     assert!(
         sarif
             .stderr
-            .contains("Error: test2.R:1:5 expected `)` but instead the file ends")
+            .contains("Error: test2.R:1:5 Expected `)` but instead found the end of the file.")
     );
 
     Ok(())
@@ -888,7 +888,7 @@ fn test_output_json_multiple_syntax_errors() -> anyhow::Result<()> {
               }
             },
             {
-              "message": "expected `)` but instead found `z`",
+              "message": "Expected `)` but instead found `z`.",
               "range": [
                 29,
                 30
@@ -910,7 +910,7 @@ fn test_output_json_multiple_syntax_errors() -> anyhow::Result<()> {
               }
             },
             {
-              "message": "expected `]` but instead the file ends",
+              "message": "Expected `]` but instead found the end of the file.",
               "range": [
                 35,
                 35

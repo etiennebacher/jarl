@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-core/src/lints/base/outer_negation/mod.rs
-expression: "get_fixed_text(vec![\"any(!x)\", \"any(!f(x, y))\", \"any(!f(all(!x)))\", \"all(!x)\",\n\"all(!f(x, y))\", \"all(!f(any(!x)))\"], \"outer_negation\", None)"
+expression: "get_fixed_text(vec![\"any(!x)\", \"all(!f(x, y))\", \"any(!f(all(!x)))\",\n\"all(!f(any(!x)))\", \"base::any(((!x)), na.rm = TRUE)\", \"any((!((x + y))))\",\n\"all(!((x = TRUE)))\", \"f <- function(...) any(!((...)))\",\n\"all('na.rm' = FALSE, result = !f(x, y))\", \"any(!x, `na.rm` = remove_na())\",\n\"any(na = !x)\", \"any(\\n  !x,\\n  na.rm = TRUE\\n)\", \"any(!-x)\", \"all(!+x)\",\n\"!any(!x)\", \"!!any(!x)\", \"!(base::all(!x))\", \"! any(!x, na.rm = TRUE)\",\n\"if (!any(!x)) 1\", \"!any(!x) + 2\", \"any(!FALSE) + 2\", \"2 * all(!TRUE)\",\n\"any(!x) == y\", \"any(!x) |> as.integer()\", \"any(!x)[1]\", \"(any(!x)) + 2\",\n\"result <- any(!x)\", \"f(any(!x))\", \"# Leading comment\\nany(!x)\",\n\"all(!x) # Trailing comment\", \"any(\\n  # Keep this comment.\\n  !x\\n)\",\n\"all(!(x + # Keep this comment too.\\n  y))\",], \"outer_negation\", None)"
 ---
 OLD:
 ====
@@ -11,10 +11,10 @@ NEW:
 
 OLD:
 ====
-any(!f(x, y))
+all(!f(x, y))
 NEW:
 ====
-!all(f(x, y))
+!any(f(x, y))
 
 OLD:
 ====
@@ -25,21 +25,219 @@ NEW:
 
 OLD:
 ====
-all(!x)
-NEW:
-====
-!any(x)
-
-OLD:
-====
-all(!f(x, y))
-NEW:
-====
-!any(f(x, y))
-
-OLD:
-====
 all(!f(any(!x)))
 NEW:
 ====
 !any(f(!all(x)))
+
+OLD:
+====
+base::any(((!x)), na.rm = TRUE)
+NEW:
+====
+!base::all(x, na.rm = TRUE)
+
+OLD:
+====
+any((!((x + y))))
+NEW:
+====
+!all(x + y)
+
+OLD:
+====
+all(!((x = TRUE)))
+NEW:
+====
+!any((x = TRUE))
+
+OLD:
+====
+f <- function(...) any(!((...)))
+NEW:
+====
+f <- function(...) !all((...))
+
+OLD:
+====
+all('na.rm' = FALSE, result = !f(x, y))
+NEW:
+====
+!any('na.rm' = FALSE, result = f(x, y))
+
+OLD:
+====
+any(!x, `na.rm` = remove_na())
+NEW:
+====
+!all(x, `na.rm` = remove_na())
+
+OLD:
+====
+any(na = !x)
+NEW:
+====
+!all(na = x)
+
+OLD:
+====
+any(
+  !x,
+  na.rm = TRUE
+)
+NEW:
+====
+!all(
+  x,
+  na.rm = TRUE
+)
+
+OLD:
+====
+any(!-x)
+NEW:
+====
+!all(-x)
+
+OLD:
+====
+all(!+x)
+NEW:
+====
+!any(+x)
+
+OLD:
+====
+!any(!x)
+NEW:
+====
+all(x)
+
+OLD:
+====
+!!any(!x)
+NEW:
+====
+!all(x)
+
+OLD:
+====
+!(base::all(!x))
+NEW:
+====
+base::any(x)
+
+OLD:
+====
+! any(!x, na.rm = TRUE)
+NEW:
+====
+all(x, na.rm = TRUE)
+
+OLD:
+====
+if (!any(!x)) 1
+NEW:
+====
+if (all(x)) 1
+
+OLD:
+====
+!any(!x) + 2
+NEW:
+====
+!(!all(x)) + 2
+
+OLD:
+====
+any(!FALSE) + 2
+NEW:
+====
+(!all(FALSE)) + 2
+
+OLD:
+====
+2 * all(!TRUE)
+NEW:
+====
+2 * (!any(TRUE))
+
+OLD:
+====
+any(!x) == y
+NEW:
+====
+(!all(x)) == y
+
+OLD:
+====
+any(!x) |> as.integer()
+NEW:
+====
+(!all(x)) |> as.integer()
+
+OLD:
+====
+any(!x)[1]
+NEW:
+====
+(!all(x))[1]
+
+OLD:
+====
+(any(!x)) + 2
+NEW:
+====
+(!all(x)) + 2
+
+OLD:
+====
+result <- any(!x)
+NEW:
+====
+result <- !all(x)
+
+OLD:
+====
+f(any(!x))
+NEW:
+====
+f(!all(x))
+
+OLD:
+====
+# Leading comment
+any(!x)
+NEW:
+====
+# Leading comment
+!all(x)
+
+OLD:
+====
+all(!x) # Trailing comment
+NEW:
+====
+!any(x) # Trailing comment
+
+OLD:
+====
+any(
+  # Keep this comment.
+  !x
+)
+NEW:
+====
+any(
+  # Keep this comment.
+  !x
+)
+
+OLD:
+====
+all(!(x + # Keep this comment too.
+  y))
+NEW:
+====
+all(!(x + # Keep this comment too.
+  y))

@@ -377,3 +377,48 @@ fn test_fix_skips_internal_comments_with_outer_comments_460() -> anyhow::Result<
 
     Ok(())
 }
+
+#[test]
+fn test_biome_ignore_does_not_affect_jarl_ignore() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.R",
+        "# biome-ignore-all format: not a jarl directive
+# jarl-ignore any_is_na: legacy code
+any(is.na(x))
+
+# biome-ignore format: not a jarl directive
+any(is.na(y))
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:6:1
+      |
+    6 | any(is.na(y))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}

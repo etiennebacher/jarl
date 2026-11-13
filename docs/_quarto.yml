@@ -86,6 +86,7 @@ website:
             - rules/all_equal.md
             - rules/any_duplicated.md
             - rules/any_is_na.md
+            - rules/apply_paste.md
             - rules/assignment_on_if_no_else.md
             - rules/assignment.md
             - rules/blanket_suppression.md
@@ -119,10 +120,12 @@ website:
             - rules/fixed_regex.md
             - rules/for_loop_dup_index.md
             - rules/for_loop_index.md
+            - rules/function_return.md
             - rules/glue.md
             - rules/grepv.md
             - rules/if_always_true.md
             - rules/if_not_else.md
+            - rules/if_switch.md
             - rules/implicit_assignment.md
             - rules/internal_function.md
             - rules/invalid_chunk_suppression.md
@@ -131,6 +134,7 @@ website:
             - rules/length_test.md
             - rules/lengths.md
             - rules/library_call.md
+            - rules/list_comparison.md
             - rules/list2df.md
             - rules/literal_coercion.md
             - rules/matrix_apply.md
@@ -141,6 +145,7 @@ website:
             - rules/negative_index.md
             - rules/nested_pipe.md
             - rules/notin.md
+            - rules/null_list.md
             - rules/numeric_leading_zero.md
             - rules/nzchar.md
             - rules/outdated_suppression.md
@@ -161,6 +166,7 @@ website:
             - rules/string_boundary.md
             - rules/strings_as_factors.md
             - rules/system_file.md
+            - rules/terminal_close.md
             - rules/todo_comment.md
             - rules/true_false_symbol.md
             - rules/undesirable_function.md

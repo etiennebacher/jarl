@@ -9,8 +9,8 @@
 mod add_jarl_ignore;
 mod allow_dirty;
 mod allow_no_vcs;
-mod assignment;
 mod comments;
+mod config;
 mod edge_cases;
 mod exclude;
 mod help;
@@ -32,4 +32,5 @@ mod syntax_errors;
 mod toml;
 mod toml_hierarchical;
 mod toml_rule_args;
+mod unused_function;
 mod unused_object;
