@@ -138,9 +138,10 @@ fn has_preceding_guard(
     Ok(false)
 }
 
-/// A direct local assignment establishes nonemptiness on every path reaching
-/// the next statement. Conditional writes and replacement assignments cannot
-/// establish this fact; the caller still treats them as invalidating writes.
+/// A direct local assignment of constant arithmetic establishes nonemptiness
+/// on every path reaching the next statement. Conditional writes and replacement
+/// assignments cannot establish this fact; the caller treats them as invalidating
+/// writes.
 fn is_numeric_assignment(binary: &RBinaryExpression, name: &str) -> anyhow::Result<bool> {
     let (target, value) = match binary.operator()?.kind() {
         RSyntaxKind::ASSIGN | RSyntaxKind::EQUAL => (binary.left()?, binary.right()?),
@@ -150,20 +151,39 @@ fn is_numeric_assignment(binary: &RBinaryExpression, name: &str) -> anyhow::Resu
     let AnyRExpression::RIdentifier(identifier) = target else {
         return Ok(false);
     };
-    Ok(identifier.name_text() == name && is_numeric_literal(value)?)
+    Ok(identifier.name_text() == name && is_constant_numeric_expression(value)?)
 }
 
-/// Only scalar numeric literals establish this fact, without evaluating calls
-/// or arithmetic. Inspect the syntax so decimal and hexadecimal forms agree.
-fn is_numeric_literal(expression: AnyRExpression) -> anyhow::Result<bool> {
+/// Recognize arithmetic built only from numeric scalars, without evaluating it.
+/// Requiring both operands to qualify excludes empty values (`NULL * -2`) and
+/// runtime values (`idx * -2`). Only known arithmetic operators are accepted.
+pub(super) fn is_constant_numeric_expression(expression: AnyRExpression) -> anyhow::Result<bool> {
     match unparenthesized(expression)? {
         AnyRExpression::AnyRValue(AnyRValue::RIntegerValue(_) | AnyRValue::RDoubleValue(_)) => {
             Ok(true)
         }
-        AnyRExpression::RUnaryExpression(unary) => Ok(matches!(
-            unary.operator()?.kind(),
-            RSyntaxKind::PLUS | RSyntaxKind::MINUS
-        ) && is_numeric_literal(unary.argument()?)?),
+        AnyRExpression::RUnaryExpression(unary) => {
+            Ok(matches!(
+                unary.operator()?.kind(),
+                RSyntaxKind::PLUS | RSyntaxKind::MINUS
+            ) && is_constant_numeric_expression(unary.argument()?)?)
+        }
+        AnyRExpression::RBinaryExpression(binary) => {
+            let operator = binary.operator()?;
+            let is_arithmetic = matches!(
+                operator.kind(),
+                RSyntaxKind::PLUS
+                    | RSyntaxKind::MINUS
+                    | RSyntaxKind::MULTIPLY
+                    | RSyntaxKind::DIVIDE
+                    | RSyntaxKind::EXPONENTIATE
+                    | RSyntaxKind::EXPONENTIATE2
+            ) || (operator.kind() == RSyntaxKind::SPECIAL
+                && matches!(operator.text_trimmed(), "%%" | "%/%"));
+            Ok(is_arithmetic
+                && is_constant_numeric_expression(binary.left()?)?
+                && is_constant_numeric_expression(binary.right()?)?)
+        }
         _ => Ok(false),
     }
 }

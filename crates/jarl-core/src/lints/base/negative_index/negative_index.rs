@@ -4,7 +4,7 @@ use crate::utils::{get_function_name, get_function_namespace_prefix};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, WalkEvent};
 
-use super::nonempty_guard::has_nonempty_guard;
+use super::nonempty_guard::{has_nonempty_guard, is_constant_numeric_expression};
 
 pub struct NegativeIndex;
 
@@ -17,14 +17,14 @@ pub struct NegativeIndex;
 ///
 /// The rule will not report for cases below:
 ///
-/// - Literals, such as `x[-1]` and `x[c(-1, -2)]`.
+/// - Literals and constant arithmetic, such as `x[-1]`, `x[-2 * 3]`, and `x[c(-1, -2)]`.
 /// - Negation inside comparisons, such as `x[x > -n]`.
 /// - Negation inside `which()`, `order()`, and `between()`.
 /// - `-idx` guarded by an `if` or `while` condition proving it is nonempty,
 ///   such as `length(idx) > 0`, `length(idx)`, or `any(idx > 0)`.
 /// - `-idx` after a check that exits with `return()`, `stop()`, `next`, or `break`
 ///   when the index is empty, or an assertion such as `stopifnot(length(idx) > 0)`.
-/// - `-idx` after a numeric literal assignment, such as `idx <- 1`.
+/// - `-idx` after a constant numeric assignment, such as `idx <- 1` or `idx <- 2 * 3`.
 ///
 /// ## Why is this bad?
 ///
@@ -84,11 +84,17 @@ pub fn negative_index(ast: &RSubset) -> anyhow::Result<Vec<Diagnostic>> {
             expression = paren.body()?;
         }
 
+        // Check the whole index: a constant part of `x[-2 * idx]` cannot
+        // establish that the complete expression is independent of runtime values.
+        if is_literal(expression.clone())? {
+            continue;
+        }
+
         // A guard protects the whole index only for a direct negation.
         // In `x[-n * idx]`, checking `n` does not establish `idx`'s length.
         if let AnyRExpression::RUnaryExpression(unary) = expression
             && unary.operator()?.kind() == RSyntaxKind::MINUS
-            && (is_literal(unary.argument()?)? || has_nonempty_guard(&unary)?)
+            && has_nonempty_guard(&unary)?
         {
             continue;
         }
@@ -208,6 +214,9 @@ fn is_literal(mut expression: AnyRExpression) -> anyhow::Result<bool> {
         | AnyRExpression::RFalseExpression(_)
         | AnyRExpression::RInfExpression(_)
         | AnyRExpression::RNanExpression(_) => Ok(true),
+        expression @ AnyRExpression::RBinaryExpression(_) => {
+            is_constant_numeric_expression(expression)
+        }
         AnyRExpression::RCall(call) => is_literal_c_call(&call),
         AnyRExpression::RUnaryExpression(unary) => Ok(matches!(
             unary.operator()?.kind(),

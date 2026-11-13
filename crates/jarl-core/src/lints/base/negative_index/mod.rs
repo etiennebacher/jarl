@@ -23,6 +23,17 @@ mod tests {
             "x[-NULL]",
             "x[-\"text\"]",
             "x[c(-1, c(-2, 3))]",
+            // Constant arithmetic is recognized recursively, without evaluating it.
+            "x[-2 * 3]",
+            "x[-(1 + 2)]",
+            "x[-(3 - 1L)]",
+            "x[-(4 / 2)]",
+            "x[-2 ^ 3]",
+            "x[-2 ** 3]",
+            "x[-(5 %% 2)]",
+            "x[-(5 %/% 2)]",
+            "x[-((2 + 3) * +4)]",
+            "x[c(-2 * 3, -(4 / 2))]",
             // Logical indices cannot pass negative values through.
             "x[idx == -1]",
             "x[idx != -1]",
@@ -99,6 +110,7 @@ mod tests {
         for code in [
             // Direct assignments accept numeric syntax without evaluating expressions.
             "idx <- 1; x[-idx]",
+            "idx <- 1 + 1; x[-idx]",
             "idx = -2L; x[-idx]",
             "1.5 -> idx; x[-idx]",
             "idx <- (+(-((0)))); x[-idx]",
@@ -232,6 +244,48 @@ mod tests {
           = help: Handle empty indices explicitly or use a logical index.
         Found 1 error.
         ");
+        // A constant operand does not make the whole expression constant.
+        assert_snapshot!(snapshot_lint("x[-(idx + 1)]"), @"
+        warning: negative_index
+         --> <test>:1:3
+          |
+        1 | x[-(idx + 1)]
+          |   ---------- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("x[-2 * NULL]"), @"
+        warning: negative_index
+         --> <test>:1:3
+          |
+        1 | x[-2 * NULL]
+          |   --------- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("x[-(length(idx) + 1)]"), @"
+        warning: negative_index
+         --> <test>:1:3
+          |
+        1 | x[-(length(idx) + 1)]
+          |   ------------------ Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        // Unknown operators may return empty values even with constant operands.
+        assert_snapshot!(snapshot_lint("x[-(1 %custom% 2)]"), @"
+        warning: negative_index
+         --> <test>:1:3
+          |
+        1 | x[-(1 %custom% 2)]
+          |   --------------- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
         assert_snapshot!(snapshot_lint("x[-1 * idx]"), @"
         warning: negative_index
          --> <test>:1:3
@@ -258,16 +312,6 @@ mod tests {
           |
         1 | x[c(-1, idx)]
           |   ---------- Non-literal negative indices may produce unexpected results when empty.
-          |
-          = help: Handle empty indices explicitly or use a logical index.
-        Found 1 error.
-        ");
-        assert_snapshot!(snapshot_lint("x[-2 * 3]"), @"
-        warning: negative_index
-         --> <test>:1:3
-          |
-        1 | x[-2 * 3]
-          |   ------ Non-literal negative indices may produce unexpected results when empty.
           |
           = help: Handle empty indices explicitly or use a logical index.
         Found 1 error.
@@ -457,16 +501,6 @@ mod tests {
           |
         1 | idx <- length(x); x[-idx]
           |                     ---- Non-literal negative indices may produce unexpected results when empty.
-          |
-          = help: Handle empty indices explicitly or use a logical index.
-        Found 1 error.
-        ");
-        assert_snapshot!(snapshot_lint("idx <- 1 + 1; x[-idx]"), @"
-        warning: negative_index
-         --> <test>:1:17
-          |
-        1 | idx <- 1 + 1; x[-idx]
-          |                 ---- Non-literal negative indices may produce unexpected results when empty.
           |
           = help: Handle empty indices explicitly or use a logical index.
         Found 1 error.

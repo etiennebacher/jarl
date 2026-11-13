@@ -9,14 +9,14 @@ Checks for unary minus in `[]` indices, such as `x[-idx]` and `x[-which(x == 99)
 
 The rule will not report for cases below:
 
-- Literals, such as `x[-1]` and `x[c(-1, -2)]`.
+- Literals and constant arithmetic, such as `x[-1]`, `x[-2 * 3]`, and `x[c(-1, -2)]`.
 - Negation inside comparisons, such as `x[x > -n]`.
 - Negation inside `which()`, `order()`, and `between()`.
 - `-idx` guarded by an `if` or `while` condition proving it is nonempty,
   such as `length(idx) > 0`, `length(idx)`, or `any(idx > 0)`.
 - `-idx` after a check that exits with `return()`, `stop()`, `next`, or `break`
   when the index is empty, or an assertion such as `stopifnot(length(idx) > 0)`.
-- `-idx` after a numeric literal assignment, such as `idx <- 1`.
+- `-idx` after a constant numeric assignment, such as `idx <- 1` or `idx <- 2 * 3`.
 
 ## Why is this bad?
 
