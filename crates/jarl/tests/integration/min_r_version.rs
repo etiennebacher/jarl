@@ -157,7 +157,7 @@ Depends: R (>= 4.6.0), utils, stats"#,
 }
 
 #[test]
-fn test_min_r_version_from_description_strict_lower_bound()-> anyhow::Result<()> {
+fn test_min_r_version_from_description_strict_lower_bound() -> anyhow::Result<()> {
     let case = CliTest::with_file("test.R", "grep('a.*', x, value = TRUE)")?;
 
     // grepv() only exists for R >= 4.5.0, and `> 4.5.0` guarantees 4.5.1.

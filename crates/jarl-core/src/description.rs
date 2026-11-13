@@ -81,9 +81,10 @@ fn extract_version_from_dependency(dep: &str) -> Option<String> {
     {
         return match version.trim().split('.').collect::<Vec<_>>()[..] {
             [major, minor] => Some(format!("{major}.{minor}.1")),
-            [major, minor, patch] => {
-                Some(format!("{major}.{minor}.{}", patch.parse::<u32>().ok()? + 1))
-            }
+            [major, minor, patch] => Some(format!(
+                "{major}.{minor}.{}",
+                patch.parse::<u32>().ok()? + 1
+            )),
             _ => None,
         };
     }
