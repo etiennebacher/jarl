@@ -130,30 +130,23 @@ mod tests {
     }
 
     #[test]
-    fn test_lint_deparse1_vectorizes() {
-        // the recommendation applies independently to every matching call, so it
-        // vectorizes over multiple statements
+    fn test_deparse1_with_comments_no_fix() {
+        // Leading and trailing comments are outside the replaced range, so the
+        // fix is applied. Comments inside the expression would be lost, so the
+        // lint is reported but no fix is applied.
         assert_snapshot!(
-            snapshot_lint(
-                "{\n  paste(deparse(x), collapse = ' ')\n  paste(deparse(y), collapse = ' ')\n}"
-            ),
-            @r#"
-        warning: deparse1
-         --> <test>:2:3
-          |
-        2 |   paste(deparse(x), collapse = ' ')
-          |   --------------------------------- `paste(deparse(x), collapse = " ")` can be simplified.
-          |
-          = help: Use `deparse1(x)` instead.
-        warning: deparse1
-         --> <test>:3:3
-          |
-        3 |   paste(deparse(y), collapse = ' ')
-          |   --------------------------------- `paste(deparse(x), collapse = " ")` can be simplified.
-          |
-          = help: Use `deparse1(x)` instead.
-        Found 2 errors.
-        "#
+            "no_fix_with_comments",
+            get_unsafe_fixed_text_with_settings(
+                vec![
+                    "# leading comment\npaste(deparse(x), collapse = ' ')",
+                    "paste(deparse(x), collapse = ' ') # trailing comment",
+                    "paste(\n  # comment\n  deparse(x),\n  collapse = ' '\n)",
+                    "paste(deparse(\n  # comment\n  x\n), collapse = ' ')",
+                ],
+                "deparse1",
+                Some("4.0.0"),
+                None
+            )
         );
     }
 }
