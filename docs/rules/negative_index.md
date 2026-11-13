@@ -5,29 +5,33 @@
 
 ## What it does
 
-Checks for unary minus in `[]` indices, such as `x[-idx]`, except for
-directly negated literals such as `x[-1]`.
-A `c()` call is also treated as literal when all its arguments are literals.
-Negation inside logical expressions or calls to `between()`, `which()`, and
-`order()` is ignored, as in `x[x > -1]` and `x[order(-x)]`.
+Checks for unary minus in `[]` indices, such as `x[-idx]` and `x[-which(x == 99)]`.
+
+The rule will not report for cases below:
+
+- Literals, such as `x[-1]` and `x[c(-1, -2)]`.
+- Negation inside comparisons, such as `x[x > -n]`.
+- Negation inside `which()`, `order()`, and `between()`.
+- `-idx` guarded by an `if` or `while` condition proving it is nonempty,
+  such as `length(idx) > 0`, `length(idx)`, or `any(idx > 0)`.
+- `-idx` after a check that exits with `return()`, `stop()`, `next`, or `break`
+  when the index is empty, or an assertion such as `stopifnot(length(idx) > 0)`.
+- `-idx` after a numeric literal assignment, such as `idx <- 1`.
 
 ## Why is this bad?
 
 If `idx` is empty, `x[-idx]` selects no elements instead of keeping all of
-`x`. This can happen with `x[-which(condition)]` when nothing matches.
+`x`. For example, trying to remove a value that is not present returns an
+empty vector:
 
-This rule also reports expressions such as `x[-1 * idx]`, `x[c(-1, -idx)]`,
-and `x[-2 * 3]`. A directly negated variable is allowed inside an `if` branch
-or `while` body whose condition establishes that it is nonempty, such as
-`if (length(idx))`, `if (n > 1)`, or `while (length(idx) > 0)`, with no
-intervening assignment to that variable.
-An earlier check that exits with `return()`, `stop()`, `next`, or `break`
-when the index is empty also protects subsequent uses in the same block.
-Checks such as `if (any(idx > 0))` and `stopifnot(length(idx) > 0)` are also
-recognized. `stopifnot(idx > 0)` does not exclude empty indices.
-A preceding numeric literal assignment, such as `idx <- 1`, also establishes
-nonemptiness if the variable is unchanged before use.
-Other runtime values and indirect checks are not inferred.
+```r
+x <- 1:10
+x[-which(x == 99)]
+#> integer(0)
+```
+
+Since `99` is not in `x`, the intended result is the unchanged vector `1:10`
+rather than an empty vector.
 
 No automatic fix is provided. Handle empty indices explicitly or use a
 logical index when possible.
