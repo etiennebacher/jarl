@@ -781,10 +781,10 @@ fn get_checks_roxygen(
                     for node in expression.descendants() {
                         if let Some(binary) = node.cast::<RBinaryExpression>() {
                             checker.report_diagnostic(
-                        crate::lints::base::assignment_on_if_no_else::assignment_on_if_no_else::assignment_on_if_no_else(
-                            &binary, &info,
-                        )?,
-                    );
+                                crate::lints::base::assignment_on_if_no_else::assignment_on_if_no_else::assignment_on_if_no_else(
+                                    &binary, &info,
+                                )?,
+                            );
                         }
                     }
                 }
