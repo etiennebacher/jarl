@@ -40,6 +40,10 @@
 
 ### Bug fixes
 
+* R version constraints in `DESCRIPTION` that use `>`, such as `R (> 4.5.0)`,
+  are now used to determine the minimum R version (here 4.5.1) (#578,
+  @Yousa-Mirage).
+
 * Fix `download_file` handling of binary URL suffixes, string literals, namespaces,
   and ignored `mode` arguments with external download methods (#786, @Yousa-Mirage).
 
