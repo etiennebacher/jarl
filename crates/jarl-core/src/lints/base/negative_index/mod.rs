@@ -128,6 +128,30 @@ mod tests {
     }
 
     #[test]
+    fn test_no_lint_negative_index_early_exit() {
+        for code in [
+            "function(x, idx) { if (length(idx) == 0) return(x); x[-idx] }",
+            "function(x, idx) { if (!length(idx)) { message('empty'); return(x) }; x[-idx] }",
+            "if (length(idx) == 0) stop('empty'); x[-idx]",
+            "if (length(idx) == 0) base::stop('empty'); x[-idx]",
+            "if (length(idx)) print(idx) else stop('empty'); x[-idx]",
+            "if (!length(idx)) stop('empty') else print(idx); x[-idx]",
+            "function(x, idx) { if (!length(idx)) return(x); if (verbose) print(x[-idx]) }",
+            "for (i in 1:3) { if (!length(idx)) next; x[-idx]; idx <- f() }",
+            "repeat { if (!length(idx)) break; x[-idx]; idx <- f() }",
+            "function(x, idx) { if (!length(idx)) { if (verbose) return(x) else stop('empty') }; x[-idx] }",
+            // Writes on the exiting path do not affect the surviving path.
+            "function(x, idx) { if (!length(idx)) { idx <- f(); return(x) }; x[-idx] }",
+            // A fresh check restores protection after a write.
+            "if (!length(idx)) stop('empty'); idx <- f(); if (!length(idx)) stop('empty'); x[-idx]",
+            "function(x, idx) { if (!length(idx)) return(x); idx <- x[-idx] }",
+            "function(x, idx) { if (!length(idx)) return(x); f <- function() idx <- NULL; x[-idx] }",
+        ] {
+            expect_no_lint(code, "negative_index", None);
+        }
+    }
+
+    #[test]
     fn test_lint_negative_index_while_and_length() {
         assert_snapshot!(snapshot_lint("if (length(idx)) NULL else x[-idx]"), @"
         warning: negative_index
@@ -199,6 +223,208 @@ mod tests {
           |
         3 |     x[-idx]
           |       ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+    }
+
+    #[test]
+    fn test_lint_negative_index_early_exit() {
+        assert_snapshot!(snapshot_lint(
+            "if (!length(idx) || { idx <- f(); FALSE }) stop('empty')
+x[-idx]"
+        ), @"
+        warning: negative_index
+         --> <test>:2:3
+          |
+        2 | x[-idx]
+          |   ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint(
+            "function(x, idx) {
+  if (!length(idx)) {
+    if (verbose) return(x) else warning('empty')
+  }
+  x[-idx]
+}"
+        ), @"
+        warning: negative_index
+         --> <test>:5:5
+          |
+        5 |   x[-idx]
+          |     ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("if (!length(idx)) function() stop('empty'); x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:47
+          |
+        1 | if (!length(idx)) function() stop('empty'); x[-idx]
+          |                                               ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        // The empty path must exit unconditionally.
+        assert_snapshot!(snapshot_lint(
+            "function(x, idx) {
+  if (!length(idx)) {
+    if (verbose) return(x)
+  }
+  x[-idx]
+}"
+        ), @"
+        warning: negative_index
+         --> <test>:5:5
+          |
+        5 |   x[-idx]
+          |     ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("if (!length(idx)) warning('empty'); x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:39
+          |
+        1 | if (!length(idx)) warning('empty'); x[-idx]
+          |                                       ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("if (length(idx)) stop('nonempty'); x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:38
+          |
+        1 | if (length(idx)) stop('nonempty'); x[-idx]
+          |                                      ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("if (!length(idx)) other::stop('empty'); x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:43
+          |
+        1 | if (!length(idx)) other::stop('empty'); x[-idx]
+          |                                           ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        // A guard in another branch need not have run.
+        assert_snapshot!(snapshot_lint("if (verbose) { if (!length(idx)) stop('empty') }; x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:53
+          |
+        1 | if (verbose) { if (!length(idx)) stop('empty') }; x[-idx]
+          |                                                     ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint(
+            "function(x, idx) {
+  if (!length(idx)) return(x)
+  idx <- f()
+  x[-idx]
+}"
+        ), @"
+        warning: negative_index
+         --> <test>:4:5
+          |
+        4 |   x[-idx]
+          |     ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("if (length(idx)) idx <- f() else stop('empty'); x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:51
+          |
+        1 | if (length(idx)) idx <- f() else stop('empty'); x[-idx]
+          |                                                   ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("if (!length(idx)) stop('empty') else idx <- f(); x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:52
+          |
+        1 | if (!length(idx)) stop('empty') else idx <- f(); x[-idx]
+          |                                                    ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        // Exits caught by another call or confined to another loop do not protect this use.
+        assert_snapshot!(snapshot_lint("if (!length(idx)) tryCatch(stop('empty'), error = identity); x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:64
+          |
+        1 | if (!length(idx)) tryCatch(stop('empty'), error = identity); x[-idx]
+          |                                                                ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("if (!length(idx)) repeat { break }; x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:39
+          |
+        1 | if (!length(idx)) repeat { break }; x[-idx]
+          |                                       ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint(
+            "function(x, idx) {
+  if (!length(idx)) return(x)
+  function() x[-idx]
+}"
+        ), @"
+        warning: negative_index
+         --> <test>:3:16
+          |
+        3 |   function() x[-idx]
+          |                ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        // A guard outside the loop does not recheck the index on later iterations.
+        assert_snapshot!(snapshot_lint(
+            "if (!length(idx)) stop('empty')
+while (more) {
+  x[-idx]
+  idx <- f()
+}"
+        ), @"
+        warning: negative_index
+         --> <test>:3:5
+          |
+        3 |   x[-idx]
+          |     ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("x[-idx]; if (!length(idx)) stop('empty')"), @"
+        warning: negative_index
+         --> <test>:1:3
+          |
+        1 | x[-idx]; if (!length(idx)) stop('empty')
+          |   ---- Non-literal negative indices may produce unexpected results when empty.
           |
           = help: Handle empty indices explicitly or use a logical index.
         Found 1 error.

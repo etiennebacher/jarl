@@ -29,6 +29,8 @@ pub struct NegativeIndex;
 /// or `while` body whose condition establishes that it is nonempty, such as
 /// `if (length(idx))`, `if (n > 1)`, or `while (length(idx) > 0)`, with no
 /// intervening assignment to that variable.
+/// An earlier check that exits with `return()`, `stop()`, `next`, or `break`
+/// when the index is empty also protects subsequent uses in the same block.
 /// Other runtime values and indirect checks are not inferred.
 ///
 /// No automatic fix is provided. Handle empty indices explicitly or use a

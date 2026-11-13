@@ -1,10 +1,12 @@
-use crate::utils::{get_arg_by_position, get_function_name, get_function_namespace_prefix};
+use crate::utils::{
+    StatementsExt, get_arg_by_position, get_function_name, get_function_namespace_prefix,
+};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList, TextSize, WalkEvent};
 use oak_core::syntax_ext::RIdentifierExt;
 
 /// A length or scalar check can make a negated variable safe in an enclosing
-/// `if` branch or `while` body. Only trust it while the variable holds its value.
+/// branch or after an early exit. Only trust it while the variable holds its value.
 pub(super) fn has_nonempty_guard(unary: &RUnaryExpression) -> anyhow::Result<bool> {
     let Some(identifier) = unparenthesized(unary.argument()?)?
         .as_r_identifier()
@@ -20,6 +22,14 @@ pub(super) fn has_nonempty_guard(unary: &RUnaryExpression) -> anyhow::Result<boo
         // A deferred function body may run after the checked variable changes.
         if RFunctionDefinition::can_cast(ancestor.kind()) {
             break;
+        }
+
+        // An earlier statement can exclude empty indices from every path
+        // reaching this use, as in `if (!length(idx)) return(x); x[-idx]`.
+        if let Some(statements) = RStatementList::cast_ref(&ancestor)
+            && has_preceding_guard(&statements, &name, position, end)?
+        {
+            return Ok(true);
         }
 
         let guard = match AnyRExpression::cast_ref(&ancestor) {
@@ -69,6 +79,104 @@ pub(super) fn has_nonempty_guard(unary: &RUnaryExpression) -> anyhow::Result<boo
         }
     }
     Ok(false)
+}
+
+/// Look backward for a guard, stopping at a write that would invalidate it.
+/// When the use is in a loop, `end` also includes writes that affect subsequent
+/// iterations. A check after the use cannot protect it.
+fn has_preceding_guard(
+    statements: &RStatementList,
+    name: &str,
+    position: TextSize,
+    end: TextSize,
+) -> anyhow::Result<bool> {
+    for expression in statements.expressions().into_iter().rev() {
+        if expression.range().start() >= end {
+            continue;
+        }
+        // Check the guard first: writes on its exiting path do not matter.
+        if expression.range().end() <= position && is_early_exit_guard(expression.clone(), name)? {
+            return Ok(true);
+        }
+        if has_write(expression.syntax(), name, end)? {
+            return Ok(false);
+        }
+    }
+    Ok(false)
+}
+
+/// The surviving branch must establish nonemptiness and preserve the variable.
+/// Writes in the exiting branch cannot affect code after the `if`.
+fn is_early_exit_guard(expression: AnyRExpression, name: &str) -> anyhow::Result<bool> {
+    let AnyRExpression::RIfStatement(statement) = unparenthesized(expression)? else {
+        return Ok(false);
+    };
+    let condition = statement.condition()?;
+    if has_write(condition.syntax(), name, condition.range().end())? {
+        return Ok(false);
+    }
+    let consequence = statement.consequence()?;
+    let alternative = statement
+        .else_clause()
+        .map(|clause| clause.alternative())
+        .transpose()?;
+
+    if always_exits(consequence.clone())?
+        && condition_proves_nonempty(condition.clone(), name, false)?
+    {
+        return match alternative {
+            Some(branch) => Ok(!has_write(branch.syntax(), name, branch.range().end())?),
+            None => Ok(true),
+        };
+    }
+    if let Some(alternative) = alternative
+        && always_exits(alternative)?
+        && condition_proves_nonempty(condition, name, true)?
+    {
+        return Ok(!has_write(
+            consequence.syntax(),
+            name,
+            consequence.range().end(),
+        )?);
+    }
+    Ok(false)
+}
+
+/// Require an unconditional exit from this branch. Inspect only statements
+/// that execute here: a nested function, loop, or arbitrary call may contain
+/// an exit without preventing execution of the following statement.
+fn always_exits(expression: AnyRExpression) -> anyhow::Result<bool> {
+    match unparenthesized(expression)? {
+        AnyRExpression::RBreakExpression(_) | AnyRExpression::RNextExpression(_) => Ok(true),
+        AnyRExpression::RCall(call) => {
+            let function = call.function()?;
+            Ok(matches!(
+                get_function_name(function.clone()).as_str(),
+                "return" | "stop"
+            ) && matches!(
+                get_function_namespace_prefix(function).as_deref(),
+                None | Some("base::")
+            ))
+        }
+        AnyRExpression::RBracedStatements(braced) => {
+            for expression in braced.expressions() {
+                if always_exits(expression)? {
+                    return Ok(true);
+                }
+            }
+            Ok(false)
+        }
+        AnyRExpression::RIfStatement(statement) => {
+            let Some(alternative) = statement.else_clause() else {
+                return Ok(false);
+            };
+            Ok(
+                always_exits(statement.consequence()?)?
+                    && always_exits(alternative.alternative()?)?,
+            )
+        }
+        _ => Ok(false),
+    }
 }
 
 /// Infer only facts established by reaching this particular branch. Both sides
