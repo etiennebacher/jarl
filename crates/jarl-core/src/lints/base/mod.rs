@@ -40,6 +40,7 @@ pub(crate) mod list_comparison;
 pub(crate) mod literal_coercion;
 pub(crate) mod matrix_apply;
 pub(crate) mod missing_argument;
+pub(crate) mod negative_index;
 pub(crate) mod nested_pipe;
 pub(crate) mod notin;
 pub(crate) mod null_list;
