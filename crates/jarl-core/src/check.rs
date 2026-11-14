@@ -426,6 +426,7 @@ pub fn get_checks(
         let context = RoxygenContext {
             loaded_packages: &checker.loaded_packages,
             import_from: &checker.import_from,
+            package_name: checker.package_name.as_deref(),
             source_cache: &checker.source_index_cache,
         };
         let roxygen_diagnostics =
@@ -588,6 +589,17 @@ fn get_package_info(
     pkg_contexts: &HashMap<PathBuf, PackageContext>,
     file_pkg_info: &HashMap<PathBuf, FilePackageInfo>,
 ) {
+    // Any file inside a package belongs to it, loadable source or not: a
+    // script in `data-raw/` is still part of the package it sits in.
+    let package_root = match file_pkg_info.get(file) {
+        Some(FilePackageInfo::InPackage { package_root, .. }) => Some(package_root),
+        Some(FilePackageInfo::Script { package_root }) => package_root.as_ref(),
+        None => None,
+    };
+    checker.package_name = package_root
+        .and_then(|root| pkg_contexts.get(root))
+        .and_then(|ctx| ctx.name.clone());
+
     let mut packages: Vec<String> = match file_pkg_info.get(file) {
         Some(FilePackageInfo::InPackage { package_root, .. }) => {
             match pkg_contexts.get(package_root) {
@@ -682,6 +694,7 @@ fn top_level_attached_packages(
 struct RoxygenContext<'a> {
     loaded_packages: &'a [String],
     import_from: &'a HashMap<String, String>,
+    package_name: Option<&'a str>,
     source_cache: &'a jarl_semantic::SourceIndexCache,
 }
 
@@ -727,6 +740,7 @@ fn get_checks_roxygen(
         checker.file_path = file.to_path_buf();
         checker.source_index_cache = context.source_cache.clone();
         checker.import_from = context.import_from.clone();
+        checker.package_name = context.package_name.map(str::to_string);
 
         for expr in expressions {
             check_expression(expr, &mut checker)?;

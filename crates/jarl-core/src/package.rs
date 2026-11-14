@@ -38,6 +38,8 @@ pub enum FileScope {
 /// One instance per package root.
 #[derive(Clone, Debug, Default)]
 pub struct PackageContext {
+    /// The package's name, from the `Package` field of DESCRIPTION.
+    pub name: Option<String>,
     /// Parsed NAMESPACE, `None` when the package has no NAMESPACE file.
     pub namespace: Option<Namespace>,
     pub loaded_packages: Vec<String>,
@@ -241,6 +243,7 @@ pub fn summarize_package_info(
         let mut packages: Vec<String> = DEFAULT_PACKAGES.iter().map(|s| s.to_string()).collect();
         let mut namespace = None;
         let mut minimum_r_version = None;
+        let mut name = None;
 
         // Only `Depends`. Those packages are attached to the search path when
         // the package is attached, so bare names from them really do resolve.
@@ -250,6 +253,7 @@ pub fn summarize_package_info(
         let desc_path = root.join("DESCRIPTION");
         if let Ok(desc) = std::fs::read_to_string(&desc_path) {
             packages.extend(Description::get_package_deps(&desc, &["Depends"]));
+            name = Description::get_package_name(&desc);
             // Same string, so the version costs no extra read or walk.
             minimum_r_version = Description::get_depend_r_version(&desc)
                 .ok()
@@ -271,6 +275,7 @@ pub fn summarize_package_info(
         contexts.insert(
             root.clone(),
             PackageContext {
+                name,
                 namespace,
                 loaded_packages: packages,
                 minimum_r_version,

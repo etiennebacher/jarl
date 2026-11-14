@@ -24,6 +24,9 @@ pub struct UndesirableOperator {
 /// notice if the package changes. `<<-` and `->>` assign outside the current environment
 /// and may lead to code that is harder to predict.
 ///
+/// In an R package, `:::` is not reported when it accesses the package itself,
+/// e.g. `mypkg:::internal_function()` in the tests of `mypkg`.
+///
 ///
 /// ## Example
 ///
@@ -83,8 +86,20 @@ pub fn undesirable_operator_binary(
 pub fn undesirable_operator_namespace(
     ast: &RNamespaceExpression,
     options: &ResolvedUndesirableOperatorOptions,
+    package_name: Option<&str>,
 ) -> anyhow::Result<Option<Diagnostic>> {
-    Ok(check_operator(&ast.operator()?, options))
+    let operator = ast.operator()?;
+
+    // A package reaching its own internals (typically `pkg:::fn` in the tests
+    // of `pkg`) doesn't depend on anything that could change without notice.
+    if operator.kind() == RSyntaxKind::COLON3
+        && let Some(package_name) = package_name
+        && ast.left()?.syntax().text_trimmed() == package_name
+    {
+        return Ok(None);
+    }
+
+    Ok(check_operator(&operator, options))
 }
 
 pub fn undesirable_operator_extract(

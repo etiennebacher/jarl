@@ -32,5 +32,6 @@ mod syntax_errors;
 mod toml;
 mod toml_hierarchical;
 mod toml_rule_args;
+mod undesirable_operator;
 mod unused_function;
 mod unused_object;
