@@ -16,6 +16,7 @@ const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &[
     "expect_no_warning",
     "expect_no_error",
     "expect_no_message",
+    "on.exit",
     "quote",
     "suppressMessages",
     "suppressWarnings",
@@ -48,6 +49,7 @@ const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &[
 ///     "expect_no_warning",    # from {testthat}
 ///     "expect_no_error",      # from {testthat}
 ///     "expect_no_message",    # from {testthat}
+///     "on.exit",
 ///     "quote",
 ///     "suppressMessages",
 ///     "suppressWarnings",
