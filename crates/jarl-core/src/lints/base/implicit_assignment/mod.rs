@@ -200,6 +200,8 @@ mod tests {
             None,
         );
         expect_no_lint("expect_snapshot(x <- 1)", "implicit_assignment", None);
+        expect_no_lint("on.exit(x <- 1)", "implicit_assignment", None);
+        expect_no_lint("on.exit(x <- 1, add = TRUE)", "implicit_assignment", None);
         expect_no_lint("quote(x <- 1)", "implicit_assignment", None);
         expect_no_lint("suppressMessages(x <- 1)", "implicit_assignment", None);
         expect_no_lint("suppressWarnings(x <- 1)", "implicit_assignment", None);
