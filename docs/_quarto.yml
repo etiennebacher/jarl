@@ -137,6 +137,7 @@ website:
             - rules/list_comparison.md
             - rules/list2df.md
             - rules/literal_coercion.md
+            - rules/loop_invariant.md
             - rules/matrix_apply.md
             - rules/misnamed_suppression.md
             - rules/misplaced_file_suppression.md

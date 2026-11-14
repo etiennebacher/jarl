@@ -4,6 +4,7 @@
 
 ### New features
 
+
 * New rules:
 
   * `apply_paste` (#563)
@@ -14,6 +15,7 @@
   * `null_list` (#785, @JosephBARBIERDARNAL)
   * `terminal_close` (#811)
   * `todo_comment` (#739, @Yousa-Mirage)
+  * `loop_invariant` (disabled by default)
 
 * Improved rules:
 
