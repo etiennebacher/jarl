@@ -8,6 +8,7 @@
 
   * `apply_paste` (#563)
   * `assignment_on_if_no_else` (#605, @christopherkenny)
+  * `deparse1` (#694, @maelle)
   * `function_return` (#750)
   * `if_switch` (#812)
   * `list_comparison` (#572, @Yousa-Mirage)
