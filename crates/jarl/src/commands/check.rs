@@ -8,6 +8,7 @@ use jarl_core::package_cache::{PackageCache, any_file_references_packages, find_
 use jarl_core::rule_set::Rule;
 use jarl_core::toml::parse_config_overrides;
 use jarl_core::{
+    check::{VersionSkippedRule, version_skipped_rules},
     config::ArgsConfig,
     config::build_config,
     diagnostic::Diagnostic,
@@ -195,6 +196,18 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     let mut root_caches: HashMap<Option<PathBuf>, Option<Arc<PackageCache>>> = HashMap::new();
 
     let mut file_results = Vec::new();
+    // Explicitly selected rules that the R version kept from running, with the
+    // R versions found for the files they were skipped on.
+    let mut version_skipped: Vec<VersionSkippedRule> = Vec::new();
+    let mut run_check = |config: jarl_core::config::Config| {
+        for skipped in version_skipped_rules(&config) {
+            match version_skipped.iter_mut().find(|s| s.rule == skipped.rule) {
+                Some(entry) => entry.found_versions.extend(skipped.found_versions),
+                None => version_skipped.push(skipped),
+            }
+        }
+        run_check(config, stdin.as_ref())
+    };
     for (dir_key, group_paths) in groups {
         let settings = dir_key
             .as_deref()
@@ -204,7 +217,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         let mut config = build_config(&check_config, settings, group_paths.clone())?;
 
         if !config.rules_to_apply.has_package_specific_rules() {
-            file_results.extend(run_check(config, stdin.as_ref()));
+            file_results.extend(run_check(config));
             continue;
         }
 
@@ -240,7 +253,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
             config.rules_to_apply = config
                 .rules_to_apply
                 .filter(|r| !r.categories().iter().any(|c| c.is_package_specific()));
-            file_results.extend(run_check(config, stdin.as_ref()));
+            file_results.extend(run_check(config));
             continue;
         }
 
@@ -263,7 +276,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
                 .clone();
 
             config.package_cache = cache;
-            file_results.extend(run_check(config, stdin.as_ref()));
+            file_results.extend(run_check(config));
         }
     }
 
@@ -402,6 +415,8 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
             }
         }
 
+        warnings.extend(version_skipped.iter().map(version_skipped_warning));
+
         print_warnings(&warnings);
 
         // ── Notes ──
@@ -428,6 +443,31 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     }
 
     Ok(ExitStatus::Failure)
+}
+
+/// The warning for a rule the user explicitly selected but that was skipped
+/// because the R version isn't guaranteed to be high enough for it.
+fn version_skipped_warning(skipped: &VersionSkippedRule) -> String {
+    let rule = skipped.rule.name();
+    let (major, minor, patch) = skipped.rule.minimum_r_version().unwrap_or_default();
+
+    let lower: Vec<String> = skipped
+        .found_versions
+        .iter()
+        .flatten()
+        .map(|(major, minor, patch)| format!("{major}.{minor}.{patch}"))
+        .collect();
+    let found = match (skipped.found_versions.contains(&None), lower.is_empty()) {
+        (_, true) => "unknown".to_string(),
+        (false, false) => format!("lower ({})", lower.join(", ")),
+        (true, false) => format!("unknown or lower ({})", lower.join(", ")),
+    };
+
+    format!(
+        "Rule `{rule}` is explicitly selected but requires R >= {major}.{minor}.{patch}. \
+         It was not run on files where the minimum R version is {found}.\n\
+         To run it, set `--min-r-version` or `Depends: R (>= {major}.{minor}.{patch})` in DESCRIPTION."
+    )
 }
 
 /// Insert `# jarl-ignore` comments for all diagnostics in the given files.

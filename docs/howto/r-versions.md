@@ -10,3 +10,6 @@ There are two ways to tell Jarl which R version you're using:
 
 1. you can pass this information by hand using `--min-r-version`. For example, passing `--min-r-version 4.3` will tell Jarl that it can apply rules that depend on R 4.3.0 or before. Rules that depend on R 4.3.1 or more would still be ignored.
 1. if your project has a `DESCRIPTION` file, you can set `R (>= x.y.z)` in the `Depends` field and Jarl will retrieve this version.
+
+If you explicitly select one of those rules by its name (in `--select` / `--extend-select` or in the corresponding fields of `jarl.toml`) but Jarl cannot guarantee that the R version is high enough, the rule is still skipped and Jarl prints a warning to let you know.
+There is no warning when the rule is only selected through a group of rules, such as `PERF` or `ALL`.

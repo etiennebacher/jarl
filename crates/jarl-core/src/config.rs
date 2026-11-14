@@ -73,6 +73,11 @@ pub struct Config {
     /// The minimum R version the user pinned with `--min-r-version`, which
     /// applies to the whole run and overrides every package's own `Depends`.
     pub minimum_r_version: Option<(u32, u32, u32)>,
+    /// Rules that need a minimum R version and that the user named one by one
+    /// in `select` / `extend-select` (CLI or `jarl.toml`), in declaration
+    /// order. Unlike `rules`, this is not filtered by R version: it is what
+    /// lets us warn when such a rule ends up not running.
+    pub explicit_versioned_rules: Vec<Rule>,
     /// Apply fixes even if the Git branch still has uncommitted files?
     pub allow_dirty: bool,
     /// Apply fixes even if there is no version control system?
@@ -114,14 +119,6 @@ pub fn build_config(
     let rules_toml = parse_rules_toml(toml_settings)?;
     let rules = reconcile_rules(rules_cli, rules_toml)?;
 
-    // We can only do this general filter if the user passed an explicity `--min-r-version`,
-    // otherwise we resolve the min R version of each path later on. This is
-    // necessary because not all paths necessarily get the same min R version.
-    let rules = match minimum_r_version {
-        Some(_) => filter_rules_by_version(&rules, minimum_r_version),
-        None => rules,
-    };
-
     // Parse fixable/unfixable rules from TOML.
     // These will be stored in Config and checked when applying fixes.
     let (fixable_toml, unfixable_toml) = parse_fixable_toml(toml_settings)?;
@@ -153,6 +150,26 @@ pub fn build_config(
             .collect::<RuleSet>()
     } else {
         rules_to_apply
+    };
+
+    // Collected before the R version filter below, so that it keeps the rules
+    // that this filter (or the per-file one) drops.
+    let explicit = explicitly_selected_rules(check_config, toml_settings);
+    let explicit_versioned_rules = rules_to_apply
+        .iter()
+        .filter(|rule| rule.minimum_r_version().is_some() && explicit.contains(rule))
+        .copied()
+        .collect::<Vec<_>>();
+
+    // We can only do this general filter if the user passed an explicit `--min-r-version`,
+    // otherwise we resolve the min R version of each path later on. This is
+    // necessary because not all paths necessarily get the same min R version.
+    let (rules, rules_to_apply) = match minimum_r_version {
+        Some(_) => (
+            filter_rules_by_version(&rules, minimum_r_version),
+            filter_rules_by_version(&rules_to_apply, minimum_r_version),
+        ),
+        None => (rules, rules_to_apply),
     };
 
     let rule_options = toml_settings
@@ -190,6 +207,7 @@ pub fn build_config(
         apply_fixes,
         apply_unsafe_fixes: check_config.unsafe_fixes,
         minimum_r_version,
+        explicit_versioned_rules,
         allow_dirty: check_config.allow_dirty,
         allow_no_vcs: check_config.allow_no_vcs,
         unfixable: unfixable_toml,
@@ -556,6 +574,42 @@ fn reconcile_rules(rules_cli: RuleSelection, rules_toml: RuleSelection) -> Resul
         .iter()
         .filter(|rule| selected.contains(rule))
         .collect())
+}
+
+/// Rules the user named one by one in `select` / `extend-select`, as opposed
+/// to rules that are only on by default or pulled in by a group (`PERF`,
+/// `ALL`).
+///
+/// Follows the precedence of [`reconcile_rules`]: a CLI flag replaces the
+/// `jarl.toml` field of the same name.
+fn explicitly_selected_rules(
+    check_config: &ArgsConfig,
+    toml_settings: Option<&Settings>,
+) -> HashSet<Rule> {
+    let linter = toml_settings.map(|s| &s.linter);
+    let fields = [
+        (
+            &check_config.select,
+            linter.and_then(|l| l.select.as_deref()),
+        ),
+        (
+            &check_config.extend_select,
+            linter.and_then(|l| l.extend_select.as_deref()),
+        ),
+    ];
+
+    let mut explicit = HashSet::new();
+    for (cli, toml) in fields {
+        if !cli.is_empty() {
+            explicit.extend(
+                cli.split(',')
+                    .filter_map(|name| Rule::from_name(name.trim())),
+            );
+        } else if let Some(names) = toml {
+            explicit.extend(names.iter().filter_map(|name| Rule::from_name(name.trim())));
+        }
+    }
+    explicit
 }
 
 /// The R version the user pinned with `--min-r-version`, if any.

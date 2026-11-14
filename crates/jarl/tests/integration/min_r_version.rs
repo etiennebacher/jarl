@@ -414,3 +414,293 @@ fn test_min_r_version_is_per_package_not_per_run() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn test_warn_explicit_rule_skipped_unknown_r_version() -> anyhow::Result<()> {
+    let case = CliTest::with_file("test.R", "grep('a.*', x, value = TRUE)")?;
+
+    // Named in the CLI.
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("grepv")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ── Warnings ─────────────────────────────────────
+    Rule `grepv` is explicitly selected but requires R >= 4.5.0. It was not run on files where the minimum R version is unknown.
+    To run it, set `--min-r-version` or `Depends: R (>= 4.5.0)` in DESCRIPTION.
+
+    ----- stderr -----
+    "
+    );
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--extend-select")
+            .arg("grepv,notin")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ── Warnings ─────────────────────────────────────
+    Rule `grepv` is explicitly selected but requires R >= 4.5.0. It was not run on files where the minimum R version is unknown.
+    To run it, set `--min-r-version` or `Depends: R (>= 4.5.0)` in DESCRIPTION.
+    Rule `notin` is explicitly selected but requires R >= 4.6.0. It was not run on files where the minimum R version is unknown.
+    To run it, set `--min-r-version` or `Depends: R (>= 4.6.0)` in DESCRIPTION.
+
+    ----- stderr -----
+    "
+    );
+
+    // Named in `jarl.toml`.
+    case.write_file("jarl.toml", "[lint]\nextend-select = [\"grepv\"]\n")?;
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ── Warnings ─────────────────────────────────────
+    Rule `grepv` is explicitly selected but requires R >= 4.5.0. It was not run on files where the minimum R version is unknown.
+    To run it, set `--min-r-version` or `Depends: R (>= 4.5.0)` in DESCRIPTION.
+
+    ----- stderr -----
+    "
+    );
+
+    // The CLI `--extend-select` replaces the one of `jarl.toml`, so `grepv`
+    // isn't selected anymore.
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--extend-select")
+            .arg("any_is_na")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_warn_explicit_rule_skipped_r_version_too_low() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "pkg/DESCRIPTION",
+            "Package: mypackage\nVersion: 1.0.0\nDepends: R (>= 4.4.0)",
+        ),
+        ("pkg/R/test.R", "grep('a.*', x, value = TRUE)"),
+        ("script.R", "grep('a.*', x, value = TRUE)"),
+    ])?;
+
+    // From `--min-r-version`.
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("grepv")
+            .arg("--min-r-version")
+            .arg("4.4")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ── Warnings ─────────────────────────────────────
+    Rule `grepv` is explicitly selected but requires R >= 4.5.0. It was not run on files where the minimum R version is lower (4.4.0).
+    To run it, set `--min-r-version` or `Depends: R (>= 4.5.0)` in DESCRIPTION.
+
+    ----- stderr -----
+    "
+    );
+
+    // From `DESCRIPTION` for the package, unknown for the script.
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("grepv")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ── Warnings ─────────────────────────────────────
+    Rule `grepv` is explicitly selected but requires R >= 4.5.0. It was not run on files where the minimum R version is unknown or lower (4.4.0).
+    To run it, set `--min-r-version` or `Depends: R (>= 4.5.0)` in DESCRIPTION.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_no_warn_for_skipped_rule_not_explicitly_selected() -> anyhow::Result<()> {
+    let case = CliTest::with_file("test.R", "grep('a.*', x, value = TRUE)")?;
+
+    // Selected through a group only.
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("PERF")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    // Explicitly selected, but ignored.
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("grepv")
+            .arg("--ignore")
+            .arg("grepv")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+    case.write_file(
+        "jarl.toml",
+        "[lint]\nselect = [\"grepv\"]\n\n[lint.per-file-ignores]\n\"test.R\" = [\"grepv\"]\n",
+    )?;
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_no_warn_for_explicit_rule_when_r_version_is_enough() -> anyhow::Result<()> {
+    let case = CliTest::with_file("test.R", "grep('a.*', x, value = TRUE)")?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("grepv")
+            .arg("--min-r-version")
+            .arg("4.5")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: grepv
+     --> test.R:1:1
+      |
+    1 | grep('a.*', x, value = TRUE)
+      | ---------------------------- `grep(..., value = TRUE)` can be simplified.
+      |
+      = help: Use `grepv(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}

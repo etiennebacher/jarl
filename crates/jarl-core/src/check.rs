@@ -194,6 +194,60 @@ fn file_minimum_r_version(
     pkg_contexts.get(package_root)?.minimum_r_version
 }
 
+/// A rule the user explicitly selected that didn't run on some files because
+/// their R version isn't guaranteed to be high enough for it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct VersionSkippedRule {
+    pub rule: crate::rule_set::Rule,
+    /// The distinct R versions those files can count on. `None` stands for
+    /// files whose R version is unknown.
+    pub found_versions: std::collections::BTreeSet<Option<(u32, u32, u32)>>,
+}
+
+/// The explicitly selected rules of `config` that are skipped on at least one
+/// of its paths because of the R version, in rule declaration order.
+pub fn version_skipped_rules(config: &Config) -> Vec<VersionSkippedRule> {
+    if config.explicit_versioned_rules.is_empty() {
+        return Vec::new();
+    }
+
+    // With `--min-r-version`, every file shares the same version, so there is
+    // no need to look for packages.
+    let (pkg_contexts, file_pkg_info) = if config.minimum_r_version.is_some() {
+        (HashMap::new(), HashMap::new())
+    } else {
+        summarize_package_info(&config.paths)
+    };
+
+    let mut skipped: Vec<VersionSkippedRule> = Vec::new();
+    for path in &config.paths {
+        // Same path form as the one the files are linted under.
+        let path = &PathBuf::from(relativize_path(path));
+        let found = file_minimum_r_version(path, config, &pkg_contexts, &file_pkg_info);
+        let ignored = config.per_file_ignores.ignored_rules(path);
+
+        for &rule in &config.explicit_versioned_rules {
+            if ignored.contains(&rule) || rule.minimum_r_version() <= found {
+                continue;
+            }
+            match skipped.iter_mut().find(|s| s.rule == rule) {
+                Some(entry) => {
+                    entry.found_versions.insert(found);
+                }
+                None => skipped.push(VersionSkippedRule { rule, found_versions: [found].into() }),
+            }
+        }
+    }
+
+    skipped.sort_by_key(|s| {
+        config
+            .explicit_versioned_rules
+            .iter()
+            .position(|rule| *rule == s.rule)
+    });
+    skipped
+}
+
 pub fn lint_only(
     path: &PathBuf,
     config: Arc<Config>,

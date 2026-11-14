@@ -38,6 +38,10 @@
   the discovered ones, or to override some options of the configuration, e.g.
   `--config "lint.select = ['any_is_na']"` (#804).
 
+* Jarl now warns when a rule that requires a minimum R version is explicitly
+  selected (by name, in the CLI or in `jarl.toml`) but doesn't run because the
+  R version of the project is unknown or too low.
+
 ### Bug fixes
 
 * R version constraints in `DESCRIPTION` that use `>`, such as `R (> 4.5.0)`,
