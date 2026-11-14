@@ -41,7 +41,7 @@
 ### Bug fixes
 
 * `implicit_assignment` no longer reports assignments in `on.exit()`, such as
-  `on.exit(x <- 1)`.
+  `on.exit(x <- 1)` (#818).
 
 * R version constraints in `DESCRIPTION` that use `>`, such as `R (> 4.5.0)`,
   are now used to determine the minimum R version (here 4.5.1) (#578,
