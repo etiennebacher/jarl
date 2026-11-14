@@ -15,6 +15,9 @@ internal functions, meaning that they may disappear or behave differently withou
 notice if the package changes. `<<-` and `->>` assign outside the current environment
 and may lead to code that is harder to predict.
 
+In an R package, `:::` is not reported when it accesses the package itself,
+e.g. `mypkg:::internal_function()` in the tests of `mypkg`.
+
 
 ## Configuration options
 

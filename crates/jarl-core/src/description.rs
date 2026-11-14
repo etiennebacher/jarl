@@ -10,6 +10,12 @@ use oak_package_metadata::dcf::Dcf;
 pub struct Description;
 
 impl Description {
+    /// The package's name, from the `Package` field.
+    pub fn get_package_name(contents: &str) -> Option<String> {
+        let name = Dcf::parse(contents).get("Package")?.trim().to_string();
+        (!name.is_empty()).then_some(name)
+    }
+
     /// Extract package names from the specified DESCRIPTION fields.
     ///
     /// `fields` should be a slice of field names, e.g.

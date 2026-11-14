@@ -40,6 +40,9 @@
 
 ### Bug fixes
 
+* `undesirable_operator` no longer reports `:::` when it accesses the package
+  the file belongs to, e.g. `mypkg:::fun()` in the tests of `mypkg` (#819).
+
 * `implicit_assignment` no longer reports assignments in `on.exit()`, such as
   `on.exit(x <- 1)` (#818).
 

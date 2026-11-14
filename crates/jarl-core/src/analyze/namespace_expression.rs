@@ -16,6 +16,7 @@ pub fn namespace_expression(
         checker.report_diagnostic(undesirable_operator_namespace(
             r_expr,
             &checker.rule_options.undesirable_operator,
+            checker.package_name.as_deref(),
         )?);
     }
     Ok(())
