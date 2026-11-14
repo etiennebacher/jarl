@@ -40,6 +40,7 @@ skipped-functions = [
     "expect_no_warning",    # from {testthat}
     "expect_no_error",      # from {testthat}
     "expect_no_message",    # from {testthat}
+    "on.exit",
     "quote",
     "suppressMessages",
     "suppressWarnings",
