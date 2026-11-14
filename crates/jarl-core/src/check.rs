@@ -184,14 +184,24 @@ fn file_minimum_r_version(
     if config.minimum_r_version.is_some() {
         return config.minimum_r_version;
     }
-    // A file inside a package is bounded by its DESCRIPTION whether or not it
-    // is a loadable source: a script in `data-raw/` still runs under the R
-    // version the package declares.
+    file_package_context(file, pkg_contexts, file_pkg_info)?.minimum_r_version
+}
+
+/// The context of the package `file` sits in, if any.
+///
+/// A file inside a package belongs to it whether or not it is a loadable
+/// source: a script in `data-raw/` is still part of the package, and still
+/// runs under the R version its DESCRIPTION declares.
+fn file_package_context<'a>(
+    file: &Path,
+    pkg_contexts: &'a HashMap<PathBuf, PackageContext>,
+    file_pkg_info: &HashMap<PathBuf, FilePackageInfo>,
+) -> Option<&'a PackageContext> {
     let package_root = match file_pkg_info.get(file)? {
         FilePackageInfo::InPackage { package_root, .. } => package_root,
         FilePackageInfo::Script { package_root } => package_root.as_ref()?,
     };
-    pkg_contexts.get(package_root)?.minimum_r_version
+    pkg_contexts.get(package_root)
 }
 
 pub fn lint_only(
@@ -589,16 +599,8 @@ fn get_package_info(
     pkg_contexts: &HashMap<PathBuf, PackageContext>,
     file_pkg_info: &HashMap<PathBuf, FilePackageInfo>,
 ) {
-    // Any file inside a package belongs to it, loadable source or not: a
-    // script in `data-raw/` is still part of the package it sits in.
-    let package_root = match file_pkg_info.get(file) {
-        Some(FilePackageInfo::InPackage { package_root, .. }) => Some(package_root),
-        Some(FilePackageInfo::Script { package_root }) => package_root.as_ref(),
-        None => None,
-    };
-    checker.package_name = package_root
-        .and_then(|root| pkg_contexts.get(root))
-        .and_then(|ctx| ctx.name.clone());
+    checker.package_name =
+        file_package_context(file, pkg_contexts, file_pkg_info).and_then(|ctx| ctx.name.clone());
 
     let mut packages: Vec<String> = match file_pkg_info.get(file) {
         Some(FilePackageInfo::InPackage { package_root, .. }) => {

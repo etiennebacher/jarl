@@ -7,16 +7,32 @@ fn test_triple_colon_on_own_package_is_not_reported() -> anyhow::Result<()> {
         ("NAMESPACE", ""),
         (
             "R/foo.R",
-            "#' Foo\n#' @examples\n#' testpkg:::internal()\n#' otherpkg:::internal()\nfoo <- function() {\n  testpkg:::internal()\n  otherpkg:::internal()\n}\n",
+            "#' Foo
+            #' @examples
+            #' testpkg:::internal()
+            #' otherpkg:::internal()
+            foo <- function() {
+              testpkg:::internal()
+              otherpkg:::internal()
+            }
+            ",
         ),
-        ("tests/testthat.R", "testthat::test_check(\"testpkg\")\n"),
+        (
+            "tests/testthat.R",
+            "testthat::test_check(\"testpkg\")
+        ",
+        ),
         (
             "tests/testthat/test-foo.R",
-            "testpkg:::internal()\notherpkg:::internal()\n",
+            "testpkg:::internal()
+            otherpkg:::internal()
+            ",
         ),
         (
             "data-raw/script.R",
-            "testpkg:::internal()\notherpkg:::internal()\n",
+            "testpkg:::internal()
+            otherpkg:::internal()
+            ",
         ),
     ])?;
 
@@ -36,10 +52,10 @@ fn test_triple_colon_on_own_package_is_not_reported() -> anyhow::Result<()> {
     success: false
     exit_code: 1
     ----- stdout -----
-    R/foo.R [4:12] undesirable_operator `:::` is listed as an undesirable operator.
-    R/foo.R [7:11] undesirable_operator `:::` is listed as an undesirable operator.
-    data-raw/script.R [2:9] undesirable_operator `:::` is listed as an undesirable operator.
-    tests/testthat/test-foo.R [2:9] undesirable_operator `:::` is listed as an undesirable operator.
+    R/foo.R [4:24] undesirable_operator `:::` is listed as an undesirable operator.
+    R/foo.R [7:23] undesirable_operator `:::` is listed as an undesirable operator.
+    data-raw/script.R [2:21] undesirable_operator `:::` is listed as an undesirable operator.
+    tests/testthat/test-foo.R [2:21] undesirable_operator `:::` is listed as an undesirable operator.
 
     ── Summary ──────────────────────────────────────
     Found 4 errors.
