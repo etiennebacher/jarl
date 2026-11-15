@@ -972,6 +972,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>An R object can have several classes. Therefore, <code>class(...) == "some_class"</code> would return a logical vector with as many values as the object has classes, which is rarely desirable.</p>
 <p>It is better to use <code>inherits(..., "some_class")</code> instead. <code>inherits()</code> checks whether any of the object’s classes match the desired class.</p>
 <p>The same rationale applies to <code>class(...) %in% "some_class"</code>. Similarly, <code>identical(class(...), "some_class")</code> would break if a class is added or removed to the object being tested.</p>
+<p>This rule has an automated fix marked unsafe because <code>inherits()</code> is not strictly equivalent to the original code. For instance, <code>identical(class(x), "data.frame")</code> is <code>FALSE</code> if <code>x</code> is a tibble, but <code>inherits(x, "data.frame")</code> is <code>TRUE</code>.</p>
 </section>
 <section id="example" class="level2">
 <h2 class="anchored" data-anchor-id="example">Example</h2>
