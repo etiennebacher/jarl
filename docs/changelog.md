@@ -50,6 +50,8 @@
   are now used to determine the minimum R version (here 4.5.1) (#578,
   @Yousa-Mirage).
 
+* The fix for `class_equals` is now considered "unsafe" (#820).
+
 * Fix `download_file` handling of binary URL suffixes, string literals, namespaces,
   and ignored `mode` arguments with external download methods (#786, @Yousa-Mirage).
 

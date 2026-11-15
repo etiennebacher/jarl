@@ -290,7 +290,7 @@ declare_rules! {
         name: "class_equals",
         categories: [Susp],
         default: Enabled,
-        fix: Safe,
+        fix: Unsafe,
         min_r_version: None,
     },
     Coalesce => {

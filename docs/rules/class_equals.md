@@ -33,6 +33,11 @@ The same rationale applies to `class(...) %in% "some_class"`. Similarly,
 `identical(class(...), "some_class")` would break if a class is added or
 removed to the object being tested.
 
+This rule has an automated fix marked unsafe because `inherits()` is not
+strictly equivalent to the original code. For instance,
+`identical(class(x), "data.frame")` is `FALSE` if `x` is a tibble, but
+`inherits(x, "data.frame")` is `TRUE`.
+
 ## Example
 
 ```r
