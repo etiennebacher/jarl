@@ -21,7 +21,6 @@
     (#761, @JosephBARBIERDARNAL).
   * `outer_negation` now reports cases with `!` both inside and outside the call (#779,
     @Yousa-Mirage).
-
 * Jarl handles parsing errors better, which may lead to more code being analysed
   in files with parsing errors (#762). Thanks to Davis Vaughan for his work
   upstream in Air and Aether.
@@ -79,6 +78,8 @@
 
 * `duplicated_arguments` doesn't error anymore if the function name is `NULL` or
   `NA`, which used to stop the analysis for the entire file (#816).
+
+* Improve robustness of `unused_function`, leading to fewer false negatives (#821).
 
 ## 0.7.1
 

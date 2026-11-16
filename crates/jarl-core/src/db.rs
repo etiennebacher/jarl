@@ -31,6 +31,7 @@ use oak_scan::ScanScheduler;
 use oak_semantic::semantic_index::{DefinitionKind, SemanticCallKind, SemanticIndex};
 use rayon::prelude::*;
 
+use crate::lints::base::unused_function::unused_function::function_reads;
 use crate::package::find_package_root;
 
 /// One scanned R package: its root directory plus the R source files oak
@@ -67,6 +68,8 @@ struct FileUses {
     /// the edges [`Visibility`] walks to give a sourced file the environment
     /// it runs in.
     source_targets: Vec<PathBuf>,
+    /// See [`function_reads`].
+    function_reads: HashSet<String>,
 }
 
 /// Which files a given file can read top-level bindings from.
@@ -168,6 +171,9 @@ pub struct CrossFileAnalysis {
     /// seeded with each file's own (untruncated) index, and shared with the
     /// lint pass.
     pub source_index_cache: jarl_semantic::SourceIndexCache,
+    /// Per-file (relativized path) names that may call a package function,
+    /// for `unused_function`. Files that fail to parse have no entry.
+    pub function_reads: HashMap<PathBuf, HashSet<String>>,
 }
 
 impl AnalysisDb {
@@ -357,7 +363,8 @@ impl AnalysisDb {
                         source_index_cache.clone(),
                     ),
                 );
-                let uses = collect_file_uses(path.clone(), &index);
+                let mut uses = collect_file_uses(path.clone(), &index);
+                uses.function_reads = function_reads(&source, &parsed.syntax(), &index);
                 Some((Arc::new(index), uses))
             })
             .collect();
@@ -443,11 +450,13 @@ impl AnalysisDb {
             }
         }
 
-        let indices = built
-            .iter()
-            .map(|(index, file)| (file.path.clone(), Arc::clone(index)))
-            .collect();
-        CrossFileAnalysis { used, indices, source_index_cache }
+        let mut indices = HashMap::new();
+        let mut function_reads = HashMap::new();
+        for (index, file) in built {
+            function_reads.insert(file.path.clone(), file.function_reads);
+            indices.insert(file.path, index);
+        }
+        CrossFileAnalysis { used, indices, source_index_cache, function_reads }
     }
 }
 
@@ -519,6 +528,7 @@ fn collect_file_uses(path: PathBuf, index: &SemanticIndex) -> FileUses {
         free_uses,
         import_uses,
         source_targets,
+        function_reads: HashSet::new(),
     }
 }
 

@@ -14,11 +14,12 @@ use crate::lints::base::duplicated_function_definition::duplicated_function_defi
     compute_duplicates_from_shared, scan_top_level_assignments,
 };
 use crate::lints::base::unused_function::unused_function::{
-    collect_files, compute_unused_from_shared, has_cpp_extension,
+    collect_files, compute_unused_from_shared, function_reads, has_cpp_extension,
 };
 use crate::namespace::Namespace;
 use crate::rule_set::Rule;
 use crate::utils::scan_symbols;
+use air_r_parser::RParserOptions;
 
 /// Scope of a file within an R package, determining how its definitions
 /// are checked for unused functions.
@@ -72,7 +73,12 @@ pub(crate) struct SharedFileData {
     /// Absolute path to the package root (directory containing DESCRIPTION).
     pub package_root: PathBuf,
     pub assignments: Vec<(String, TextRange, u32, u32)>,
+    /// Word counts from the raw text. Empty for an R/ file that has
+    /// `function_reads`.
     pub symbol_counts: HashMap<String, usize>,
+    /// For an R/ file that parses, the names it reads according to its syntax
+    /// tree (see [`crate::lints::base::unused_function::unused_function::function_reads`]).
+    pub function_reads: Option<HashSet<String>>,
     pub scope: FileScope,
 }
 
@@ -289,8 +295,9 @@ pub fn summarize_package_info(
 /// Compute all package-level analysis for the given paths.
 ///
 /// Performs a single parallel scan over all R-package files, reading each file
-/// once and calling `scan_top_level_assignments` once (plus `scan_symbols` if
-/// the unused-function rule is enabled). The results are then dispatched to
+/// once and calling `scan_top_level_assignments` once (plus `scan_symbols` for
+/// the unused-function rule on files without a syntax tree). The results are
+/// then dispatched to
 /// the duplicate and unused-function checkers.
 pub fn make_package_analysis(
     paths: &[PathBuf],
@@ -334,13 +341,42 @@ pub fn make_package_analysis(
         }
     }
 
+    // Reuse the database scanned above: find top-level objects read from
+    // another file, and keep the per-file indices for the lint pass to reuse.
+    // Loose scripts have no package root for the db to scan, so the lint set
+    // itself is their file universe: hand them over directly and they resolve
+    // against each other through `source()` edges.
+    let cross_file = if check_unused_object {
+        db.cross_file_used_objects(&loose_script_paths(paths))
+    } else {
+        crate::db::CrossFileAnalysis::default()
+    };
+
     // Single parallel scan: read each file once. All R files get
     // scan_top_level_assignments; Src files only get scan_symbols.
     let shared_data: Vec<SharedFileData> = all_files
         .par_iter()
         .filter_map(|(path, scope)| {
             let content = std::fs::read_to_string(path).ok()?;
-            let symbol_counts = if check_unused {
+            let rel_path = PathBuf::from(air_fs::relativize_path(path));
+            // Reuse the cross-file pass when it ran. Otherwise index only R/
+            // files: that pass would also index every other file of the
+            // project, which `unused_function` doesn't need.
+            let function_reads = if !check_unused || *scope != FileScope::R {
+                None
+            } else if check_unused_object {
+                cross_file.function_reads.get(&rel_path).cloned()
+            } else {
+                let parsed = air_r_parser::parse(&content, RParserOptions::default());
+                (!parsed.has_errors()).then(|| {
+                    let index = oak_semantic::build_index(
+                        &parsed.tree(),
+                        oak_semantic::NoopImportsResolver,
+                    );
+                    function_reads(&content, &parsed.syntax(), &index)
+                })
+            };
+            let symbol_counts = if check_unused && function_reads.is_none() {
                 scan_symbols(&content)
             } else {
                 HashMap::new()
@@ -354,7 +390,6 @@ pub fn make_package_analysis(
             if *scope == FileScope::R {
                 let r_dir = path.parent()?;
                 let package_root = r_dir.parent()?.to_path_buf();
-                let rel_path = PathBuf::from(air_fs::relativize_path(path));
                 let root_key = air_fs::relativize_path(r_dir);
                 Some(SharedFileData {
                     root_key,
@@ -362,6 +397,7 @@ pub fn make_package_analysis(
                     package_root,
                     assignments,
                     symbol_counts,
+                    function_reads,
                     scope: FileScope::R,
                 })
             } else {
@@ -369,7 +405,6 @@ pub fn make_package_analysis(
                 // somewhere under root/tests/, root/inst/, or root/src/.
                 let package_root = find_package_root(path)?;
                 let r_dir = package_root.join("R");
-                let rel_path = PathBuf::from(air_fs::relativize_path(path));
                 let root_key = air_fs::relativize_path(&r_dir);
                 Some(SharedFileData {
                     root_key,
@@ -377,6 +412,7 @@ pub fn make_package_analysis(
                     package_root,
                     assignments,
                     symbol_counts,
+                    function_reads,
                     scope: *scope,
                 })
             }
@@ -397,17 +433,6 @@ pub fn make_package_analysis(
         )
     } else {
         HashMap::new()
-    };
-
-    // Reuse the database scanned above: find top-level objects read from
-    // another file, and keep the per-file indices for the lint pass to reuse.
-    // Loose scripts have no package root for the db to scan, so the lint set
-    // itself is their file universe: hand them over directly and they resolve
-    // against each other through `source()` edges.
-    let cross_file = if check_unused_object {
-        db.cross_file_used_objects(&loose_script_paths(paths))
-    } else {
-        crate::db::CrossFileAnalysis::default()
     };
 
     // `scan_top_level_assignments` only collects functions; use the semantic
@@ -579,6 +604,7 @@ pub(crate) fn scan_r_package_paths(paths: &[PathBuf], with_symbols: bool) -> Vec
                 package_root,
                 assignments,
                 symbol_counts,
+                function_reads: None,
                 scope: FileScope::R,
             })
         })
