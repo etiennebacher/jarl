@@ -110,7 +110,8 @@ pub struct PackageAnalysis {
     pub cross_file_used: HashMap<PathBuf, HashSet<String>>,
     /// Per-file semantic index built during the cross-file pass, keyed by
     /// relativized path. The parallel lint pass reuses these instead of
-    /// rebuilding each file's index. Empty unless `unused_object` runs.
+    /// rebuilding each file's index. Empty unless `unused_object` runs, or
+    /// only holds R/ files when `unused_function` runs without it.
     pub file_indices: HashMap<PathBuf, Arc<SemanticIndex>>,
     /// Memo of `source()` target indices populated during the cross-file
     /// pass and shared with the lint pass (lint-only mode; fix mode uses a
@@ -346,7 +347,7 @@ pub fn make_package_analysis(
     // Loose scripts have no package root for the db to scan, so the lint set
     // itself is their file universe: hand them over directly and they resolve
     // against each other through `source()` edges.
-    let cross_file = if check_unused_object {
+    let mut cross_file = if check_unused_object {
         db.cross_file_used_objects(&loose_script_paths(paths))
     } else {
         crate::db::CrossFileAnalysis::default()
@@ -354,14 +355,17 @@ pub fn make_package_analysis(
 
     // Single parallel scan: read each file once. All R files get
     // scan_top_level_assignments; Src files only get scan_symbols.
-    let shared_data: Vec<SharedFileData> = all_files
+    let scanned: Vec<(SharedFileData, Option<Arc<SemanticIndex>>)> = all_files
         .par_iter()
         .filter_map(|(path, scope)| {
             let content = std::fs::read_to_string(path).ok()?;
             let rel_path = PathBuf::from(air_fs::relativize_path(path));
             // Reuse the cross-file pass when it ran. Otherwise index only R/
             // files: that pass would also index every other file of the
-            // project, which `unused_function` doesn't need.
+            // project, which `unused_function` doesn't need. The index is
+            // built as the lint pass would build it, so that it can be reused
+            // there.
+            let mut index = None;
             let function_reads = if !check_unused || *scope != FileScope::R {
                 None
             } else if check_unused_object {
@@ -369,11 +373,16 @@ pub fn make_package_analysis(
             } else {
                 let parsed = air_r_parser::parse(&content, RParserOptions::default());
                 (!parsed.has_errors()).then(|| {
-                    let index = oak_semantic::build_index(
+                    let built = Arc::new(oak_semantic::build_index(
                         &parsed.tree(),
-                        oak_semantic::NoopImportsResolver,
-                    );
-                    function_reads(&content, &parsed.syntax(), &index)
+                        jarl_semantic::JarlImportsResolver::with_cache(
+                            rel_path.clone(),
+                            cross_file.source_index_cache.clone(),
+                        ),
+                    ));
+                    let reads = function_reads(&content, &parsed.syntax(), &built);
+                    index = Some(built);
+                    reads
                 })
             };
             let symbol_counts = if check_unused && function_reads.is_none() {
@@ -391,7 +400,7 @@ pub fn make_package_analysis(
                 let r_dir = path.parent()?;
                 let package_root = r_dir.parent()?.to_path_buf();
                 let root_key = air_fs::relativize_path(r_dir);
-                Some(SharedFileData {
+                let file = SharedFileData {
                     root_key,
                     rel_path,
                     package_root,
@@ -399,14 +408,15 @@ pub fn make_package_analysis(
                     symbol_counts,
                     function_reads,
                     scope: FileScope::R,
-                })
+                };
+                Some((file, index))
             } else {
                 // Extra file: figure out the package root. The file is
                 // somewhere under root/tests/, root/inst/, or root/src/.
                 let package_root = find_package_root(path)?;
                 let r_dir = package_root.join("R");
                 let root_key = air_fs::relativize_path(&r_dir);
-                Some(SharedFileData {
+                let file = SharedFileData {
                     root_key,
                     rel_path,
                     package_root,
@@ -414,10 +424,25 @@ pub fn make_package_analysis(
                     symbol_counts,
                     function_reads,
                     scope: *scope,
-                })
+                };
+                Some((file, None))
             }
         })
         .collect();
+
+    // Hand the indices built for `unused_function` to the lint pass, and seed
+    // the `source()` memo with them as the cross-file pass does.
+    let mut shared_data: Vec<SharedFileData> = Vec::with_capacity(scanned.len());
+    for (file, index) in scanned {
+        if let Some(index) = index {
+            let key = std::path::absolute(&file.rel_path).unwrap_or_else(|_| file.rel_path.clone());
+            cross_file
+                .source_index_cache
+                .insert(key, Arc::clone(&index));
+            cross_file.indices.insert(file.rel_path.clone(), index);
+        }
+        shared_data.push(file);
+    }
 
     let duplicate_assignments = if check_duplicates {
         compute_duplicates_from_shared(&shared_data)
