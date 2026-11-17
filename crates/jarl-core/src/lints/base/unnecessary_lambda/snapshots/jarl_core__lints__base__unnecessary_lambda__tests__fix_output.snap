@@ -1,0 +1,72 @@
+---
+source: crates/jarl-core/src/lints/base/unnecessary_lambda/mod.rs
+expression: "get_unsafe_fixed_text(vec![\"lapply(DF, function(x) sum(x))\",\n\"lapply(DF, \\\\(x) return(sum(x)))\",\n\"lapply(x, function(xi) {\\n  print(xi)\\n})\",\n\"lapply(x, function(xi, y) foo(xi, y), y)\",\n\"lapply(x, \\\\(xi, ...) foo(xi, ...), y = 1)\", \"purrr::map(x, ~ pkg::foo(.x))\",\n\"eapply(env, function(x) sum(x, na.rm = TRUE))\",\n\"sapply(x, function(xi) foo(xi) == 2)\",\n\"lapply(y, function(yi) {\\n  print(yi) # comment\\n})\",], \"unnecessary_lambda\")"
+---
+OLD:
+====
+lapply(DF, function(x) sum(x))
+NEW:
+====
+lapply(DF, sum)
+
+OLD:
+====
+lapply(DF, \(x) return(sum(x)))
+NEW:
+====
+lapply(DF, sum)
+
+OLD:
+====
+lapply(x, function(xi) {
+  print(xi)
+})
+NEW:
+====
+lapply(x, print)
+
+OLD:
+====
+lapply(x, function(xi, y) foo(xi, y), y)
+NEW:
+====
+lapply(x, foo, y)
+
+OLD:
+====
+lapply(x, \(xi, ...) foo(xi, ...), y = 1)
+NEW:
+====
+lapply(x, foo, y = 1)
+
+OLD:
+====
+purrr::map(x, ~ pkg::foo(.x))
+NEW:
+====
+purrr::map(x, pkg::foo)
+
+OLD:
+====
+eapply(env, function(x) sum(x, na.rm = TRUE))
+NEW:
+====
+eapply(env, function(x) sum(x, na.rm = TRUE))
+
+OLD:
+====
+sapply(x, function(xi) foo(xi) == 2)
+NEW:
+====
+sapply(x, function(xi) foo(xi) == 2)
+
+OLD:
+====
+lapply(y, function(yi) {
+  print(yi) # comment
+})
+NEW:
+====
+lapply(y, function(yi) {
+  print(yi) # comment
+})

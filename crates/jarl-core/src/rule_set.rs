@@ -728,6 +728,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    UnnecessaryLambda => {
+        name: "unnecessary_lambda",
+        categories: [Read],
+        default: Enabled,
+        fix: Unsafe,
+        min_r_version: None,
+    },
     UnnecessaryNesting => {
         name: "unnecessary_nesting",
         categories: [Read],

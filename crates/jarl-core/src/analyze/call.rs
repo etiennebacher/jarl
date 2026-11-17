@@ -35,6 +35,7 @@ use crate::lints::base::strings_as_factors::strings_as_factors::strings_as_facto
 use crate::lints::base::system_file::system_file::system_file;
 use crate::lints::base::undesirable_function::undesirable_function::undesirable_function;
 use crate::lints::base::undesirable_operator::undesirable_operator::undesirable_operator_call;
+use crate::lints::base::unnecessary_lambda::unnecessary_lambda::unnecessary_lambda;
 use crate::lints::base::which_grepl::which_grepl::which_grepl;
 use crate::lints::base::yoda_condition::yoda_condition::yoda_test;
 
@@ -158,6 +159,13 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
         checker.report_diagnostic(undesirable_operator_call(
             r_expr,
             &checker.rule_options.undesirable_operator,
+        )?);
+    }
+    if checker.is_rule_enabled(Rule::UnnecessaryLambda) {
+        checker.report_diagnostic(unnecessary_lambda(
+            r_expr,
+            fn_name,
+            checker.rule_options.unnecessary_lambda.allow_comparison,
         )?);
     }
     if checker.is_rule_enabled(Rule::WhichGrepl) {

@@ -346,6 +346,7 @@ configuration file, see the relevant rule documentation page for details:
 * [`true_false_symbol`](../rules/true_false_symbol.md#configuration-options)
 * [`undesirable_function`](../rules/undesirable_function.md#configuration-options)
 * [`undesirable_operator`](../rules/undesirable_operator.md#configuration-options)
+* [`unnecessary_lambda`](../rules/unnecessary_lambda.md#configuration-options)
 * [`unreachable_code`](../rules/unreachable_code.md#configuration-options)
 * [`unused_function`](../rules/unused_function.md#configuration-options)
 * [`unused_object`](../rules/unused_object.md#configuration-options)

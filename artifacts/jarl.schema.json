@@ -313,6 +313,18 @@
             }
           ]
         },
+        "unnecessary_lambda": {
+          "title": "Options for the `unnecessary_lambda` rule",
+          "description": "Use `allow-comparison = true` to not report anonymous functions that\ncompare the output of a function to a constant in `sapply()` or\n`vapply()`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UnnecessaryLambdaOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "unreachable_code": {
           "title": "Options for the `unreachable_code` rule",
           "description": "Use `stopping-functions` to fully replace the default list of functions\nthat are considered to stop execution (never return). Use\n`extend-stopping-functions` to add to the default list.\nSpecifying both is an error.",
@@ -651,6 +663,19 @@
           }
         }
       ]
+    },
+    "UnnecessaryLambdaOptions": {
+      "description": "<!-- docs: start -->\nUse `allow-comparison = true` to not report anonymous functions that\ncompare the output of a function to a constant in `sapply()` or `vapply()`,\ne.g. `sapply(x, function(xi) foo(xi) == 2)`.\n\n### Default values\n\n```toml\nallow-comparison = false\n```\n\n### TOML settings\n\n```toml\n[lint]\n...\n\n[lint.unnecessary_lambda]\nallow-comparison = true\n```\n<!-- docs: end -->",
+      "type": "object",
+      "properties": {
+        "allow-comparison": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
     },
     "UnreachableCodeOptions": {
       "description": "<!-- docs: start -->\nUse `stopping-functions` to fully replace the default list of functions that are\nconsidered to stop execution (never return). Use `extend-stopping-functions` to\nadd to the default list. Specifying both is an error.\n\nFunction names in `stopping-functions` or `extend-stopping-functions` also match\nnamespaced calls, e.g. `stopping-functions = [\"abort\"]` will consider `abort()`\nand `rlang::abort()` as stopping functions.\n\n### Default values\n\n```toml\nstopping-functions = [\n    \"stop\",\n    \".Defunct\",\n    \"abort\",\n    \"cli_abort\",\n    \"q\",\n    \"quit\"\n]\n```\n\n### TOML settings\n\n```toml\n[lint]\n...\n\n[lint.unreachable_code]\n# Add a custom function to the list of stopping functions\nextend-stopping-functions = [\"my_custom_stop\"]\n```\n<!-- docs: end -->",

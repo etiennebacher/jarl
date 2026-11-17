@@ -104,6 +104,7 @@ declare_rule_options! {
     base::true_false_symbol => ResolvedTrueFalseSymbolOptions,
     base::undesirable_function => ResolvedUndesirableFunctionOptions,
     base::undesirable_operator => ResolvedUndesirableOperatorOptions,
+    base::unnecessary_lambda => ResolvedUnnecessaryLambdaOptions,
     base::unreachable_code => ResolvedUnreachableCodeOptions,
     base::unused_function => ResolvedUnusedFunctionOptions,
     base::unused_object => ResolvedUnusedObjectOptions,
