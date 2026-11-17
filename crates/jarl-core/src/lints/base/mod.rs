@@ -31,6 +31,7 @@ pub(crate) mod if_switch;
 pub(crate) mod implicit_assignment;
 pub(crate) mod internal_function;
 pub(crate) mod is_numeric;
+pub(crate) mod keyword_quote;
 pub(crate) mod length_levels;
 pub(crate) mod length_test;
 pub(crate) mod lengths;

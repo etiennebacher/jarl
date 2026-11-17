@@ -483,6 +483,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    KeywordQuote => {
+        name: "keyword_quote",
+        categories: [Read],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
     LengthLevels => {
         name: "length_levels",
         categories: [Read],
