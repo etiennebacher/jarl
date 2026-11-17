@@ -17,7 +17,27 @@ on:
         type: string
 
 jobs:
+  # Stable releases must not ship rules documented as "Version added: unreleased"
+  # (`just set-rule-versions` replaces them with the release version).
+  check-rule-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        if: ${{ !contains(inputs.tag, '-') }}
+      - name: Check that no rule has "Version added: unreleased"
+        if: ${{ !contains(inputs.tag, '-') }}
+        run: |
+          matches=$(grep -rnE '^/// Version added: unreleased\b' crates/jarl-core/src/lints || true)
+          if [ -n "$matches" ]; then
+            while IFS=: read -r file line _; do
+              echo "::error file=$file,line=$line::Rule documented as 'Version added: unreleased'."
+            done <<< "$matches"
+            echo "Some rules still have 'Version added: unreleased'. Run 'just set-rule-versions' (and 'just document --no-quarto'), commit, and re-run this workflow."
+            exit 1
+          fi
+
   release:
+    needs: check-rule-versions
     runs-on: ubuntu-latest
     steps:
       - uses: actions/github-script@v9

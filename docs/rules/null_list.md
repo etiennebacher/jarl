@@ -1,6 +1,6 @@
 # null_list
 
-::: {.callout-note title="Added in 0.8.0" .low-opacity}
+::: {.callout-note title="Added in development version" .low-opacity}
 :::
 
 ## What it does

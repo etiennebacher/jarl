@@ -5,7 +5,7 @@ use biome_rowan::{AstNode, AstSeparatedList};
 use oak_core::syntax_ext::RIdentifierExt;
 
 /// <!-- docs: start -->
-/// Version added: 0.8.0
+/// Version added: unreleased
 ///
 /// ## What it does
 ///
