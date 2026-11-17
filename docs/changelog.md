@@ -10,6 +10,7 @@
   * `assignment_on_if_no_else` (#605, @christopherkenny)
   * `function_return` (#750)
   * `if_switch` (#812)
+  * `keyword_quote` (#825)
   * `list_comparison` (#572, @Yousa-Mirage)
   * `null_list` (#785, @JosephBARBIERDARNAL)
   * `terminal_close` (#811)

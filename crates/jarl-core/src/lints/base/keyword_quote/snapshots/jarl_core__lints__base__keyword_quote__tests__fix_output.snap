@@ -1,0 +1,59 @@
+---
+source: crates/jarl-core/src/lints/base/keyword_quote/mod.rs
+expression: "get_fixed_text(vec![\"c(\\\"a\\\" = 1, 'b' = 2, `c` = 3, \\\"d e\\\" = 4)\",\n\"\\\"foo\\\" <- 1\", \"'foo bar' = 1\", \"1 -> `foo`\", \"x$\\\"foo\\\"\", \"x@`foo` <- 1\",\n\"x$'foo bar'\", \"r\\\"(foo)\\\" <- 1\",], \"keyword_quote\", None)"
+---
+OLD:
+====
+c("a" = 1, 'b' = 2, `c` = 3, "d e" = 4)
+NEW:
+====
+c(a = 1, b = 2, c = 3, "d e" = 4)
+
+OLD:
+====
+"foo" <- 1
+NEW:
+====
+foo <- 1
+
+OLD:
+====
+'foo bar' = 1
+NEW:
+====
+`foo bar` = 1
+
+OLD:
+====
+1 -> `foo`
+NEW:
+====
+1 -> foo
+
+OLD:
+====
+x$"foo"
+NEW:
+====
+x$foo
+
+OLD:
+====
+x@`foo` <- 1
+NEW:
+====
+x@foo <- 1
+
+OLD:
+====
+x$'foo bar'
+NEW:
+====
+x$`foo bar`
+
+OLD:
+====
+r"(foo)" <- 1
+NEW:
+====
+foo <- 1
