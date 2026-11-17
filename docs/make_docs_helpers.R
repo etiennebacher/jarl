@@ -59,14 +59,20 @@ create_rule_md <- function(rule, lints_dir) {
     )
   }
 
-  version_added <- gsub(
-    ".*(\\d+\\.\\d+\\.\\d+).*",
-    "\\1",
-    doc_content[version_loc]
-  )
+  # New rules use `Version added: unreleased` until `just set-rule-versions`
+  # replaces it with the version being released.
+  if (grepl("^Version added:\\s*unreleased\\s*$", doc_content[version_loc])) {
+    version_added <- "development version"
+  } else {
+    version_added <- gsub(
+      ".*(\\d+\\.\\d+\\.\\d+).*",
+      "\\1",
+      doc_content[version_loc]
+    )
 
-  if (!grepl("^\\d+\\.\\d+\\.\\d+$", version_added)) {
-    stop("The 'version added' meta for rule `", rule_name, "` is malformed.")
+    if (!grepl("^\\d+\\.\\d+\\.\\d+$", version_added)) {
+      stop("The 'version added' meta for rule `", rule_name, "` is malformed.")
+    }
   }
 
   exref_loc <- grep("^## (Example|Reference)s?", doc_content)

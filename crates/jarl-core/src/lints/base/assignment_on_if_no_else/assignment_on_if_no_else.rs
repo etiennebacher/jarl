@@ -7,7 +7,7 @@ use jarl_semantic::{SemanticInfo, assignment_lhs_name};
 pub struct AssignmentOnIfNoElse;
 
 /// <!-- docs: start -->
-/// Version added: 0.8.0
+/// Version added: unreleased
 ///
 /// ## What it does
 ///

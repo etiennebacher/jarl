@@ -40,7 +40,7 @@ const SKIPPED_FUNCTIONS: &[&str] = &[
 ];
 
 /// <!-- docs: start -->
-/// Version added: 0.8.0
+/// Version added: unreleased
 ///
 /// ## What it does
 ///
