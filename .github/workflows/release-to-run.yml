@@ -24,7 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         if: ${{ !contains(inputs.tag, '-') }}
-      - name: Check that no rule has "Version added: unreleased"
+      - name: "Check that no rule has 'Version added: unreleased'"
         if: ${{ !contains(inputs.tag, '-') }}
         run: |
           matches=$(grep -rnE '^/// Version added: unreleased\b' crates/jarl-core/src/lints || true)
