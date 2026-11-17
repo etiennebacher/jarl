@@ -24,10 +24,6 @@ use oak_core::syntax_ext::RIdentifierExt;
 /// when it contains special characters (such as spaces) or is a reserved word
 /// (such as `if` or `TRUE`). In other cases, they add visual noise.
 ///
-/// When quoting is needed for an assignment or extraction target, backticks
-/// should be used: they are the standard way to write non-syntactic names in R,
-/// whereas the fact that strings also work there is an exception.
-///
 /// ## Example
 ///
 /// ```r
