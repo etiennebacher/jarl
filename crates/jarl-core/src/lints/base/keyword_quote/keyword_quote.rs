@@ -83,10 +83,10 @@ pub fn keyword_quote_assignment(ast: &RBinaryExpression) -> anyhow::Result<Optio
 }
 
 pub fn keyword_quote_extract(ast: &RExtractExpression) -> anyhow::Result<Option<Diagnostic>> {
-    let operator = match ast.operator()?.kind() {
-        RSyntaxKind::DOLLAR => "extraction with `$`",
-        RSyntaxKind::AT => "extraction with `@`",
-        _ => return Ok(None),
+    let operator = if ast.operator()?.kind() == RSyntaxKind::DOLLAR {
+        "extraction with `$`"
+    } else {
+        "extraction with `@`"
     };
     let node = match ast.right()? {
         AnyRSelector::RIdentifier(x) => AnyQuotable::Identifier(x),

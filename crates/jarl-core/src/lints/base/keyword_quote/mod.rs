@@ -64,6 +64,8 @@ mod tests {
         expect_no_lint("x@foo", "keyword_quote", None);
         expect_no_lint("x@`foo bar` <- 1", "keyword_quote", None);
         expect_no_lint("x$`foo bar` = 1", "keyword_quote", None);
+        expect_no_lint("x$...", "keyword_quote", None);
+        expect_no_lint("x@..1", "keyword_quote", None);
         expect_no_lint("x[[\"foo\"]]", "keyword_quote", None);
         expect_no_lint("x[\"foo\"]", "keyword_quote", None);
     }
