@@ -61,8 +61,9 @@ const PURRR_MAPPERS: &[&str] = &[
 ///
 /// Anonymous functions whose first argument isn't the iterated element, e.g.
 /// `lapply(x, function(xi) grep("a", xi))`, or that pass extra arguments to the
-/// inner function, e.g. `lapply(x, function(xi) sum(xi, na.rm = TRUE))`, are
-/// not reported because removing them is not always more readable.
+/// inner function, e.g. `lapply(x, function(xi) sum(xi, na.rm = TRUE))` or
+/// `lapply(x, function(xi, y) foo(xi, y), y)`, are not reported because removing
+/// them is not always more readable.
 ///
 /// This rule has an unsafe automatic fix when the anonymous function only
 /// passes its arguments to the inner function. It is unsafe because the inner
@@ -126,7 +127,15 @@ fn check_lambda(
         }
         formals.push(symbol_name(param.name().ok()?.syntax())?);
     }
-    if formals.is_empty() {
+    // Formals beyond the iterated elements receive extra arguments of the outer
+    // call, e.g. `lapply(x, function(xi, y) foo(xi, y), y)`, which is clearer
+    // than `lapply(x, foo, y)`.
+    let n_iterated = match fn_name {
+        "mapply" | "mcmapply" => usize::MAX,
+        "outer" => 2,
+        _ => 1,
+    };
+    if formals.is_empty() || formals.len() > n_iterated {
         return None;
     }
     // Formals other than `...` must be supplied by the outer call.

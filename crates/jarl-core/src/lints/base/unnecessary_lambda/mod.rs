@@ -140,25 +140,37 @@ mod tests {
         expect_no_lint("mapply(function(xi, yi) foo(xi), x, y)", rule, None);
         expect_no_lint("outer(x, y, function(xi, yi) foo(xi))", rule, None);
         expect_no_lint("purrr::map2(x, y, function(xi, yi) foo(xi))", rule, None);
-        // `y` is not supplied by the outer call
-        expect_no_lint("lapply(x, function(xi, y) foo(xi, y))", rule, None);
+        // `yi` is not supplied by the outer call
+        expect_no_lint("mapply(function(xi, yi) foo(xi, yi), x)", rule, None);
         // `foo()` may not have a formal named `y`
-        expect_no_lint("lapply(x, function(xi, y) foo(xi, y), y = 1)", rule, None);
+        expect_no_lint("mapply(function(xi, y) foo(xi, y), x, y = z)", rule, None);
         // `y` may not be the second formal of `foo()`
-        expect_no_lint("lapply(x, function(xi, y) foo(xi, y = y), y)", rule, None);
+        expect_no_lint("mapply(function(xi, y) foo(xi, y = y), x, z)", rule, None);
         expect_no_lint(
-            "lapply(x, function(xi, y, z) foo(xi, y + z), y, z)",
+            "mapply(function(xi, y, z) foo(xi, y + z), x, y, z)",
             rule,
             None,
         );
-        expect_no_lint("lapply(x, function(xi, y) foo(xi, bar = y), y)", rule, None);
+        expect_no_lint("mapply(function(xi, y) foo(xi, bar = y), x, y)", rule, None);
         expect_no_lint(
-            "lapply(x, function(xi, y) foo(xi, bar = y), y = 1)",
+            "mapply(function(xi, y) foo(xi, bar = y), x, y = z)",
             rule,
             None,
         );
-        expect_no_lint("lapply(x, function(xi, y) foo(xi, y, y), y)", rule, None);
-        expect_no_lint("lapply(x, function(xi, y = 1) foo(xi, y))", rule, None);
+        expect_no_lint("mapply(function(xi, y) foo(xi, y, y), x, y)", rule, None);
+        expect_no_lint("mapply(function(xi, y = 1) foo(xi, y), x)", rule, None);
+
+        // Extra arguments of the outer call
+        expect_no_lint("lapply(x, function(xi, y) foo(xi, y), y)", rule, None);
+        expect_no_lint("x |> lapply(function(xi, y) foo(xi, y), y)", rule, None);
+        expect_no_lint("lapply(x, \\(xi, y) foo(xi, y = y), y = 1)", rule, None);
+        expect_no_lint("lapply(x, \\(xi, ...) foo(xi, ...), y = 1)", rule, None);
+        expect_no_lint("purrr::map(x, function(xi, y) foo(xi, y), y)", rule, None);
+        expect_no_lint(
+            "outer(x, y, function(xi, yi, z) foo(xi, yi, z), z)",
+            rule,
+            None,
+        );
     }
 
     #[test]
@@ -242,47 +254,7 @@ mod tests {
           = help: Pass `pkg::foo` directly to `sapply()`.
         Found 1 error.
         ");
-        assert_snapshot!(snapshot_lint("x |> lapply(function(xi, y) foo(xi, y), y)"), @"
-        warning: unnecessary_lambda
-         --> <test>:1:13
-          |
-        1 | x |> lapply(function(xi, y) foo(xi, y), y)
-          |             -------------------------- Unnecessary anonymous function around `foo()`.
-          |
-          = help: Pass `foo` directly to `lapply()`.
-        Found 1 error.
-        ");
         // Multiple formals
-        assert_snapshot!(snapshot_lint("lapply(x, function(xi, y) foo(xi, y), y)"), @"
-        warning: unnecessary_lambda
-         --> <test>:1:11
-          |
-        1 | lapply(x, function(xi, y) foo(xi, y), y)
-          |           -------------------------- Unnecessary anonymous function around `foo()`.
-          |
-          = help: Pass `foo` directly to `lapply()`.
-        Found 1 error.
-        ");
-        assert_snapshot!(snapshot_lint("lapply(x, \\(xi, y) foo(xi, y = y), y = 1)"), @r"
-        warning: unnecessary_lambda
-         --> <test>:1:11
-          |
-        1 | lapply(x, \(xi, y) foo(xi, y = y), y = 1)
-          |           ----------------------- Unnecessary anonymous function around `foo()`.
-          |
-          = help: Pass `foo` directly to `lapply()`.
-        Found 1 error.
-        ");
-        assert_snapshot!(snapshot_lint("lapply(x, \\(xi, ...) foo(xi, ...), y = 1)"), @r"
-        warning: unnecessary_lambda
-         --> <test>:1:11
-          |
-        1 | lapply(x, \(xi, ...) foo(xi, ...), y = 1)
-          |           ----------------------- Unnecessary anonymous function around `foo()`.
-          |
-          = help: Pass `foo` directly to `lapply()`.
-        Found 1 error.
-        ");
         assert_snapshot!(snapshot_lint("mapply(function(xi, yi) foo(xi, yi), x, y)"), @"
         warning: unnecessary_lambda
          --> <test>:1:8
@@ -291,6 +263,36 @@ mod tests {
           |        ---------------------------- Unnecessary anonymous function around `foo()`.
           |
           = help: Pass `foo` directly to `mapply()`.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("mapply(function(xi, y) foo(xi, y = y), x, y = z)"), @"
+        warning: unnecessary_lambda
+         --> <test>:1:8
+          |
+        1 | mapply(function(xi, y) foo(xi, y = y), x, y = z)
+          |        ------------------------------ Unnecessary anonymous function around `foo()`.
+          |
+          = help: Pass `foo` directly to `mapply()`.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("outer(x, y, function(xi, yi) foo(xi, yi))"), @"
+        warning: unnecessary_lambda
+         --> <test>:1:13
+          |
+        1 | outer(x, y, function(xi, yi) foo(xi, yi))
+          |             ---------------------------- Unnecessary anonymous function around `foo()`.
+          |
+          = help: Pass `foo` directly to `outer()`.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("x |> outer(y, function(xi, yi) foo(xi, yi))"), @"
+        warning: unnecessary_lambda
+         --> <test>:1:15
+          |
+        1 | x |> outer(y, function(xi, yi) foo(xi, yi))
+          |               ---------------------------- Unnecessary anonymous function around `foo()`.
+          |
+          = help: Pass `foo` directly to `outer()`.
         Found 1 error.
         ");
         // purrr
@@ -504,8 +506,7 @@ mod tests {
                     "lapply(DF, function(x) sum(x))",
                     "lapply(DF, \\(x) return(sum(x)))",
                     "lapply(x, function(xi) {\n  print(xi)\n})",
-                    "lapply(x, function(xi, y) foo(xi, y), y)",
-                    "lapply(x, \\(xi, ...) foo(xi, ...), y = 1)",
+                    "mapply(function(xi, yi) foo(xi, yi), x, y)",
                     "purrr::map(x, ~ pkg::foo(.x))",
                     // No fix: comparison
                     "sapply(x, function(xi) foo(xi) == 2)",
