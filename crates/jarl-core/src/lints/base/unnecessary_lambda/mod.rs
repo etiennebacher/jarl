@@ -117,6 +117,20 @@ mod tests {
 
         // No formals
         expect_no_lint("lapply(l, function() foo())", rule, None);
+
+        // Extra arguments
+        expect_no_lint("lapply(x, function(y) sum(y, na.rm = TRUE))", rule, None);
+        expect_no_lint(
+            "eapply(env, function(x) return(sum(x, na.rm = TRUE)))",
+            rule,
+            None,
+        );
+        expect_no_lint(
+            "mapply(function(xi, yi) foo(xi, yi, na.rm = TRUE), x, y)",
+            rule,
+            None,
+        );
+        expect_no_lint("purrr::map_int(x, ~foo(.x, y))", rule, None);
     }
 
     #[test]
@@ -219,8 +233,6 @@ mod tests {
             "lapply(DF, function(x) return(sum(x)))",
             "lapply(DF, \\(x) sum(x))",
             "rapply(l, function(x) is.data.frame(x))",
-            "eapply(env, function(x) sum(x, na.rm = TRUE))",
-            "eapply(env, function(x) return(sum(x, na.rm = TRUE)))",
             "sapply(x, function(xi) (foo(xi)))",
             "sapply(x, function(xi) { foo(xi) })",
             "sapply(x, function(xi) pkg::foo(xi))",
@@ -229,11 +241,10 @@ mod tests {
             "lapply(x, function(xi, y) foo(xi, y), y)",
             "lapply(x, \\(xi, y) foo(xi, y = y), y = 1)",
             "lapply(x, \\(xi, ...) foo(xi, ...), y = 1)",
-            "mapply(function(xi, yi) foo(xi, yi, na.rm = TRUE), x, y)",
+            "mapply(function(xi, yi) foo(xi, yi), x, y)",
             // purrr
             "purrr::map(x, ~foo(.x))",
-            "purrr::map_int(x, ~foo(.x, y))",
-            "purrr::map_vec(x, ~foo(.x, y))",
+            "purrr::map_vec(x, ~foo(.x))",
             "map(x, ~foo(.))",
             "purrr::map(x, function(xi) foo(xi))",
             // Braces
@@ -280,32 +291,6 @@ mod tests {
           |            ------------------ Unnecessary anonymous function around `sum()`.
           |
           = help: Pass `sum` directly to `lapply()`.
-        Found 1 error.
-        "
-        );
-        assert_snapshot!(
-            snapshot_lint("eapply(env, function(x) sum(x, na.rm = TRUE))"),
-            @"
-        warning: unnecessary_lambda
-         --> <test>:1:13
-          |
-        1 | eapply(env, function(x) sum(x, na.rm = TRUE))
-          |             -------------------------------- Unnecessary anonymous function around `sum()`.
-          |
-          = help: Pass `sum` directly to `eapply()`, followed by its other arguments.
-        Found 1 error.
-        "
-        );
-        assert_snapshot!(
-            snapshot_lint("purrr::map_int(x, ~foo(.x, y))"),
-            @"
-        warning: unnecessary_lambda
-         --> <test>:1:19
-          |
-        1 | purrr::map_int(x, ~foo(.x, y))
-          |                   ----------- Unnecessary anonymous function around `foo()`.
-          |
-          = help: Pass `foo` directly to `map_int()`, followed by its other arguments.
         Found 1 error.
         "
         );
@@ -372,8 +357,6 @@ mod tests {
                     "lapply(x, function(xi, y) foo(xi, y), y)",
                     "lapply(x, \\(xi, ...) foo(xi, ...), y = 1)",
                     "purrr::map(x, ~ pkg::foo(.x))",
-                    // No fix: extra arguments
-                    "eapply(env, function(x) sum(x, na.rm = TRUE))",
                     // No fix: comparison
                     "sapply(x, function(xi) foo(xi) == 2)",
                     // No fix: comments

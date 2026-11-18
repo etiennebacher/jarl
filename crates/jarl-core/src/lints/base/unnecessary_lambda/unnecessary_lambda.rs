@@ -53,16 +53,16 @@ const PURRR_MAPPERS: &[&str] = &[
 /// ## Why is this bad?
 ///
 /// The anonymous function is unnecessary: the function it calls can be passed
-/// directly, e.g. `lapply(x, sum)`. Extra arguments can be passed after it,
-/// e.g. `lapply(x, sum, na.rm = TRUE)`.
+/// directly, e.g. `lapply(x, sum)`.
 ///
 /// Comparing to a constant once on the output of `sapply()` or `vapply()`,
 /// e.g. `sapply(x, foo) == 2`, is faster than doing it for every element since
 /// `==` is vectorized.
 ///
 /// Anonymous functions whose first argument isn't the iterated element, e.g.
-/// `lapply(x, function(xi) grep("a", xi))`, are not reported because removing
-/// them is not always more readable.
+/// `lapply(x, function(xi) grep("a", xi))`, or that pass extra arguments to the
+/// inner function, e.g. `lapply(x, function(xi) sum(xi, na.rm = TRUE))`, are
+/// not reported because removing them is not always more readable.
 ///
 /// This rule has an unsafe automatic fix when the anonymous function only
 /// passes its arguments to the inner function. It is unsafe because the inner
@@ -72,7 +72,6 @@ const PURRR_MAPPERS: &[&str] = &[
 ///
 /// ```r
 /// lapply(x, function(xi) sum(xi))
-/// lapply(x, \(xi) sum(xi, na.rm = TRUE))
 /// purrr::map(x, ~ sum(.x))
 /// sapply(x, function(xi) foo(xi) == 2)
 /// ```
@@ -80,7 +79,6 @@ const PURRR_MAPPERS: &[&str] = &[
 /// Use instead:
 /// ```r
 /// lapply(x, sum)
-/// lapply(x, sum, na.rm = TRUE)
 /// purrr::map(x, sum)
 /// sapply(x, foo) == 2
 /// ```
@@ -144,13 +142,11 @@ fn check_lambda(
     let body = unwrap_body(lambda.body().ok()?);
 
     if let Some(call) = body.as_r_call() {
-        let (fun, fixable) = inner_call_target(call, &formals, &formals, outer_args)?;
-        return Some(pass_directly_diagnostic(
-            lambda.syntax(),
-            &fun,
-            fn_name,
-            fixable,
-        ));
+        let (fun, only_formals) = inner_call_target(call, &formals, &formals, outer_args)?;
+        if !only_formals {
+            return None;
+        }
+        return Some(pass_directly_diagnostic(lambda.syntax(), &fun, fn_name));
     }
 
     if allow_comparison || !matches!(fn_name, "sapply" | "vapply") {
@@ -217,18 +213,15 @@ fn check_formula(
     }
     // All of these refer to the same element.
     let forbidden = [".x", ".", "..1"].map(String::from);
-    let (fun, fixable) = inner_call_target(call, &[first], &forbidden, outer_args)?;
-    Some(pass_directly_diagnostic(
-        formula.syntax(),
-        &fun,
-        fn_name,
-        fixable,
-    ))
+    let (fun, only_formals) = inner_call_target(call, &[first], &forbidden, outer_args)?;
+    if !only_formals {
+        return None;
+    }
+    Some(pass_directly_diagnostic(formula.syntax(), &fun, fn_name))
 }
 
 /// If `call` can replace the anonymous function, return the text of its
-/// function and whether the anonymous function can be replaced by it as-is
-/// (i.e. `call` has no arguments other than `formals`).
+/// function and whether `call` has no arguments other than `formals`.
 ///
 /// The leading arguments of `call` must be `formals` in order, the first one
 /// passed positionally and the others passed the same way as in the outer
@@ -293,27 +286,16 @@ fn pass_directly_diagnostic(
     lambda: &RSyntaxNode,
     fun: &str,
     fn_name: &str,
-    fixable: bool,
 ) -> Diagnostic {
     let range = lambda.text_trimmed_range();
-    let suggestion = if fixable {
-        format!("Pass `{fun}` directly to `{fn_name}()`.")
-    } else {
-        format!("Pass `{fun}` directly to `{fn_name}()`, followed by its other arguments.")
-    };
-    let fix = if fixable {
-        Fix::new(range, fun.to_string(), node_contains_comments(lambda))
-    } else {
-        Fix::empty()
-    };
     Diagnostic::new(
         ViolationData::new(
             Rule::UnnecessaryLambda,
             format!("Unnecessary anonymous function around `{fun}()`."),
-            Some(suggestion),
+            Some(format!("Pass `{fun}` directly to `{fn_name}()`.")),
         ),
         range,
-        fix,
+        Fix::new(range, fun.to_string(), node_contains_comments(lambda)),
     )
 }
 
