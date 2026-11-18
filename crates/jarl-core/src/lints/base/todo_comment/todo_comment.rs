@@ -6,7 +6,7 @@ use biome_rowan::Direction;
 pub struct TodoComment;
 
 /// <!-- docs: start -->
-/// Version added: 0.8.0
+/// Version added: unreleased
 ///
 /// ## What it does
 ///
