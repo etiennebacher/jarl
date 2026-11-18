@@ -132,6 +132,13 @@ mod tests {
             // All paths through the empty branch must exit.
             "function(x, idx) { if (length(idx) == 0) return(x); x[-idx] }",
             "if (!length(idx)) base::stop('empty'); x[-idx]",
+            "if (length(foo) == 0) { cli_abort('foo') }; x[-foo]",
+            "if (!length(idx)) cli::cli_abort('empty'); x[-idx]",
+            "if (!length(idx)) rlang::abort('empty'); x[-idx]",
+            "if (!length(idx)) abort('empty'); x[-idx]",
+            "if (!length(idx)) base::.Defunct(); x[-idx]",
+            "if (!length(idx)) q(); x[-idx]",
+            "if (!length(idx)) base::quit(); x[-idx]",
             "if (length(idx)) print(idx) else stop('empty'); x[-idx]",
             "if (!length(idx)) stop('empty') else print(idx); x[-idx]",
             "for (i in 1:3) { if (!length(idx)) next; x[-idx]; idx <- f() }",
@@ -663,6 +670,16 @@ mod tests {
 
     #[test]
     fn test_lint_negative_index_early_exit() {
+        assert_snapshot!(snapshot_lint("if (!length(idx)) other::cli_abort('empty')\nx[-idx]"), @"
+        warning: negative_index
+         --> <test>:2:3
+          |
+        2 | x[-idx]
+          |   ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
         // The exit condition must preserve the index and reject the empty case.
         assert_snapshot!(snapshot_lint(
             "if (!length(idx) || { idx <- f(); FALSE }) stop('empty')

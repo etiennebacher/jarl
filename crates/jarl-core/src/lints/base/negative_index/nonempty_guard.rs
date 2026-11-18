@@ -4,7 +4,7 @@ use crate::utils::{
 };
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList, TextSize, WalkEvent};
-use oak_core::syntax_ext::RIdentifierExt;
+use oak_core::syntax_ext::{AnyRSelectorExt, RIdentifierExt};
 
 /// A check or numeric assignment can establish that a negated variable is
 /// nonempty. Only trust that evidence while the variable holds its value.
@@ -232,9 +232,7 @@ fn is_early_exit_guard(statement: &RIfStatement, name: &str) -> anyhow::Result<b
 fn always_exits(expression: AnyRExpression) -> anyhow::Result<bool> {
     match unparenthesized(expression)? {
         AnyRExpression::RBreakExpression(_) | AnyRExpression::RNextExpression(_) => Ok(true),
-        AnyRExpression::RCall(call) => {
-            Ok(is_base_call(&call, "return")? || is_base_call(&call, "stop")?)
-        }
+        AnyRExpression::RCall(call) => is_exit_call(&call),
         AnyRExpression::RBracedStatements(braced) => {
             for expression in braced.expressions() {
                 if always_exits(expression)? {
@@ -254,6 +252,29 @@ fn always_exits(expression: AnyRExpression) -> anyhow::Result<bool> {
         }
         _ => Ok(false),
     }
+}
+
+fn is_exit_call(call: &RCall) -> anyhow::Result<bool> {
+    let (name, package) = match call.function()? {
+        AnyRExpression::RIdentifier(id) => (id.name_text(), None),
+        AnyRExpression::RNamespaceExpression(ns) => {
+            let (Some(name), Some(package)) =
+                (ns.right()?.identifier_text(), ns.left()?.identifier_text())
+            else {
+                return Ok(false);
+            };
+            (name, Some(package))
+        }
+        _ => return Ok(false),
+    };
+    Ok(match name.as_str() {
+        "return" | "stop" | ".Defunct" | "q" | "quit" => {
+            matches!(package.as_deref(), None | Some("base"))
+        }
+        "abort" => matches!(package.as_deref(), None | Some("rlang")),
+        "cli_abort" => matches!(package.as_deref(), None | Some("cli")),
+        _ => false,
+    })
 }
 
 /// Determine whether observing `truth` for this condition rules out an empty
