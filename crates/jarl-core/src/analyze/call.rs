@@ -168,11 +168,7 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
         )?);
     }
     if checker.is_rule_enabled(Rule::UnnecessaryLambda) {
-        checker.report_diagnostic(unnecessary_lambda(
-            r_expr,
-            fn_name,
-            checker.rule_options.unnecessary_lambda.allow_comparison,
-        )?);
+        checker.report_diagnostic(unnecessary_lambda(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::WhichGrepl) {
         checker.report_diagnostic(which_grepl(r_expr, fn_name)?);

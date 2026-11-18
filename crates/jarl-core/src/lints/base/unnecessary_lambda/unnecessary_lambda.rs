@@ -83,11 +83,7 @@ const PURRR_MAPPERS: &[&str] = &[
 /// sapply(x, foo) == 2
 /// ```
 /// <!-- docs: end -->
-pub fn unnecessary_lambda(
-    ast: &RCall,
-    fn_name: &str,
-    allow_comparison: bool,
-) -> anyhow::Result<Option<Diagnostic>> {
+pub fn unnecessary_lambda(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     let is_purrr = PURRR_MAPPERS.contains(&fn_name);
     if !is_purrr && !APPLY_FUNS.contains(&fn_name) {
         return Ok(None);
@@ -102,7 +98,7 @@ pub fn unnecessary_lambda(
             continue;
         };
         let diagnostic = if let Some(lambda) = value.as_r_function_definition() {
-            check_lambda(lambda, fn_name, &outer_args, n_other_args, allow_comparison)
+            check_lambda(lambda, fn_name, &outer_args, n_other_args)
         } else if is_purrr && let Some(formula) = value.as_r_unary_expression() {
             check_formula(formula, fn_name, &outer_args)
         } else {
@@ -121,7 +117,6 @@ fn check_lambda(
     fn_name: &str,
     outer_args: &[RArgument],
     n_other_args: usize,
-    allow_comparison: bool,
 ) -> Option<Diagnostic> {
     let mut formals = vec![];
     for param in lambda.parameters().ok()?.items().iter() {
@@ -149,7 +144,7 @@ fn check_lambda(
         return Some(pass_directly_diagnostic(lambda.syntax(), &fun, fn_name));
     }
 
-    if allow_comparison || !matches!(fn_name, "sapply" | "vapply") {
+    if !matches!(fn_name, "sapply" | "vapply") {
         return None;
     }
     let binary = body.as_r_binary_expression()?;

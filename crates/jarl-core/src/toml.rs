@@ -29,7 +29,6 @@ use crate::lints::base::quotes::options::QuotesOptions;
 use crate::lints::base::true_false_symbol::options::TrueFalseSymbolOptions;
 use crate::lints::base::undesirable_function::options::UndesirableFunctionOptions;
 use crate::lints::base::undesirable_operator::options::UndesirableOperatorOptions;
-use crate::lints::base::unnecessary_lambda::options::UnnecessaryLambdaOptions;
 use crate::lints::base::unreachable_code::options::UnreachableCodeOptions;
 use crate::lints::base::unused_function::options::UnusedFunctionOptions;
 use crate::lints::base::unused_object::options::UnusedObjectOptions;
@@ -542,14 +541,6 @@ pub struct LinterTomlOptions {
     /// Specifying both is an error.
     #[serde(rename = "undesirable_operator")]
     pub undesirable_operator: Option<UndesirableOperatorOptions>,
-
-    /// # Options for the `unnecessary_lambda` rule
-    ///
-    /// Use `allow-comparison = true` to not report anonymous functions that
-    /// compare the output of a function to a constant in `sapply()` or
-    /// `vapply()`.
-    #[serde(rename = "unnecessary_lambda")]
-    pub unnecessary_lambda: Option<UnnecessaryLambdaOptions>,
 
     /// # Options for the `unreachable_code` rule
     ///

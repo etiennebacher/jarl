@@ -1,28 +1,12 @@
-pub(crate) mod options;
 pub(crate) mod unnecessary_lambda;
 
 #[cfg(test)]
 mod tests {
-    use crate::lints::base::unnecessary_lambda::options::ResolvedUnnecessaryLambdaOptions;
-    use crate::rule_options::ResolvedRuleOptions;
-    use crate::settings::{LinterSettings, Settings};
     use crate::utils_test::*;
     use insta::assert_snapshot;
 
     fn snapshot_lint(code: &str) -> String {
         format_diagnostics(code, "unnecessary_lambda", None)
-    }
-
-    fn settings_allow_comparison() -> Settings {
-        Settings {
-            linter: LinterSettings {
-                rule_options: ResolvedRuleOptions {
-                    unnecessary_lambda: ResolvedUnnecessaryLambdaOptions { allow_comparison: true },
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        }
     }
 
     #[test]
@@ -145,18 +129,6 @@ mod tests {
         expect_no_lint("sapply(x, function(xi) (!foo(xi)))", rule, None);
         expect_no_lint("sapply(x, function(xi) (-foo(xi)))", rule, None);
         expect_no_lint("sapply(x, function(xi) { -foo(xi) })", rule, None);
-
-        // Option
-        let settings = settings_allow_comparison();
-        for code in [
-            "sapply(x, function(xi) foo(xi) == 2)",
-            "sapply(x, function(xi) foo(xi) == 'a')",
-            "sapply(x, function(xi) foo(xi) == 1 + 2i)",
-            "sapply(x, \\(xi) foo(xi) >= 2)",
-            "vapply(x, function(xi) foo(xi) == 2, logical(1L))",
-        ] {
-            expect_no_lint_with_settings(code, rule, None, settings.clone());
-        }
     }
 
     #[test]
