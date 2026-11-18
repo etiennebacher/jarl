@@ -220,16 +220,7 @@ mod tests {
 
     #[test]
     fn test_lint_unnecessary_lambda() {
-        assert_snapshot!(
-            snapshot_lint(
-                "lapply(DF, function(x) return(sum(x)))
-lapply(DF, \\(x) sum(x))
-rapply(l, function(x) is.data.frame(x))
-sapply(x, function(xi) (foo(xi)))
-sapply(x, function(xi) pkg::foo(xi))
-x |> lapply(function(xi, y) foo(xi, y), y)"
-            ),
-            @r"
+        assert_snapshot!(snapshot_lint("lapply(DF, function(x) return(sum(x)))"), @"
         warning: unnecessary_lambda
          --> <test>:1:12
           |
@@ -237,53 +228,60 @@ x |> lapply(function(xi, y) foo(xi, y), y)"
           |            -------------------------- Unnecessary anonymous function around `sum()`.
           |
           = help: Pass `sum` directly to `lapply()`.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("lapply(DF, \\(x) sum(x))"), @r"
         warning: unnecessary_lambda
-         --> <test>:2:12
+         --> <test>:1:12
           |
-        2 | lapply(DF, \(x) sum(x))
+        1 | lapply(DF, \(x) sum(x))
           |            ----------- Unnecessary anonymous function around `sum()`.
           |
           = help: Pass `sum` directly to `lapply()`.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("rapply(l, function(x) is.data.frame(x))"), @"
         warning: unnecessary_lambda
-         --> <test>:3:11
+         --> <test>:1:11
           |
-        3 | rapply(l, function(x) is.data.frame(x))
+        1 | rapply(l, function(x) is.data.frame(x))
           |           ---------------------------- Unnecessary anonymous function around `is.data.frame()`.
           |
           = help: Pass `is.data.frame` directly to `rapply()`.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("sapply(x, function(xi) (foo(xi)))"), @"
         warning: unnecessary_lambda
-         --> <test>:4:11
+         --> <test>:1:11
           |
-        4 | sapply(x, function(xi) (foo(xi)))
+        1 | sapply(x, function(xi) (foo(xi)))
           |           ---------------------- Unnecessary anonymous function around `foo()`.
           |
           = help: Pass `foo` directly to `sapply()`.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("sapply(x, function(xi) pkg::foo(xi))"), @"
         warning: unnecessary_lambda
-         --> <test>:5:11
+         --> <test>:1:11
           |
-        5 | sapply(x, function(xi) pkg::foo(xi))
+        1 | sapply(x, function(xi) pkg::foo(xi))
           |           ------------------------- Unnecessary anonymous function around `pkg::foo()`.
           |
           = help: Pass `pkg::foo` directly to `sapply()`.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("x |> lapply(function(xi, y) foo(xi, y), y)"), @"
         warning: unnecessary_lambda
-         --> <test>:6:13
+         --> <test>:1:13
           |
-        6 | x |> lapply(function(xi, y) foo(xi, y), y)
+        1 | x |> lapply(function(xi, y) foo(xi, y), y)
           |             -------------------------- Unnecessary anonymous function around `foo()`.
           |
           = help: Pass `foo` directly to `lapply()`.
-        Found 6 errors.
-        "
-        );
+        Found 1 error.
+        ");
         // Multiple formals
-        assert_snapshot!(
-            snapshot_lint(
-                "lapply(x, function(xi, y) foo(xi, y), y)
-lapply(x, \\(xi, y) foo(xi, y = y), y = 1)
-lapply(x, \\(xi, ...) foo(xi, ...), y = 1)
-mapply(function(xi, yi) foo(xi, yi), x, y)"
-            ),
-            @r"
+        assert_snapshot!(snapshot_lint("lapply(x, function(xi, y) foo(xi, y), y)"), @"
         warning: unnecessary_lambda
          --> <test>:1:11
           |
@@ -291,38 +289,40 @@ mapply(function(xi, yi) foo(xi, yi), x, y)"
           |           -------------------------- Unnecessary anonymous function around `foo()`.
           |
           = help: Pass `foo` directly to `lapply()`.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("lapply(x, \\(xi, y) foo(xi, y = y), y = 1)"), @r"
         warning: unnecessary_lambda
-         --> <test>:2:11
+         --> <test>:1:11
           |
-        2 | lapply(x, \(xi, y) foo(xi, y = y), y = 1)
+        1 | lapply(x, \(xi, y) foo(xi, y = y), y = 1)
           |           ----------------------- Unnecessary anonymous function around `foo()`.
           |
           = help: Pass `foo` directly to `lapply()`.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("lapply(x, \\(xi, ...) foo(xi, ...), y = 1)"), @r"
         warning: unnecessary_lambda
-         --> <test>:3:11
+         --> <test>:1:11
           |
-        3 | lapply(x, \(xi, ...) foo(xi, ...), y = 1)
+        1 | lapply(x, \(xi, ...) foo(xi, ...), y = 1)
           |           ----------------------- Unnecessary anonymous function around `foo()`.
           |
           = help: Pass `foo` directly to `lapply()`.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("mapply(function(xi, yi) foo(xi, yi), x, y)"), @"
         warning: unnecessary_lambda
-         --> <test>:4:8
+         --> <test>:1:8
           |
-        4 | mapply(function(xi, yi) foo(xi, yi), x, y)
+        1 | mapply(function(xi, yi) foo(xi, yi), x, y)
           |        ---------------------------- Unnecessary anonymous function around `foo()`.
           |
           = help: Pass `foo` directly to `mapply()`.
-        Found 4 errors.
-        "
-        );
-        assert_snapshot!(
-            snapshot_lint(
-                "purrr::map(x, ~foo(.x))
-purrr::map_vec(x, ~foo(.x))
-map(x, ~foo(.))
-purrr::map(x, function(xi) foo(xi))"
-            ),
-            @"
+        Found 1 error.
+        ");
+        // purrr
+        assert_snapshot!(snapshot_lint("purrr::map(x, ~foo(.x))"), @"
         warning: unnecessary_lambda
          --> <test>:1:15
           |
@@ -330,43 +330,40 @@ purrr::map(x, function(xi) foo(xi))"
           |               -------- Unnecessary anonymous function around `foo()`.
           |
           = help: Pass `foo` directly to `map()`.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("purrr::map_vec(x, ~foo(.x))"), @"
         warning: unnecessary_lambda
-         --> <test>:2:19
+         --> <test>:1:19
           |
-        2 | purrr::map_vec(x, ~foo(.x))
+        1 | purrr::map_vec(x, ~foo(.x))
           |                   -------- Unnecessary anonymous function around `foo()`.
           |
           = help: Pass `foo` directly to `map_vec()`.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("map(x, ~foo(.))"), @"
         warning: unnecessary_lambda
-         --> <test>:3:8
+         --> <test>:1:8
           |
-        3 | map(x, ~foo(.))
+        1 | map(x, ~foo(.))
           |        ------- Unnecessary anonymous function around `foo()`.
           |
           = help: Pass `foo` directly to `map()`.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("purrr::map(x, function(xi) foo(xi))"), @"
         warning: unnecessary_lambda
-         --> <test>:4:15
+         --> <test>:1:15
           |
-        4 | purrr::map(x, function(xi) foo(xi))
+        1 | purrr::map(x, function(xi) foo(xi))
           |               -------------------- Unnecessary anonymous function around `foo()`.
           |
           = help: Pass `foo` directly to `map()`.
-        Found 4 errors.
-        "
-        );
+        Found 1 error.
+        ");
         // Braces
-        assert_snapshot!(
-            snapshot_lint(
-                "sapply(x, function(xi) { foo(xi) })
-lapply(x, function(xi) { return(print(xi)) })
-lapply(x, function(xi) {
-  return(print(xi))
-})
-lapply(y, function(yi) {
-  print(yi) # comment
-})"
-            ),
-            @"
+        assert_snapshot!(snapshot_lint("sapply(x, function(xi) { foo(xi) })"), @"
         warning: unnecessary_lambda
          --> <test>:1:11
           |
@@ -374,44 +371,46 @@ lapply(y, function(yi) {
           |           ------------------------ Unnecessary anonymous function around `foo()`.
           |
           = help: Pass `foo` directly to `sapply()`.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("lapply(x, function(xi) { return(print(xi)) })"), @"
         warning: unnecessary_lambda
-         --> <test>:2:11
+         --> <test>:1:11
           |
-        2 | lapply(x, function(xi) { return(print(xi)) })
+        1 | lapply(x, function(xi) { return(print(xi)) })
           |           ---------------------------------- Unnecessary anonymous function around `print()`.
           |
           = help: Pass `print` directly to `lapply()`.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("lapply(x, function(xi) {\n  return(print(xi))\n})"), @"
         warning: unnecessary_lambda
-         --> <test>:3:11
+         --> <test>:1:11
           |
-        3 |   lapply(x, function(xi) {
+        1 |   lapply(x, function(xi) {
           |  ___________-
-        4 | |   return(print(xi))
-        5 | | })
+        2 | |   return(print(xi))
+        3 | | })
           | |_- Unnecessary anonymous function around `print()`.
           |
           = help: Pass `print` directly to `lapply()`.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("lapply(y, function(yi) {\n  print(yi) # comment\n})"), @"
         warning: unnecessary_lambda
-         --> <test>:6:11
+         --> <test>:1:11
           |
-        6 |   lapply(y, function(yi) {
+        1 |   lapply(y, function(yi) {
           |  ___________-
-        7 | |   print(yi) # comment
-        8 | | })
+        2 | |   print(yi) # comment
+        3 | | })
           | |_- Unnecessary anonymous function around `print()`.
           |
           = help: Pass `print` directly to `lapply()`.
-        Found 4 errors.
-        "
-        );
+        Found 1 error.
+        ");
         // Comparisons
-        assert_snapshot!(
-            snapshot_lint(
-                "sapply(x, function(xi) foo(xi) == 'a')
-sapply(x, function(xi) 2 < foo(xi))
-sapply(x, \\(xi) foo(xi) != TRUE)"
-            ),
-            @r"
+        assert_snapshot!(snapshot_lint("sapply(x, function(xi) foo(xi) == 'a')"), @"
         warning: unnecessary_lambda
          --> <test>:1:11
           |
@@ -419,23 +418,28 @@ sapply(x, \\(xi) foo(xi) != TRUE)"
           |           --------------------------- Comparing to a constant inside `sapply()` doesn't benefit from vectorization.
           |
           = help: Compare after calling `sapply()`, e.g. `sapply(x, foo) == 'a'`.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("sapply(x, function(xi) 2 < foo(xi))"), @"
         warning: unnecessary_lambda
-         --> <test>:2:11
+         --> <test>:1:11
           |
-        2 | sapply(x, function(xi) 2 < foo(xi))
+        1 | sapply(x, function(xi) 2 < foo(xi))
           |           ------------------------ Comparing to a constant inside `sapply()` doesn't benefit from vectorization.
           |
-          = help: Compare after calling `sapply()`, e.g. `sapply(x, foo) < 2`.
+          = help: Compare after calling `sapply()`, e.g. `2 < sapply(x, foo)`.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("sapply(x, \\(xi) foo(xi) != TRUE)"), @r"
         warning: unnecessary_lambda
-         --> <test>:3:11
+         --> <test>:1:11
           |
-        3 | sapply(x, \(xi) foo(xi) != TRUE)
+        1 | sapply(x, \(xi) foo(xi) != TRUE)
           |           --------------------- Comparing to a constant inside `sapply()` doesn't benefit from vectorization.
           |
           = help: Compare after calling `sapply()`, e.g. `sapply(x, foo) != TRUE`.
-        Found 3 errors.
-        "
-        );
+        Found 1 error.
+        ");
         expect_no_lint(
             "lapply(x, function(xi) {\n  print(xi)\n  xi\n})",
             "unnecessary_lambda",

@@ -166,9 +166,9 @@ fn check_lambda(
         return None;
     }
     let (left, right) = (binary.left().ok()?, binary.right().ok()?);
-    let (call, constant) = match (left.as_r_call(), right.as_r_call()) {
-        (Some(call), None) if is_constant(&right) => (call, right.clone()),
-        (None, Some(call)) if is_constant(&left) => (call, left.clone()),
+    let (call, constant, call_on_left) = match (left.as_r_call(), right.as_r_call()) {
+        (Some(call), None) if is_constant(&right) => (call, right.clone(), true),
+        (None, Some(call)) if is_constant(&left) => (call, left.clone(), false),
         _ => return None,
     };
     let (fun, _) = inner_call_target(call, &formals, &formals, outer_args)?;
@@ -178,6 +178,13 @@ fn check_lambda(
     } else {
         ""
     };
+    let applied = format!("{fn_name}(x, {fun}{fun_value})");
+    let (op, constant) = (operator.text_trimmed(), constant.syntax().text_trimmed());
+    let comparison = if call_on_left {
+        format!("{applied} {op} {constant}")
+    } else {
+        format!("{constant} {op} {applied}")
+    };
     Some(Diagnostic::new(
         ViolationData::new(
             Rule::UnnecessaryLambda,
@@ -185,9 +192,7 @@ fn check_lambda(
                 "Comparing to a constant inside `{fn_name}()` doesn't benefit from vectorization."
             ),
             Some(format!(
-                "Compare after calling `{fn_name}()`, e.g. `{fn_name}(x, {fun}{fun_value}) {} {}`.",
-                operator.text_trimmed(),
-                constant.syntax().text_trimmed()
+                "Compare after calling `{fn_name}()`, e.g. `{comparison}`."
             )),
         ),
         lambda.syntax().text_trimmed_range(),
@@ -282,11 +287,7 @@ fn inner_call_target(
     Some((fun, inner_args.len() == formals.len()))
 }
 
-fn pass_directly_diagnostic(
-    lambda: &RSyntaxNode,
-    fun: &str,
-    fn_name: &str,
-) -> Diagnostic {
+fn pass_directly_diagnostic(lambda: &RSyntaxNode, fun: &str, fn_name: &str) -> Diagnostic {
     let range = lambda.text_trimmed_range();
     Diagnostic::new(
         ViolationData::new(
