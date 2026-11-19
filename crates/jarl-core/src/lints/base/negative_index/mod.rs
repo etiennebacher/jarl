@@ -753,6 +753,16 @@ mod tests {
           = help: Handle empty or zero indices explicitly, or use a logical index.
         Found 1 error.
         ");
+        assert_snapshot!(snapshot_lint("idx <- 1\nwhile (running) idx <- x[-idx] # comment\n"), @"
+        warning: negative_index
+         --> <test>:2:26
+          |
+        2 | while (running) idx <- x[-idx] # comment
+          |                          ---- Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
+        Found 1 error.
+        ");
         // An inner loop can invalidate the outer while condition.
         assert_snapshot!(snapshot_lint(
             "while (length(idx)) {
