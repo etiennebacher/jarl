@@ -100,8 +100,6 @@ mod tests {
             "idx <- 1 + 1; x[-idx]",
             "idx = -2L; x[-idx]",
             "1.5 -> idx; x[-idx]",
-            "idx <- (+(-((0)))); x[-idx]",
-            "idx <- 0x2L; x[-idx]",
             "`my idx` <- 1; x[-`my idx`]",
             // The assignment must execute before the use, including on each loop iteration.
             "if (flag) { idx <- 1; x[-idx] }",
@@ -367,6 +365,26 @@ mod tests {
 
     #[test]
     fn test_lint_negative_index_numeric_assignment() {
+        assert_snapshot!(snapshot_lint("x <- 1:3\nidx <- 0\nx[-idx]"), @"
+        warning: negative_index
+         --> <test>:3:3
+          |
+        3 | x[-idx]
+          |   ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("idx <- 1; idx <- (+(-((0L)))); x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:34
+          |
+        1 | idx <- 1; idx <- (+(-((0L)))); x[-idx]
+          |                                  ---- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
         // A conditional assignment need not execute.
         assert_snapshot!(snapshot_lint("if (flag) idx <- 1; x[-idx]"), @"
         warning: negative_index

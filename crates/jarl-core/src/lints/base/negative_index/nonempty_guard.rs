@@ -151,7 +151,17 @@ fn is_numeric_assignment(binary: &RBinaryExpression, name: &str) -> anyhow::Resu
     let AnyRExpression::RIdentifier(identifier) = target else {
         return Ok(false);
     };
-    Ok(identifier.name_text() == name && is_constant_numeric_expression(value)?)
+    Ok(identifier.name_text() == name
+        && is_constant_numeric_expression(value.clone())?
+        && !is_zero_literal(value)?)
+}
+
+/// Zero has length one, but `x[-0]` selects nothing.
+fn is_zero_literal(expression: AnyRExpression) -> anyhow::Result<bool> {
+    match unparenthesized(expression)? {
+        AnyRExpression::RUnaryExpression(unary) => is_zero_literal(unary.argument()?),
+        expression => Ok(numeric_literal(&expression) == Some(0.0)),
+    }
 }
 
 /// Recognize arithmetic built only from numeric scalars, without evaluating it.
@@ -450,6 +460,8 @@ fn is_base_call(call: &RCall, name: &str) -> anyhow::Result<bool> {
         ))
 }
 
+/// Strip only the parentheses around the whole expression, so `((-idx))`
+/// is checked as `-idx` while `-(idx)` keeps its parenthesized operand.
 pub(super) fn unparenthesized(mut expression: AnyRExpression) -> anyhow::Result<AnyRExpression> {
     while let AnyRExpression::RParenthesizedExpression(paren) = expression {
         expression = paren.body()?;
@@ -457,6 +469,8 @@ pub(super) fn unparenthesized(mut expression: AnyRExpression) -> anyhow::Result<
     Ok(expression)
 }
 
+/// Read a decimal integer or double as `f64`, including `L` suffixes and unary
+/// signs.
 fn numeric_literal(expression: &AnyRExpression) -> Option<f64> {
     match expression {
         AnyRExpression::AnyRValue(AnyRValue::RIntegerValue(_) | AnyRValue::RDoubleValue(_)) => {

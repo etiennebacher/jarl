@@ -27,6 +27,8 @@ pub struct NegativeIndex;
 ///   `return()`, `stop()`, `rlang::abort()`, `cli::cli_abort()`, `next`, or `break`,
 ///   or after an assertion such as `stopifnot(length(idx) > 0)`.
 /// - `-idx` after a constant numeric assignment, such as `idx <- 1` or `idx <- 2 * 3`.
+///   Assigning a zero literal still triggers a warning on `x[-idx]` because `x[-0]`
+///   selects nothing.
 ///
 /// ## Why is this bad?
 ///
