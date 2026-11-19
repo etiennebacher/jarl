@@ -11,7 +11,7 @@ title: Jarl
 <br>
 <div style="text-align: center !important">
   <a href = "https://jarl.etiennebacher.com/" target = "_blank"><img src="https://img.shields.io/static/v1?label=Docs&message=Visit&color=blue"></a>
-  <a href = "https://github.com/etiennebacher/jarl/actions" target = "_blank"><img src="https://github.com/etiennebacher/jarl/workflows/cargo-test/badge.svg"></a>
+  <a href = "https://github.com/etiennebacher/jarl/actions" target = "_blank"><img src="https://github.com/etiennebacher/jarl/actions/workflows/cargo-test.yml/badge.svg"></a>
   <a href="https://codecov.io/gh/etiennebacher/jarl" >
   <img src="https://codecov.io/gh/etiennebacher/jarl/graph/badge.svg?token=P859N5VE46"/>
   </a>

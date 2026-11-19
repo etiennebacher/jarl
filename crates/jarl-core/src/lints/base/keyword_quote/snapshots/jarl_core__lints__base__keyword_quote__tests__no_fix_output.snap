@@ -1,0 +1,24 @@
+---
+source: crates/jarl-core/src/lints/base/keyword_quote/mod.rs
+expression: "get_fixed_text(vec![\"\\\"a\\\\\\\"b\\\" <- 1\", \"'a`b' <- 1\", \"x$\\\"a\\\\nb\\\"\",],\n\"keyword_quote\", None)"
+---
+OLD:
+====
+"a\"b" <- 1
+NEW:
+====
+"a\"b" <- 1
+
+OLD:
+====
+'a`b' <- 1
+NEW:
+====
+'a`b' <- 1
+
+OLD:
+====
+x$"a\nb"
+NEW:
+====
+x$"a\nb"

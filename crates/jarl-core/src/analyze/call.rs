@@ -16,6 +16,7 @@ use crate::lints::base::fixed_regex::fixed_regex::fixed_regex;
 use crate::lints::base::glue::glue::glue;
 use crate::lints::base::grepv::grepv::grepv;
 use crate::lints::base::if_not_else::if_not_else::if_not_else_call;
+use crate::lints::base::keyword_quote::keyword_quote::keyword_quote_call;
 use crate::lints::base::length_levels::length_levels::length_levels;
 use crate::lints::base::length_test::length_test::length_test;
 use crate::lints::base::lengths::lengths::lengths;
@@ -102,6 +103,11 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     }
     if checker.is_rule_enabled(Rule::IfNotElse) {
         checker.report_diagnostic(if_not_else_call(r_expr, fn_name, checker)?);
+    }
+    if checker.is_rule_enabled(Rule::KeywordQuote) {
+        for diagnostic in keyword_quote_call(r_expr)? {
+            checker.report_diagnostic(Some(diagnostic));
+        }
     }
     if checker.is_rule_enabled(Rule::LengthLevels) {
         checker.report_diagnostic(length_levels(r_expr, fn_name)?);

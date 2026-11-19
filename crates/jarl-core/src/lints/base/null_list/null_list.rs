@@ -11,7 +11,7 @@ const FORMALS_MAP: Formals = &[".x", ".f"];
 pub struct EmptyList;
 
 /// <!-- docs: start -->
-/// Version added: 0.8.0
+/// Version added: unreleased
 ///
 /// ## What it does
 ///

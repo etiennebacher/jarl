@@ -11,6 +11,7 @@
   * `assignment_on_if_no_else` (#605, @christopherkenny)
   * `function_return` (#750)
   * `if_switch` (#812)
+  * `keyword_quote` (#825)
   * `list_comparison` (#572, @Yousa-Mirage)
   * `null_list` (#785, @JosephBARBIERDARNAL)
   * `terminal_close` (#811)
@@ -41,9 +42,17 @@
 
 ### Bug fixes
 
+* `undesirable_operator` no longer reports `:::` when it accesses the package
+  the file belongs to, e.g. `mypkg:::fun()` in the tests of `mypkg` (#819).
+
+* `implicit_assignment` no longer reports assignments in `on.exit()`, such as
+  `on.exit(x <- 1)` (#818).
+
 * R version constraints in `DESCRIPTION` that use `>`, such as `R (> 4.5.0)`,
   are now used to determine the minimum R version (here 4.5.1) (#578,
   @Yousa-Mirage).
+
+* The fix for `class_equals` is now considered "unsafe" (#821).
 
 * Fix `download_file` handling of binary URL suffixes, string literals, namespaces,
   and ignored `mode` arguments with external download methods (#786, @Yousa-Mirage).
@@ -72,6 +81,8 @@
 
 * `duplicated_arguments` doesn't error anymore if the function name is `NULL` or
   `NA`, which used to stop the analysis for the entire file (#816).
+
+* Improve robustness of `unused_function`, leading to fewer false negatives (#822).
 
 ## 0.7.1
 

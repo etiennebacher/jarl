@@ -184,14 +184,24 @@ fn file_minimum_r_version(
     if config.minimum_r_version.is_some() {
         return config.minimum_r_version;
     }
-    // A file inside a package is bounded by its DESCRIPTION whether or not it
-    // is a loadable source: a script in `data-raw/` still runs under the R
-    // version the package declares.
+    file_package_context(file, pkg_contexts, file_pkg_info)?.minimum_r_version
+}
+
+/// The context of the package `file` sits in, if any.
+///
+/// A file inside a package belongs to it whether or not it is a loadable
+/// source: a script in `data-raw/` is still part of the package, and still
+/// runs under the R version its DESCRIPTION declares.
+fn file_package_context<'a>(
+    file: &Path,
+    pkg_contexts: &'a HashMap<PathBuf, PackageContext>,
+    file_pkg_info: &HashMap<PathBuf, FilePackageInfo>,
+) -> Option<&'a PackageContext> {
     let package_root = match file_pkg_info.get(file)? {
         FilePackageInfo::InPackage { package_root, .. } => package_root,
         FilePackageInfo::Script { package_root } => package_root.as_ref()?,
     };
-    pkg_contexts.get(package_root)?.minimum_r_version
+    pkg_contexts.get(package_root)
 }
 
 pub fn lint_only(
@@ -426,6 +436,7 @@ pub fn get_checks(
         let context = RoxygenContext {
             loaded_packages: &checker.loaded_packages,
             import_from: &checker.import_from,
+            package_name: checker.package_name.as_deref(),
             source_cache: &checker.source_index_cache,
         };
         let roxygen_diagnostics =
@@ -588,6 +599,9 @@ fn get_package_info(
     pkg_contexts: &HashMap<PathBuf, PackageContext>,
     file_pkg_info: &HashMap<PathBuf, FilePackageInfo>,
 ) {
+    checker.package_name =
+        file_package_context(file, pkg_contexts, file_pkg_info).and_then(|ctx| ctx.name.clone());
+
     let mut packages: Vec<String> = match file_pkg_info.get(file) {
         Some(FilePackageInfo::InPackage { package_root, .. }) => {
             match pkg_contexts.get(package_root) {
@@ -682,6 +696,7 @@ fn top_level_attached_packages(
 struct RoxygenContext<'a> {
     loaded_packages: &'a [String],
     import_from: &'a HashMap<String, String>,
+    package_name: Option<&'a str>,
     source_cache: &'a jarl_semantic::SourceIndexCache,
 }
 
@@ -727,6 +742,7 @@ fn get_checks_roxygen(
         checker.file_path = file.to_path_buf();
         checker.source_index_cache = context.source_cache.clone();
         checker.import_from = context.import_from.clone();
+        checker.package_name = context.package_name.map(str::to_string);
 
         for expr in expressions {
             check_expression(expr, &mut checker)?;

@@ -63,6 +63,223 @@ fn test_called_internal_not_flagged() -> anyhow::Result<()> {
     Ok(())
 }
 
+// https://github.com/etiennebacher/jarl/issues/483
+#[test]
+fn test_argument_name_is_not_a_call() -> anyhow::Result<()> {
+    let case = CliTest::package_with_files([
+        ("NAMESPACE", "export(public_fn)\n"),
+        (
+            "R/public.R",
+            "public_fn <- function(foo = FALSE, bar = 1) {\n  g(x,\n    bar = 2)\n  used(1)\n}\n",
+        ),
+        (
+            "R/helpers.R",
+            "foo <- function() NULL\nbar <- function() NULL\nused = function(x) x\n",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(check(&case), @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unused_function
+     --> R/helpers.R:1:1
+      |
+    1 | foo <- function() NULL
+      | --- `foo` is defined but is never called in this package nor is it exported in NAMESPACE.
+      |
+      = help: Defined at R/helpers.R:1:1.
+
+    warning: unused_function
+     --> R/helpers.R:2:1
+      |
+    2 | bar <- function() NULL
+      | --- `bar` is defined but is never called in this package nor is it exported in NAMESPACE.
+      |
+      = help: Defined at R/helpers.R:2:1.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+
+    ----- stderr -----
+    ");
+    Ok(())
+}
+
+#[test]
+fn test_names_that_cannot_call_a_function() -> anyhow::Result<()> {
+    let case = CliTest::package_with_files([
+        ("NAMESPACE", "export(public_fn)\n"),
+        (
+            "R/public.R",
+            r#"public_fn <- function(param_used, x) {
+  if (param_used) NULL
+  x@slot
+  local_var <- 1
+  local_var + 1
+  1 -> right_assigned
+  list(list_name = 1)
+  # comment_only()
+}
+"#,
+        ),
+        (
+            "R/helpers.R",
+            r#"param_used <- function() NULL
+slot <- function() NULL
+local_var <- function() NULL
+right_assigned <- function() NULL
+list_name <- function() NULL
+comment_only <- function() NULL
+"#,
+        ),
+    ])?;
+
+    insta::assert_snapshot!(check(&case), @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unused_function
+     --> R/helpers.R:1:1
+      |
+    1 | param_used <- function() NULL
+      | ---------- `param_used` is defined but is never called in this package nor is it exported in NAMESPACE.
+      |
+      = help: Defined at R/helpers.R:1:1.
+
+    warning: unused_function
+     --> R/helpers.R:2:1
+      |
+    2 | slot <- function() NULL
+      | ---- `slot` is defined but is never called in this package nor is it exported in NAMESPACE.
+      |
+      = help: Defined at R/helpers.R:2:1.
+
+    warning: unused_function
+     --> R/helpers.R:3:1
+      |
+    3 | local_var <- function() NULL
+      | --------- `local_var` is defined but is never called in this package nor is it exported in NAMESPACE.
+      |
+      = help: Defined at R/helpers.R:3:1.
+
+    warning: unused_function
+     --> R/helpers.R:4:1
+      |
+    4 | right_assigned <- function() NULL
+      | -------------- `right_assigned` is defined but is never called in this package nor is it exported in NAMESPACE.
+      |
+      = help: Defined at R/helpers.R:4:1.
+
+    warning: unused_function
+     --> R/helpers.R:5:1
+      |
+    5 | list_name <- function() NULL
+      | --------- `list_name` is defined but is never called in this package nor is it exported in NAMESPACE.
+      |
+      = help: Defined at R/helpers.R:5:1.
+
+    warning: unused_function
+     --> R/helpers.R:6:1
+      |
+    6 | comment_only <- function() NULL
+      | ------------ `comment_only` is defined but is never called in this package nor is it exported in NAMESPACE.
+      |
+      = help: Defined at R/helpers.R:6:1.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 6 errors.
+
+    ----- stderr -----
+    ");
+    Ok(())
+}
+
+#[test]
+fn test_indirect_uses_are_kept() -> anyhow::Result<()> {
+    let case = CliTest::package_with_files([
+        ("NAMESPACE", "export(public_fn)\n"),
+        (
+            "R/public.R",
+            r#"#' \Sexpr{in_roxygen()}
+public_fn <- function(x) {
+  shadowed <- 1
+  shadowed()
+  do.call("in_string", list())
+  quote(in_quote())
+  mypkg:::in_namespace()
+  asNamespace("mypkg")$in_env()
+  lapply(x, FUN = as_value)
+  inner <- function() same_file()
+  inner()
+}
+same_file <- function() NULL
+"#,
+        ),
+        (
+            "R/wrapped.R",
+            r#"wrapped <- local({
+in_local <- function() NULL
+uses_local <- function() lapply(1, in_local)
+uses_local
+})
+"#,
+        ),
+        (
+            "R/helpers.R",
+            r#"in_roxygen <- function() NULL
+shadowed <- function() NULL
+in_string <- function() NULL
+in_quote <- function() NULL
+in_namespace <- function() NULL
+in_env <- function() NULL
+as_value <- function() NULL
+"#,
+        ),
+    ])?;
+
+    insta::assert_snapshot!(check(&case), @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    ");
+    Ok(())
+}
+
+#[test]
+fn test_unparsable_file_falls_back_to_text() -> anyhow::Result<()> {
+    let case = CliTest::package_with_files([
+        ("NAMESPACE", "export(public_fn)\n"),
+        ("R/public.R", "public_fn <- function() {\n  helper(\n"),
+        ("R/helpers.R", "helper <- function() NULL\n"),
+    ])?;
+
+    insta::assert_snapshot!(check(&case), @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    error: Expected `)` but instead found the end of the file.
+     --> R/public.R:2:10
+      |
+    2 |   helper(
+      |          ^
+      |
+    ");
+    Ok(())
+}
+
 #[test]
 fn test_non_ascii_function_used_across_files() -> anyhow::Result<()> {
     let case = CliTest::package_with_files([

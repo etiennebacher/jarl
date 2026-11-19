@@ -78,7 +78,7 @@ Although the documentation website is built using Quarto, do not include any exe
 
 ```rust
 /// <!-- docs: start -->
-/// Version added: 0.1.2
+/// Version added: unreleased
 ///
 /// ## What it does
 ///
@@ -88,7 +88,8 @@ Although the documentation website is built using Quarto, do not include any exe
 /// <!-- docs: end -->
 ```
 
-The first line of a documentation block must declare the version added (in `MAJOR.MINOR.PATCH` format).
+The first line of a documentation block must declare the version added.
+For a new rule, write `Version added: unreleased`: it is automatically replaced by the actual version before the next release is made.
 The documentation block should have the following subsections (each using a level 2 (`##`) markdown header):
 
 * "What is does" to explain what the rule does

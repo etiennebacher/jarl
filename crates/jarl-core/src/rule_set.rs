@@ -290,7 +290,7 @@ declare_rules! {
         name: "class_equals",
         categories: [Susp],
         default: Enabled,
-        fix: Safe,
+        fix: Unsafe,
         min_r_version: None,
     },
     Coalesce => {
@@ -480,6 +480,13 @@ declare_rules! {
         name: "is_numeric",
         categories: [Read],
         default: Enabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+    KeywordQuote => {
+        name: "keyword_quote",
+        categories: [Read],
+        default: Disabled,
         fix: Safe,
         min_r_version: None,
     },

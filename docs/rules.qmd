@@ -102,6 +102,7 @@ dat <- as.data.frame(
     c("internal_function", "suspicious", "❌", "Disabled by default"),
     c("invalid_chunk_suppression", "comments", "❌", ""),
     c("is_numeric", "readability", "✅", ""),
+    c("keyword_quote", "readability", "✅", "Disabled by default"),
     c("length_levels", "readability", "✅", ""),
     c("length_test", "correctness", "✅", ""),
     c("lengths", "performance, readability", "✅", ""),

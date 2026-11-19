@@ -5,7 +5,7 @@ use air_r_syntax::*;
 use biome_rowan::AstNode;
 
 /// <!-- docs: start -->
-/// Version added: 0.8.0
+/// Version added: unreleased
 ///
 /// ## What it does
 ///

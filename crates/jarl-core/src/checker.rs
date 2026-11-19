@@ -75,6 +75,8 @@ pub struct Checker {
     // `S3method()`, etc.).  Used to suppress false positives in rules
     // like `unused_object` — exported names are "used" by definition.
     pub namespace_exports: HashSet<String>,
+    // Name of the R package the file belongs to, if any.
+    pub package_name: Option<String>,
     // Path of the file being checked. Used by rules that need to resolve
     // paths relative to the current file (e.g. `unused_object` resolving
     // `source("...")` arguments).
@@ -105,6 +107,7 @@ impl Checker {
             package_cache: None,
             import_from: HashMap::new(),
             namespace_exports: HashSet::new(),
+            package_name: None,
             file_path: std::path::PathBuf::new(),
             source_index_cache: jarl_semantic::SourceIndexCache::new(),
             chunks: Vec::new(),

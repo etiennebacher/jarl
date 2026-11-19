@@ -1,9 +1,14 @@
-use biome_rowan::TextRange;
+use air_r_syntax::{RBinaryExpression, RSyntaxKind, RSyntaxNode};
+use biome_rowan::{AstNode, TextRange};
+use jarl_semantic::assignment_rhs_is_function_def;
+use oak_core::syntax_ext::RIdentifierExt;
+use oak_semantic::semantic_index::{DefinitionKind, ScopeId, SemanticIndex};
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use crate::namespace::Namespace;
 use crate::package::{FileScope, SharedFileData};
+use crate::utils::scan_symbols;
 
 /// <!-- docs: start -->
 /// Version added: 0.5.0
@@ -63,8 +68,9 @@ use crate::package::{FileScope, SharedFileData};
 // ## Implementation
 //
 // Operates on the already-scanned `SharedFileData` of a package rather than
-// reading its files again, and looks symbols up across files in O(1) through
-// the pre-computed frequency maps.
+// reading its files again. Files in R/ are judged on the names their syntax
+// tree reads (see `function_reads`), other files and files that don't parse on
+// the words of their text.
 //
 // `namespaces` maps package root paths to their parsed NAMESPACE file.
 // Packages without a NAMESPACE entry are skipped.
@@ -118,20 +124,27 @@ pub(crate) fn compute_unused_from_shared(
         };
         let namespace_exports = namespace.exported(all_defined_name_refs.iter().copied());
 
-        // Total occurrences of each symbol across all R/ files.
-        let mut total_occurrences: HashMap<&str, usize> = HashMap::new();
+        // Names read anywhere in R/.
+        let mut read_names: HashSet<&str> = HashSet::new();
         for file in &r_files {
-            for (name, count) in &file.symbol_counts {
-                *total_occurrences.entry(name.as_str()).or_insert(0) += count;
+            if let Some(reads) = &file.function_reads {
+                read_names.extend(reads.iter().map(String::as_str));
+                continue;
             }
-        }
-
-        // Total definitions of each symbol across all R/ files.
-        let mut total_definitions: HashMap<&str, usize> = HashMap::new();
-        for file in &r_files {
+            // Without a syntax tree, fall back to counting words: a name is
+            // read if it appears more often than this file defines it.
+            let mut definitions: HashMap<&str, usize> = HashMap::new();
             for (name, _, _, _) in &file.assignments {
-                *total_definitions.entry(name.as_str()).or_insert(0) += 1;
+                *definitions.entry(name.as_str()).or_insert(0) += 1;
             }
+            read_names.extend(
+                file.symbol_counts
+                    .iter()
+                    .filter(|(name, count)| {
+                        **count > definitions.get(name.as_str()).copied().unwrap_or(0)
+                    })
+                    .map(|(name, _)| name.as_str()),
+            );
         }
 
         // Symbols from extra files (tests/, inst/tinytest/, inst/tests/, src/).
@@ -154,7 +167,11 @@ pub(crate) fn compute_unused_from_shared(
         ]);
 
         // All symbols across R/ files (used for S3 method heuristic).
-        let all_symbols: HashSet<&str> = total_occurrences.keys().copied().collect();
+        let all_symbols: HashSet<&str> = read_names
+            .iter()
+            .copied()
+            .chain(all_defined_name_refs.iter().copied())
+            .collect();
 
         for file in &r_files {
             let mut unused: Vec<(String, TextRange, String)> = Vec::new();
@@ -192,13 +209,8 @@ pub(crate) fn compute_unused_from_shared(
                     }
                 }
 
-                // A definition contributes exactly one occurrence to
-                // total_occurrences. If that's all there is (and no extra
-                // file references it), the function is unused.
-                let occurrences = total_occurrences.get(name.as_str()).copied().unwrap_or(0);
-                let definitions = total_definitions.get(name.as_str()).copied().unwrap_or(0);
-
-                if occurrences <= definitions && !extra_symbol_set.contains(name.as_str()) {
+                if !read_names.contains(name.as_str()) && !extra_symbol_set.contains(name.as_str())
+                {
                     let help = format!(
                         "Defined at {path}:{line}:{col}.",
                         path = file.rel_path.display()
@@ -271,6 +283,121 @@ pub(crate) fn compute_unused_from_shared(
     }
 
     result
+}
+
+/// The names a parsed R file reads, i.e. the names that may call one of the
+/// package's functions.
+///
+/// Every identifier counts unless its position can't refer to a function of
+/// the package (#483): an argument or parameter name, a member name (`x$foo`),
+/// the package of `pkg::foo`, an assignment target, or a read that resolves to
+/// a parameter or local of an enclosing function. Everything else is kept, so
+/// that quoted code (`quote(foo())`) still counts.
+///
+/// Words inside strings and roxygen comments also count, since they can name a
+/// function indirectly (`do.call("foo", ...)`, `parse(text = "foo()")`,
+/// `\Sexpr`).
+pub(crate) fn function_reads(
+    source: &str,
+    root: &RSyntaxNode,
+    index: &SemanticIndex,
+) -> HashSet<String> {
+    let file_scope = ScopeId::from(0);
+    let mut local_reads: HashSet<TextRange> = HashSet::new();
+    for scope in index.scope_ids() {
+        if scope == file_scope {
+            continue;
+        }
+        for (use_id, use_site) in index.uses(scope).iter() {
+            // A local function definition is not excluded: it may be one of
+            // the definitions this rule checks, e.g. in a file wrapped in an
+            // unindented `local({ ... })`.
+            let is_local = index.use_is_bound(scope, use_id)
+                && index.reaching_definitions(scope, use_id).into_iter().all(
+                    |(def_scope, def_id)| {
+                        def_scope != file_scope
+                            && match index.definitions(def_scope)[def_id].kind() {
+                                DefinitionKind::Parameter(_) | DefinitionKind::ForVariable(_) => {
+                                    true
+                                }
+                                DefinitionKind::Assignment(ptr) => {
+                                    !assignment_rhs_is_function_def(&ptr.to_node(root))
+                                }
+                                _ => false,
+                            }
+                    },
+                );
+            if is_local {
+                local_reads.insert(use_site.range());
+            }
+        }
+    }
+
+    let mut reads: HashSet<String> = HashSet::new();
+    for node in root.descendants() {
+        match node.kind() {
+            RSyntaxKind::R_IDENTIFIER if is_function_read(&node, &local_reads) => {
+                if let Some(ident) = air_r_syntax::RIdentifier::cast(node) {
+                    reads.insert(ident.name_text());
+                }
+            }
+            RSyntaxKind::R_STRING_VALUE => {
+                reads.extend(scan_symbols(&node.text_trimmed().to_string()).into_keys());
+            }
+            _ => {}
+        }
+    }
+
+    let roxygen: Vec<&str> = source
+        .lines()
+        .filter(|line| line.trim_start().starts_with("#'"))
+        .collect();
+    reads.extend(scan_symbols(&roxygen.join("\n")).into_keys());
+
+    reads
+}
+
+fn is_function_read(node: &RSyntaxNode, local_reads: &HashSet<TextRange>) -> bool {
+    let Some(parent) = node.parent() else {
+        return true;
+    };
+    let is_first_child = parent.first_child().as_ref() == Some(node);
+    match parent.kind() {
+        RSyntaxKind::R_ARGUMENT_NAME_CLAUSE | RSyntaxKind::R_PARAMETER => return false,
+        // `x@foo` is a slot, but `$` stays a use: `asNamespace("pkg")$foo()`
+        // and `env$foo()` call package functions.
+        RSyntaxKind::R_EXTRACT_EXPRESSION if !is_first_child && is_slot_access(&parent) => {
+            return false;
+        }
+        RSyntaxKind::R_NAMESPACE_EXPRESSION if is_first_child => return false,
+        // Function lookup skips non-function bindings, so `foo()` calls the
+        // package's `foo` even where a local `foo <- 1` is in scope.
+        RSyntaxKind::R_CALL if is_first_child => return true,
+        RSyntaxKind::R_BINARY_EXPRESSION if is_assignment_target(&parent, node) => return false,
+        _ => {}
+    }
+    !local_reads.contains(&node.text_trimmed_range())
+}
+
+fn is_slot_access(parent: &RSyntaxNode) -> bool {
+    air_r_syntax::RExtractExpression::cast(parent.clone())
+        .and_then(|extract| extract.operator().ok())
+        .is_some_and(|operator| operator.text_trimmed() == "@")
+}
+
+fn is_assignment_target(parent: &RSyntaxNode, node: &RSyntaxNode) -> bool {
+    let Some(bin) = RBinaryExpression::cast(parent.clone()) else {
+        return false;
+    };
+    let Ok(operator) = bin.operator() else {
+        return false;
+    };
+    let target = match operator.text_trimmed() {
+        "<-" | "<<-" | "=" => bin.left(),
+        "->" | "->>" => bin.right(),
+        _ => return false,
+    };
+    target.is_ok_and(|target| target.syntax() == node)
 }
 
 /// Recursively collect files under `dir` that match `predicate`.

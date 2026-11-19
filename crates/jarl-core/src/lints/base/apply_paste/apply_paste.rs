@@ -8,7 +8,7 @@ use biome_rowan::AstSeparatedList;
 const FORMALS_APPLY: Formals = &["X", "MARGIN", "FUN"];
 
 /// <!-- docs: start -->
-/// Version added: 0.8.0
+/// Version added: unreleased
 ///
 /// ## What it does
 ///

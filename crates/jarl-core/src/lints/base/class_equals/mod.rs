@@ -126,16 +126,12 @@ mod tests {
         // No fixes because we can't infer if it is correct or not.
         assert_snapshot!(
             "no_fix_output",
-            get_fixed_text(
-                vec!["is_regression <- class(x) == 'lm'",],
-                "class_equals",
-                None
-            )
+            get_unsafe_fixed_text(vec!["is_regression <- class(x) == 'lm'",], "class_equals")
         );
 
         assert_snapshot!(
             "fix_output",
-            get_fixed_text(
+            get_unsafe_fixed_text(
                 vec![
                     "is_regression <- class(x) == 'lm'",
                     "if (class(x) == 'character') 1",
@@ -149,8 +145,7 @@ mod tests {
                     "if (class(foo(bar(y) + 1)) == 'abc') 1",
                     "if (my_fun(class(x) != 'character')) 1",
                 ],
-                "class_equals",
-                None
+                "class_equals"
             )
         );
     }
@@ -225,7 +220,7 @@ mod tests {
 
         assert_snapshot!(
             "identical_class",
-            get_fixed_text(
+            get_unsafe_fixed_text(
                 vec![
                     "if (identical(class(x), 'character')) 1",
                     "if (identical('character', class(x))) 1",
@@ -233,8 +228,7 @@ mod tests {
                     "is_regression <- identical(class(x), 'lm')",
                     "is_regression <- identical('lm', class(x))",
                 ],
-                "class_equals",
-                None
+                "class_equals"
             )
         );
     }
@@ -244,14 +238,13 @@ mod tests {
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             "no_fix_with_comments",
-            get_fixed_text(
+            get_unsafe_fixed_text(
                 vec![
                     "# leading comment\nif (class(x) == 'foo') 1",
                     "if(\n  class(\n  # comment\nx) == 'foo'\n) 1",
                     "if (class(x) == 'foo') 1 # trailing comment",
                 ],
-                "class_equals",
-                None
+                "class_equals"
             )
         );
     }
