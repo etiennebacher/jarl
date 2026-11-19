@@ -1,30 +1,108 @@
-use crate::utils::{
-    StatementsExt, get_arg_by_name, get_arg_by_position, get_function_name,
-    get_function_namespace_prefix,
-};
+use crate::utils::{StatementsExt, get_arg_by_name, get_arg_by_position};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList, TextSize, WalkEvent};
-use oak_core::syntax_ext::{AnyRSelectorExt, RIdentifierExt};
+use oak_core::syntax_ext::RIdentifierExt;
 
-use super::negative_index::unparenthesized;
+use super::literal_index::{
+    call_name_and_package, is_call_to, is_constant_numeric_expression, is_zero_literal,
+    numeric_literal, unparenthesized,
+};
 
-/// Look for a condition or assertion that proves the negated variable is nonempty.
-pub(super) fn has_nonempty_guard(unary: &RUnaryExpression) -> anyhow::Result<bool> {
-    let AnyRExpression::RIdentifier(identifier) = unparenthesized(unary.argument()?)? else {
-        return Ok(false);
-    };
+pub(super) enum IdentifierIndex {
+    Safe,
+    Zero,
+    Unguarded,
+}
+
+pub(super) fn check_identifier_index(
+    unary: &RUnaryExpression,
+    identifier: &RIdentifier,
+) -> anyhow::Result<IdentifierIndex> {
     let name = identifier.name_text();
     let position = unary.range().start();
+
+    // An enclosing length check also accepts a scalar zero. Look for an
+    // assignment first so `idx <- 0L; if (length(idx)) x[-idx]` still warns.
+    if let Some(value) = preceding_assignment(unary, &name, position)?
+        && is_constant_numeric_expression(&value)?
+    {
+        return Ok(if is_zero_literal(&value)? {
+            IdentifierIndex::Zero
+        } else {
+            IdentifierIndex::Safe
+        });
+    }
+
+    Ok(if has_nonempty_guard(unary, &name, position)? {
+        IdentifierIndex::Safe
+    } else {
+        IdentifierIndex::Unguarded
+    })
+}
+
+/// Find the preceding direct assignment, stopping at any intervening write
+/// whose value cannot be established.
+fn preceding_assignment(
+    unary: &RUnaryExpression,
+    name: &str,
+    position: TextSize,
+) -> anyhow::Result<Option<AnyRExpression>> {
+    for (ancestor, end) in index_ancestors(unary) {
+        let Some(statements) = RStatementList::cast(ancestor) else {
+            continue;
+        };
+        for statement in statements.expressions().into_iter().rev() {
+            if statement.range().start() >= end {
+                continue;
+            }
+            if statement.range().end() <= position
+                && let AnyRExpression::RBinaryExpression(binary) =
+                    unparenthesized(statement.clone())?
+                && let Some(value) = assigned_value(&binary, name)?
+            {
+                return Ok(Some(value));
+            }
+            if has_write(statement.syntax(), name, end)? {
+                return Ok(None);
+            }
+        }
+    }
+    Ok(None)
+}
+
+/// Recognize a direct local assignment to the index variable. Replacement and
+/// conditional assignments can invalidate earlier values without proving a new one.
+fn assigned_value(
+    binary: &RBinaryExpression,
+    name: &str,
+) -> anyhow::Result<Option<AnyRExpression>> {
+    let (target, value) = match binary.operator()?.kind() {
+        RSyntaxKind::ASSIGN | RSyntaxKind::EQUAL => (binary.left()?, binary.right()?),
+        RSyntaxKind::ASSIGN_RIGHT => (binary.right()?, binary.left()?),
+        _ => return Ok(None),
+    };
+    Ok(target
+        .as_r_identifier()
+        .is_some_and(|identifier| identifier.name_text() == name)
+        .then_some(value))
+}
+
+/// Look for a condition or assertion that proves the negated variable is nonempty.
+fn has_nonempty_guard(
+    unary: &RUnaryExpression,
+    name: &str,
+    position: TextSize,
+) -> anyhow::Result<bool> {
     for (ancestor, end) in index_ancestors(unary) {
         let guarded = if let Some(statements) = RStatementList::cast_ref(&ancestor) {
-            has_preceding_guard(&statements, &name, position, end)?
+            has_preceding_guard(&statements, name, position, end)?
         } else {
             match AnyRExpression::cast_ref(&ancestor) {
                 Some(AnyRExpression::RIfStatement(statement)) => {
-                    has_if_guard(&statement, &name, position, end)?
+                    has_if_guard(&statement, name, position, end)?
                 }
                 Some(AnyRExpression::RWhileStatement(statement)) => {
-                    has_while_guard(&statement, &name, position, end)?
+                    has_while_guard(&statement, name, position, end)?
                 }
                 _ => false,
             }
@@ -38,9 +116,7 @@ pub(super) fn has_nonempty_guard(unary: &RUnaryExpression) -> anyhow::Result<boo
 
 /// Walk outward within the current function. For evidence outside a loop,
 /// include writes after the index use that can affect the next iteration.
-pub(super) fn index_ancestors(
-    unary: &RUnaryExpression,
-) -> impl Iterator<Item = (RSyntaxNode, TextSize)> {
+fn index_ancestors(unary: &RUnaryExpression) -> impl Iterator<Item = (RSyntaxNode, TextSize)> {
     unary
         .syntax()
         .ancestors()
@@ -208,26 +284,18 @@ fn always_exits(expression: AnyRExpression) -> anyhow::Result<bool> {
 }
 
 fn is_exit_call(call: &RCall) -> anyhow::Result<bool> {
-    let (name, package) = match call.function()? {
-        AnyRExpression::RIdentifier(id) => (id.name_text(), None),
-        AnyRExpression::RNamespaceExpression(ns) => {
-            let (Some(name), Some(package)) =
-                (ns.right()?.identifier_text(), ns.left()?.identifier_text())
-            else {
-                return Ok(false);
-            };
-            (name, Some(package))
-        }
+    let Some((name, package)) = call_name_and_package(call)? else {
+        return Ok(false);
+    };
+    let expected_package = match name.as_str() {
+        "return" | "stop" | ".Defunct" | "q" | "quit" => "base",
+        "abort" => "rlang",
+        "cli_abort" => "cli",
         _ => return Ok(false),
     };
-    Ok(match name.as_str() {
-        "return" | "stop" | ".Defunct" | "q" | "quit" => {
-            matches!(package.as_deref(), None | Some("base"))
-        }
-        "abort" => matches!(package.as_deref(), None | Some("rlang")),
-        "cli_abort" => matches!(package.as_deref(), None | Some("cli")),
-        _ => false,
-    })
+    Ok(package
+        .as_deref()
+        .is_none_or(|actual| actual == expected_package))
 }
 
 /// Determine whether observing `truth` for this condition rules out an empty
@@ -323,7 +391,7 @@ fn comparison_proves_nonempty(
 /// A true `any()` needs at least one true element. Only accept one data
 /// argument: another argument could make it true while this index is empty.
 fn is_any_guard(call: &RCall, name: &str) -> anyhow::Result<bool> {
-    if !is_base_call(call, "any")? {
+    if !is_call_to(call, "any", "base")? {
         return Ok(false);
     }
     let arguments = call.arguments()?.items();
@@ -355,7 +423,9 @@ fn is_any_guard(call: &RCall, name: &str) -> anyhow::Result<bool> {
 /// index would fail it. `stopifnot(idx > 0)` accepts empty vectors, whereas
 /// `stopifnot(length(idx) > 0)` and `stopifnot(any(idx > 0))` reject them.
 fn is_stopifnot_guard(call: &RCall, name: &str) -> anyhow::Result<bool> {
-    if !is_base_call(call, "stopifnot")? || has_write(call.syntax(), name, call.range().end())? {
+    if !is_call_to(call, "stopifnot", "base")?
+        || has_write(call.syntax(), name, call.range().end())?
+    {
         return Ok(false);
     }
     let arguments = call.arguments()?.items();
@@ -380,7 +450,7 @@ fn is_stopifnot_guard(call: &RCall, name: &str) -> anyhow::Result<bool> {
 
 /// Recognize the length of this variable, including `base::length(x = idx)`.
 pub(super) fn is_index_length(call: &RCall, name: &str) -> anyhow::Result<bool> {
-    if !is_base_call(call, "length")? || call.arguments()?.items().len() != 1 {
+    if !is_call_to(call, "length", "base")? || call.arguments()?.items().len() != 1 {
         return Ok(false);
     }
     let Some(argument) =
@@ -393,39 +463,9 @@ pub(super) fn is_index_length(call: &RCall, name: &str) -> anyhow::Result<bool> 
         .is_some_and(|identifier| identifier.name_text() == name))
 }
 
-/// Apply base semantics only to unqualified calls and known base functions.
-fn is_base_call(call: &RCall, name: &str) -> anyhow::Result<bool> {
-    let function = call.function()?;
-    Ok(get_function_name(function.clone()) == name
-        && matches!(
-            get_function_namespace_prefix(function).as_deref(),
-            None | Some("base::")
-        ))
-}
-
-/// Read a decimal integer or double as `f64`, including `L` suffixes and unary
-/// signs.
-pub(super) fn numeric_literal(expression: &AnyRExpression) -> Option<f64> {
-    match expression {
-        AnyRExpression::AnyRValue(AnyRValue::RIntegerValue(_) | AnyRValue::RDoubleValue(_)) => {
-            expression
-                .to_trimmed_string()
-                .trim_end_matches('L')
-                .parse()
-                .ok()
-        }
-        AnyRExpression::RUnaryExpression(unary) => match unary.operator().ok()?.kind() {
-            RSyntaxKind::MINUS => Some(-numeric_literal(&unary.argument().ok()?)?),
-            RSyntaxKind::PLUS => numeric_literal(&unary.argument().ok()?),
-            _ => None,
-        },
-        _ => None,
-    }
-}
-
 /// Discard a guard if the variable may have been assigned before its use.
 /// Writes in nested function definitions do not run when defining the function.
-pub(super) fn has_write(node: &RSyntaxNode, name: &str, end: TextSize) -> anyhow::Result<bool> {
+fn has_write(node: &RSyntaxNode, name: &str, end: TextSize) -> anyhow::Result<bool> {
     let mut walk = node.preorder();
     while let Some(event) = walk.next() {
         let WalkEvent::Enter(node) = event else {

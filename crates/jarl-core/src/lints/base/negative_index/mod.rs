@@ -24,7 +24,7 @@ mod tests {
             "x[-TRUE]",
             "x[-NULL]",
             "x[-\"text\"]",
-            "x[-c(-1, c(-2, 3))]",
+            "x[-base::c(-1, c(-2, 3))]",
             // Constant arithmetic is recognized recursively, without evaluating it.
             "x[-2 * 3]",
             "x[-(1 + 2)]",
@@ -227,6 +227,16 @@ mod tests {
           |
         1 | x[-length(y)]
           |   ---------- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("x[-other::c(1, 2)]"), @"
+        warning: negative_index
+         --> <test>:1:3
+          |
+        1 | x[-other::c(1, 2)]
+          |   --------------- Non-literal negative indices may produce unexpected results when empty.
           |
           = help: Handle empty indices explicitly or use a logical index.
         Found 1 error.

@@ -4,8 +4,8 @@ use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 use oak_core::syntax_ext::RIdentifierExt;
 
-use super::literal_index::{LiteralIndex, is_literal_index};
-use super::nonempty_guard::{has_nonempty_guard, is_index_length};
+use super::literal_index::{is_literal, unparenthesized};
+use super::nonempty_guard::{IdentifierIndex, check_identifier_index, is_index_length};
 
 /// <!-- docs: start -->
 /// Version added: 0.8.0
@@ -74,27 +74,36 @@ pub fn negative_index(ast: &RSubset) -> anyhow::Result<Vec<Diagnostic>> {
         let AnyRExpression::RUnaryExpression(unary) = unparenthesized(index.clone())? else {
             continue;
         };
-        if unary.operator()?.kind() != RSyntaxKind::MINUS
-            || (single_index && arg.name_clause().is_none() && is_subset_length(ast, &unary)?)
+        if unary.operator()?.kind() != RSyntaxKind::MINUS {
+            continue;
+        }
+
+        let operand = unparenthesized(unary.argument()?)?;
+        if is_literal(&operand)?
+            || (single_index && arg.name_clause().is_none() && is_subset_length(ast, &operand)?)
         {
             continue;
         }
 
-        let (message, suggestion) = match is_literal_index(&unary)? {
-            LiteralIndex::Literal => continue,
-            LiteralIndex::Zero => (
+        let assigned_zero = if let AnyRExpression::RIdentifier(identifier) = operand {
+            match check_identifier_index(&unary, &identifier)? {
+                IdentifierIndex::Safe => continue,
+                IdentifierIndex::Zero => true,
+                IdentifierIndex::Unguarded => false,
+            }
+        } else {
+            false
+        };
+        let (message, suggestion) = if assigned_zero {
+            (
                 "The negated index is zero, so it selects no elements.",
                 "Handle zero indices explicitly or use a logical index.",
-            ),
-            LiteralIndex::NonLiteral => {
-                if has_nonempty_guard(&unary)? {
-                    continue;
-                }
-                (
-                    "Non-literal negative indices may produce unexpected results when empty.",
-                    "Handle empty indices explicitly or use a logical index.",
-                )
-            }
+            )
+        } else {
+            (
+                "Non-literal negative indices may produce unexpected results when empty.",
+                "Handle empty indices explicitly or use a logical index.",
+            )
         };
         diagnostics.push(Diagnostic::new(
             ViolationData::new(
@@ -111,21 +120,12 @@ pub fn negative_index(ast: &RSubset) -> anyhow::Result<Vec<Diagnostic>> {
 
 /// Recognize `x[-length(x)]` by comparing variable names. Repeated calls such
 /// as `f()[-length(f())]` can produce different objects.
-fn is_subset_length(subset: &RSubset, unary: &RUnaryExpression) -> anyhow::Result<bool> {
-    let AnyRExpression::RCall(call) = unparenthesized(unary.argument()?)? else {
+fn is_subset_length(subset: &RSubset, operand: &AnyRExpression) -> anyhow::Result<bool> {
+    let AnyRExpression::RCall(call) = operand else {
         return Ok(false);
     };
     let AnyRExpression::RIdentifier(object) = unparenthesized(subset.function()?)? else {
         return Ok(false);
     };
-    is_index_length(&call, &object.name_text())
-}
-
-/// Strip only the parentheses around the whole expression, so `((-idx))`
-/// is checked as `-idx` while `-(idx)` keeps its parenthesized operand.
-pub(super) fn unparenthesized(mut expression: AnyRExpression) -> anyhow::Result<AnyRExpression> {
-    while let AnyRExpression::RParenthesizedExpression(paren) = expression {
-        expression = paren.body()?;
-    }
-    Ok(expression)
+    is_index_length(call, &object.name_text())
 }
