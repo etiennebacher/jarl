@@ -68,6 +68,7 @@ pub(crate) mod todo_comment;
 pub(crate) mod true_false_symbol;
 pub(crate) mod undesirable_function;
 pub(crate) mod undesirable_operator;
+pub(crate) mod unnecessary_lambda;
 pub(crate) mod unnecessary_nesting;
 pub(crate) mod unnecessary_parentheses;
 pub(crate) mod unreachable_code;

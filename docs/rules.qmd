@@ -155,6 +155,7 @@ dat <- as.data.frame(
     c("undesirable_operator", "correctness", "❌", ""),
     c("unexplained_suppression", "comments", "❌", ""),
     c("unmatched_range_suppression", "comments", "❌", ""),
+    c("unnecessary_lambda", "readability", "❗", ""),
     c("unnecessary_nesting", "readability", "✅", "Disabled by default"),
     c("unnecessary_parentheses", "readability", "✅", ""),
     c("unreachable_code", "readability, suspicious", "❌", ""),
