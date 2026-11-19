@@ -13,6 +13,8 @@ mod tests {
     fn test_no_lint_unnecessary_lambda() {
         let rule = "unnecessary_lambda";
         expect_no_lint("lapply(DF, sum)", rule, None);
+        expect_no_lint("lapply()", rule, None);
+        expect_no_lint("x |> lapply()", rule, None);
         expect_no_lint("apply(M, 1, sum, na.rm = TRUE)", rule, None);
         // Not an apply function
         expect_no_lint("foo(x, function(xi) sum(xi))", rule, None);
@@ -159,6 +161,20 @@ mod tests {
         );
         expect_no_lint("mapply(function(xi, y) foo(xi, y, y), x, y)", rule, None);
         expect_no_lint("mapply(function(xi, y = 1) foo(xi, y), x)", rule, None);
+        // The first formal is named in the outer call, `foo()` may not have it
+        expect_no_lint("mapply(function(a, b) foo(a, b), a = x, y)", rule, None);
+        // `y` partially matches `yvalue`, `foo()` may not have it
+        expect_no_lint(
+            "mapply(function(xi, yvalue) foo(xi, yvalue), x, y = z)",
+            rule,
+            None,
+        );
+        // `SIMPLIFY` is not passed to the lambda, so `yi` is missing
+        expect_no_lint(
+            "mapply(function(xi, yi) foo(xi, yi), x, SIMPLIFY = FALSE)",
+            rule,
+            None,
+        );
 
         // Extra arguments of the outer call
         expect_no_lint("lapply(x, function(xi, y) foo(xi, y), y)", rule, None);
@@ -198,6 +214,10 @@ mod tests {
         expect_no_lint("map_dbl(x, ~foo(.x, .x))", rule, None);
         expect_no_lint("map_dbl(x, ~foo(.x, .))", rule, None);
         expect_no_lint("map_dbl(x, ~foo(bar = # comment\n.x))", rule, None);
+        // Formulas ignore extra arguments
+        expect_no_lint("purrr::map(x, ~round(.x), 2)", rule, None);
+        expect_no_lint("purrr::map(x, ~round(.x), digits = 2)", rule, None);
+        expect_no_lint("x |> purrr::map(~round(.x), 2)", rule, None);
         // Formulas are only lambdas in purrr
         expect_no_lint("lapply(x, ~foo(.x))", rule, None);
     }
@@ -295,7 +315,37 @@ mod tests {
           = help: Pass `foo` directly to `outer()`.
         Found 1 error.
         ");
+        assert_snapshot!(snapshot_lint("mapply(function(xi, yi) foo(xi, yi), x, y, SIMPLIFY = FALSE)"), @"
+        warning: unnecessary_lambda
+         --> <test>:1:8
+          |
+        1 | mapply(function(xi, yi) foo(xi, yi), x, y, SIMPLIFY = FALSE)
+          |        ---------------------------- Unnecessary anonymous function around `foo()`.
+          |
+          = help: Pass `foo` directly to `mapply()`.
+        Found 1 error.
+        ");
         // purrr
+        assert_snapshot!(snapshot_lint("purrr::map(x, ~foo(.x), .progress = TRUE)"), @"
+        warning: unnecessary_lambda
+         --> <test>:1:15
+          |
+        1 | purrr::map(x, ~foo(.x), .progress = TRUE)
+          |               -------- Unnecessary anonymous function around `foo()`.
+          |
+          = help: Pass `foo` directly to `map()`.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("x |> purrr::map(~foo(.x))"), @"
+        warning: unnecessary_lambda
+         --> <test>:1:17
+          |
+        1 | x |> purrr::map(~foo(.x))
+          |                 -------- Unnecessary anonymous function around `foo()`.
+          |
+          = help: Pass `foo` directly to `map()`.
+        Found 1 error.
+        ");
         assert_snapshot!(snapshot_lint("purrr::map(x, ~foo(.x))"), @"
         warning: unnecessary_lambda
          --> <test>:1:15

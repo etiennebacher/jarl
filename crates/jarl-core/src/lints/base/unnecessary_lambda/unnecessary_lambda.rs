@@ -37,6 +37,20 @@ const PURRR_MAPPERS: &[&str] = &[
     "map_dfr", "map_dfc",
 ];
 
+/// Arguments of the outer call that are not passed to `FUN`.
+const MAPPLY_OPTIONS: &[&str] = &[
+    "MoreArgs",
+    "SIMPLIFY",
+    "USE.NAMES",
+    "mc.preschedule",
+    "mc.set.seed",
+    "mc.silent",
+    "mc.cores",
+    "mc.cleanup",
+    "affinity.list",
+];
+const PURRR_OPTIONS: &[&str] = &[".progress", ".ptype", ".id"];
+
 /// <!-- docs: start -->
 /// Version added: 0.8.0
 ///
@@ -91,8 +105,18 @@ pub fn unnecessary_lambda(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<D
     }
 
     let outer_args: Vec<RArgument> = ast.arguments()?.items().iter().flatten().collect();
+    let options: &[&str] = match fn_name {
+        "mapply" | "mcmapply" => MAPPLY_OPTIONS,
+        _ if is_purrr => PURRR_OPTIONS,
+        _ => &[],
+    };
+    let n_options = outer_args
+        .iter()
+        .filter(|a| argument_name(a).is_some_and(|n| options.contains(&n.as_str())))
+        .count();
     // In `x |> lapply(f)`, `x` is an argument too.
-    let n_other_args = outer_args.len() - 1 + usize::from(is_piped(ast));
+    let n_other_args =
+        (outer_args.len() - n_options + usize::from(is_piped(ast))).saturating_sub(1);
 
     for arg in &outer_args {
         let Some(value) = arg.value() else {
@@ -101,7 +125,7 @@ pub fn unnecessary_lambda(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<D
         let diagnostic = if let Some(lambda) = value.as_r_function_definition() {
             check_lambda(lambda, fn_name, &outer_args, n_other_args)
         } else if is_purrr && let Some(formula) = value.as_r_unary_expression() {
-            check_formula(formula, fn_name, &outer_args)
+            check_formula(formula, fn_name, &outer_args, n_other_args)
         } else {
             None
         };
@@ -140,6 +164,18 @@ fn check_lambda(
     }
     // Formals other than `...` must be supplied by the outer call.
     if formals.iter().filter(|f| *f != "...").count() > n_other_args {
+        return None;
+    }
+    // `mapply()` passes argument names on to `FUN`, so a name that isn't
+    // exactly a formal (e.g. partially matched) would reach the inner function.
+    // The first formal is always passed positionally to the inner function.
+    if n_iterated == usize::MAX
+        && outer_args.iter().filter_map(argument_name).any(|name| {
+            name != "FUN"
+                && !MAPPLY_OPTIONS.contains(&name.as_str())
+                && (name == formals[0] || !formals.contains(&name))
+        })
+    {
         return None;
     }
 
@@ -209,8 +245,14 @@ fn check_formula(
     formula: &RUnaryExpression,
     fn_name: &str,
     outer_args: &[RArgument],
+    n_other_args: usize,
 ) -> Option<Diagnostic> {
     if formula.operator().ok()?.kind() != RSyntaxKind::TILDE {
+        return None;
+    }
+    // Formulas ignore extra arguments, e.g. `map(x, ~ round(.x), 2)` doesn't
+    // round to 2 digits, but `map(x, round, 2)` does.
+    if n_other_args > 1 {
         return None;
     }
     let body = unwrap_body(formula.argument().ok()?);
