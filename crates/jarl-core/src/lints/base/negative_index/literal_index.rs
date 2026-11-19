@@ -1,8 +1,9 @@
+use crate::utils::argument_name;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 use oak_core::syntax_ext::{AnyRSelectorExt, RIdentifierExt};
 
-/// Recognize a zero literal or a sequence with both endpoints equal to zero.
+/// Recognize a zero literal, an all-zero `c()` call, or a `0:0` sequence.
 pub(super) fn is_zero_index(expression: &AnyRExpression) -> anyhow::Result<bool> {
     match expression {
         AnyRExpression::RParenthesizedExpression(paren) => is_zero_index(&paren.body()?),
@@ -16,6 +17,7 @@ pub(super) fn is_zero_index(expression: &AnyRExpression) -> anyhow::Result<bool>
             Ok(numeric_literal(&binary.left()?) == Some(0.0)
                 && numeric_literal(&binary.right()?) == Some(0.0))
         }
+        AnyRExpression::RCall(call) => Ok(matches!(classify_c_call(call)?, CIndex::Zero)),
         expression => Ok(numeric_literal(expression) == Some(0.0)),
     }
 }
@@ -60,20 +62,87 @@ pub(super) fn is_nonempty_numeric_expression(expression: &AnyRExpression) -> any
     }
 }
 
-/// Recognize a base `c()` call with literals or known numeric expressions.
-fn is_literal_c_call(call: &RCall) -> anyhow::Result<bool> {
+enum CIndex {
+    Positive,
+    Zero,
+    Empty,
+    Literal,
+    Unknown,
+}
+
+/// Under the default `c()` semantics, one positive subscript is enough to
+/// avoid an empty or all-zero index. Without one, retain the literal check and
+/// distinguish an all-zero result from a call with only `NULL` arguments.
+fn classify_c_call(call: &RCall) -> anyhow::Result<CIndex> {
     if !is_call_to(call, "c", "base")? {
-        return Ok(false);
+        return Ok(CIndex::Unknown);
     }
+    let mut result = CIndex::Empty;
     for arg in call.arguments()?.items() {
-        let Some(value) = arg?.value() else {
-            return Ok(false);
-        };
-        if !is_literal(&value)? {
-            return Ok(false);
+        let arg = arg?;
+        if matches!(
+            argument_name(&arg).as_deref(),
+            Some("recursive" | "use.names")
+        ) {
+            continue;
         }
+        let Some(value) = arg.value() else {
+            return Ok(CIndex::Unknown);
+        };
+        result = match (result, classify_c_argument(unparenthesized(value)?)?) {
+            (_, CIndex::Positive) | (CIndex::Positive, _) => return Ok(CIndex::Positive),
+            (CIndex::Unknown, _) | (_, CIndex::Unknown) => CIndex::Unknown,
+            (CIndex::Literal, _) | (_, CIndex::Literal) => CIndex::Literal,
+            (CIndex::Zero, _) | (_, CIndex::Zero) => CIndex::Zero,
+            (CIndex::Empty, CIndex::Empty) => CIndex::Empty,
+        };
     }
-    Ok(true)
+    Ok(result)
+}
+
+fn classify_c_argument(value: AnyRExpression) -> anyhow::Result<CIndex> {
+    if let Some(number) = numeric_literal(&value) {
+        return Ok(if is_positive_subscript(number) {
+            CIndex::Positive
+        } else if number == 0.0 {
+            CIndex::Zero
+        } else {
+            CIndex::Literal
+        });
+    }
+    match &value {
+        AnyRExpression::RNullExpression(_) => Ok(CIndex::Empty),
+        AnyRExpression::RFalseExpression(_) => Ok(CIndex::Zero),
+        AnyRExpression::RCall(call) => classify_c_call(call),
+        AnyRExpression::RBinaryExpression(binary)
+            if binary.operator()?.kind() == RSyntaxKind::COLON
+                && sequence_has_positive_subscript(binary)? =>
+        {
+            Ok(CIndex::Positive)
+        }
+        _ if is_zero_index(&value)? => Ok(CIndex::Zero),
+        _ if is_literal(&value)? => Ok(CIndex::Literal),
+        _ => Ok(CIndex::Unknown),
+    }
+}
+
+fn is_positive_subscript(number: f64) -> bool {
+    number.is_finite() && number >= 1.0
+}
+
+/// A `:` sequence always includes its start, but steps by one and can miss
+/// its end. For instance, `0.5:1` contains only `0.5`, which truncates to zero.
+fn sequence_has_positive_subscript(binary: &RBinaryExpression) -> anyhow::Result<bool> {
+    let start = numeric_literal(&binary.left()?);
+    if start.is_some_and(is_positive_subscript) {
+        return Ok(true);
+    }
+    let Some(end) = numeric_literal(&binary.right()?).filter(|end| is_positive_subscript(*end))
+    else {
+        return Ok(false);
+    };
+    Ok(end >= 2.0
+        || start.is_some_and(|start| start.is_finite() && (1.0 - start).ceil() <= end - start))
 }
 
 /// Recognize a literal value or a numeric expression that cannot be empty.
@@ -95,7 +164,7 @@ pub(super) fn is_literal(expression: &AnyRExpression) -> anyhow::Result<bool> {
         expression @ AnyRExpression::RBinaryExpression(_) => {
             is_nonempty_numeric_expression(expression)
         }
-        AnyRExpression::RCall(call) => is_literal_c_call(call),
+        AnyRExpression::RCall(call) => Ok(!matches!(classify_c_call(call)?, CIndex::Unknown)),
         AnyRExpression::RUnaryExpression(unary) => Ok(matches!(
             unary.operator()?.kind(),
             RSyntaxKind::PLUS | RSyntaxKind::MINUS

@@ -20,6 +20,8 @@ use super::nonempty_guard::{IdentifierIndex, check_identifier_index, is_index_le
 ///
 /// - Non-zero literals, constant arithmetic, and `:` sequences, such as `x[-1]`,
 ///   `x[-(2 * 3)]`, `x[-c(1, 2)]`, and `x[-(1:n)]`.
+/// - Calls to `c()` with a known positive subscript, such as `x[-c(idx, 1)]`,
+///   `x[-c(idx, c(1, 2))]`, or `x[-c(idx, 1:3)]`.
 /// - Single-index subsetting by the object's own length, such as `x[-length(x)]`,
 ///   where returning an empty object for an empty `x` is expected.
 /// - `-idx` guarded by an `if` or `while` condition proving `idx` is nonempty,
