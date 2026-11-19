@@ -509,6 +509,80 @@ mod tests {
     }
 
     #[test]
+    fn test_lint_negative_index_boundary_cases() {
+        assert_snapshot!(snapshot_lint("x[-which.max(x)]"), @"
+        warning: negative_index
+         --> <test>:1:3
+          |
+        1 | x[-which.max(x)]
+          |   ------------- Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("x[-which.min(x)]"), @"
+        warning: negative_index
+         --> <test>:1:3
+          |
+        1 | x[-which.min(x)]
+          |   ------------- Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("x[-(length(x) - 1)]"), @"
+        warning: negative_index
+         --> <test>:1:3
+          |
+        1 | x[-(length(x) - 1)]
+          |   ---------------- Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("dt[, -x]"), @"
+        warning: negative_index
+         --> <test>:1:6
+          |
+        1 | dt[, -x]
+          |      -- Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("for (i in 1:n) x[-i]"), @"
+        warning: negative_index
+         --> <test>:1:18
+          |
+        1 | for (i in 1:n) x[-i]
+          |                  -- Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("for (i in values) x[-i]"), @"
+        warning: negative_index
+         --> <test>:1:21
+          |
+        1 | for (i in values) x[-i]
+          |                     -- Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("df[-nrow(df)]"), @"
+        warning: negative_index
+         --> <test>:1:4
+          |
+        1 | df[-nrow(df)]
+          |    --------- Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
+        Found 1 error.
+        ");
+    }
+
+    #[test]
     fn test_lint_negative_index_conditions() {
         // The selected branch must exclude empty or zero indices for this variable.
         assert_snapshot!(snapshot_lint("if (idx == 0) x[-idx]"), @"
