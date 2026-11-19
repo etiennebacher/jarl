@@ -4,7 +4,7 @@ use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 use oak_core::syntax_ext::RIdentifierExt;
 
-use super::literal_index::{is_literal, is_zero_literal, unparenthesized};
+use super::literal_index::{is_literal, is_zero_index, unparenthesized};
 use super::nonempty_guard::{IdentifierIndex, check_identifier_index, is_index_length};
 
 /// <!-- docs: start -->
@@ -18,8 +18,8 @@ use super::nonempty_guard::{IdentifierIndex, check_identifier_index, is_index_le
 ///
 /// This rule does not report:
 ///
-/// - Non-zero literals and constant arithmetic, such as `x[-1]`, `x[-(2 * 3)]`,
-///   and `x[-c(1, 2)]`.
+/// - Non-zero literals, constant arithmetic, and `:` sequences, such as `x[-1]`,
+///   `x[-(2 * 3)]`, `x[-c(1, 2)]`, and `x[-(1:n)]`.
 /// - Single-index subsetting by the object's own length, such as `x[-length(x)]`,
 ///   where returning an empty object for an empty `x` is expected.
 /// - `-idx` guarded by an `if` or `while` condition proving `idx` is nonempty,
@@ -27,8 +27,8 @@ use super::nonempty_guard::{IdentifierIndex, check_identifier_index, is_index_le
 /// - `-idx` after a guard that exits when `idx` is empty (such as `return()`,
 ///   `stop()`, `rlang::abort()`, `cli::cli_abort()`, `next`, or `break`), or
 ///   after an assertion such as `stopifnot(length(idx) > 0)`.
-/// - `-idx` after a non-zero constant numeric assignment, such as `idx <- 1` or
-///   `idx <- 2 * 3`.
+/// - `-idx` after assigning a non-zero constant or a `:` sequence, such as
+///   `idx <- 1`, `idx <- 2 * 3`, or `idx <- a:b`.
 ///
 /// ## Why is this bad?
 ///
@@ -93,7 +93,7 @@ pub fn negative_index(ast: &RSubset) -> anyhow::Result<Vec<Diagnostic>> {
                 }
             }
             _ => {
-                let zero = is_zero_literal(&operand)?;
+                let zero = is_zero_index(&operand)?;
                 if !zero && is_literal(&operand)? {
                     continue;
                 }

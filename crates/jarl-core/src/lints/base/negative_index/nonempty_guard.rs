@@ -4,7 +4,7 @@ use biome_rowan::{AstNode, AstSeparatedList, TextSize, WalkEvent};
 use oak_core::syntax_ext::RIdentifierExt;
 
 use super::literal_index::{
-    call_name_and_package, is_call_to, is_constant_numeric_expression, is_zero_literal,
+    call_name_and_package, is_call_to, is_nonempty_numeric_expression, is_zero_index,
     numeric_literal, unparenthesized,
 };
 
@@ -24,9 +24,9 @@ pub(super) fn check_identifier_index(
     // An enclosing length check also accepts a scalar zero. Look for an
     // assignment first so `idx <- 0L; if (length(idx)) x[-idx]` still warns.
     if let Some(value) = preceding_assignment(unary, &name, position)?
-        && is_constant_numeric_expression(&value)?
+        && is_nonempty_numeric_expression(&value)?
     {
-        return Ok(if is_zero_literal(&value)? {
+        return Ok(if is_zero_index(&value)? {
             IdentifierIndex::Zero
         } else {
             IdentifierIndex::Safe

@@ -35,6 +35,9 @@ mod tests {
             "x[-(5 %/% 2)]",
             "x[-((2 + 3) * +4)]",
             "x[-c(-2 * 3, -(4 / 2))]",
+            "x[-(1:3)]",
+            "x[-(1:n)]",
+            "df[-(1:5), ]",
             // A single index can use the length of the object being subsetted.
             "x[-length(x)]",
             "(x)[-(base::length(x = (`x`)))]",
@@ -104,6 +107,8 @@ mod tests {
             // Direct assignments accept numeric syntax without evaluating expressions.
             "idx <- 1; x[-idx]",
             "idx <- 1 + 1; x[-idx]",
+            "idx <- 0:2; x[-idx]",
+            "idx <- a:b; x[-idx]",
             "idx = -2L; x[-idx]",
             "1.5 -> idx; x[-idx]",
             "`my idx` <- 1; x[-`my idx`]",
@@ -189,6 +194,16 @@ mod tests {
           |
         1 | x[-0]
           |   -- The negated index is zero, so it selects no elements.
+          |
+          = help: Handle zero indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("x[-(0:0)]"), @"
+        warning: negative_index
+         --> <test>:1:3
+          |
+        1 | x[-(0:0)]
+          |   ------ The negated index is zero, so it selects no elements.
           |
           = help: Handle zero indices explicitly or use a logical index.
         Found 1 error.
@@ -448,6 +463,16 @@ mod tests {
           |
         3 | x[-idx]
           |   ---- The negated index is zero, so it selects no elements.
+          |
+          = help: Handle zero indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("idx <- 0:0; x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:15
+          |
+        1 | idx <- 0:0; x[-idx]
+          |               ---- The negated index is zero, so it selects no elements.
           |
           = help: Handle zero indices explicitly or use a logical index.
         Found 1 error.

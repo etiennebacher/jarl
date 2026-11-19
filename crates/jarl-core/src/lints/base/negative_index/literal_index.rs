@@ -2,25 +2,31 @@ use air_r_syntax::*;
 use biome_rowan::AstNode;
 use oak_core::syntax_ext::{AnyRSelectorExt, RIdentifierExt};
 
-/// Recognize a numeric zero literal, allowing parentheses and unary signs.
-pub(super) fn is_zero_literal(expression: &AnyRExpression) -> anyhow::Result<bool> {
+/// Recognize a zero literal or a sequence with both endpoints equal to zero.
+pub(super) fn is_zero_index(expression: &AnyRExpression) -> anyhow::Result<bool> {
     match expression {
-        AnyRExpression::RParenthesizedExpression(paren) => is_zero_literal(&paren.body()?),
+        AnyRExpression::RParenthesizedExpression(paren) => is_zero_index(&paren.body()?),
         AnyRExpression::RUnaryExpression(unary) => Ok(matches!(
             unary.operator()?.kind(),
             RSyntaxKind::PLUS | RSyntaxKind::MINUS
-        ) && is_zero_literal(&unary.argument()?)?),
+        ) && is_zero_index(&unary.argument()?)?),
+        AnyRExpression::RBinaryExpression(binary)
+            if binary.operator()?.kind() == RSyntaxKind::COLON =>
+        {
+            Ok(numeric_literal(&binary.left()?) == Some(0.0)
+                && numeric_literal(&binary.right()?) == Some(0.0))
+        }
         expression => Ok(numeric_literal(expression) == Some(0.0)),
     }
 }
 
-/// Recognize arithmetic built only from numeric scalars, without evaluating it.
-/// Requiring both operands to qualify excludes empty or runtime values, such as
-/// `NULL * -2` and `idx * -2`.
-pub(super) fn is_constant_numeric_expression(expression: &AnyRExpression) -> anyhow::Result<bool> {
+/// Recognize numeric literals, `:` sequences, and arithmetic built from them
+/// without evaluating it. Requiring both arithmetic operands to qualify
+/// excludes expressions such as `NULL * -2` and `idx * -2`.
+pub(super) fn is_nonempty_numeric_expression(expression: &AnyRExpression) -> anyhow::Result<bool> {
     match expression {
         AnyRExpression::RParenthesizedExpression(paren) => {
-            is_constant_numeric_expression(&paren.body()?)
+            is_nonempty_numeric_expression(&paren.body()?)
         }
         AnyRExpression::AnyRValue(AnyRValue::RIntegerValue(_) | AnyRValue::RDoubleValue(_)) => {
             Ok(true)
@@ -29,10 +35,13 @@ pub(super) fn is_constant_numeric_expression(expression: &AnyRExpression) -> any
             Ok(matches!(
                 unary.operator()?.kind(),
                 RSyntaxKind::PLUS | RSyntaxKind::MINUS
-            ) && is_constant_numeric_expression(&unary.argument()?)?)
+            ) && is_nonempty_numeric_expression(&unary.argument()?)?)
         }
         AnyRExpression::RBinaryExpression(binary) => {
             let operator = binary.operator()?;
+            if operator.kind() == RSyntaxKind::COLON {
+                return Ok(true);
+            }
             let is_arithmetic = matches!(
                 operator.kind(),
                 RSyntaxKind::PLUS
@@ -44,14 +53,14 @@ pub(super) fn is_constant_numeric_expression(expression: &AnyRExpression) -> any
             ) || (operator.kind() == RSyntaxKind::SPECIAL
                 && matches!(operator.text_trimmed(), "%%" | "%/%"));
             Ok(is_arithmetic
-                && is_constant_numeric_expression(&binary.left()?)?
-                && is_constant_numeric_expression(&binary.right()?)?)
+                && is_nonempty_numeric_expression(&binary.left()?)?
+                && is_nonempty_numeric_expression(&binary.right()?)?)
         }
         _ => Ok(false),
     }
 }
 
-/// A `c()` made only of literals has no runtime-dependent values to warn about.
+/// Recognize a base `c()` call with literals or known numeric expressions.
 fn is_literal_c_call(call: &RCall) -> anyhow::Result<bool> {
     if !is_call_to(call, "c", "base")? {
         return Ok(false);
@@ -67,7 +76,7 @@ fn is_literal_c_call(call: &RCall) -> anyhow::Result<bool> {
     Ok(true)
 }
 
-/// Recognize a literal value, including `NA`, `NULL`, and `Inf`.
+/// Recognize a literal value or a numeric expression that cannot be empty.
 pub(super) fn is_literal(expression: &AnyRExpression) -> anyhow::Result<bool> {
     match expression {
         AnyRExpression::RParenthesizedExpression(paren) => is_literal(&paren.body()?),
@@ -84,7 +93,7 @@ pub(super) fn is_literal(expression: &AnyRExpression) -> anyhow::Result<bool> {
         | AnyRExpression::RInfExpression(_)
         | AnyRExpression::RNanExpression(_) => Ok(true),
         expression @ AnyRExpression::RBinaryExpression(_) => {
-            is_constant_numeric_expression(expression)
+            is_nonempty_numeric_expression(expression)
         }
         AnyRExpression::RCall(call) => is_literal_c_call(call),
         AnyRExpression::RUnaryExpression(unary) => Ok(matches!(
