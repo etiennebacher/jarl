@@ -5,10 +5,8 @@
 
 ## What it does
 
-Checks for `[]` indices whose outermost operator is unary minus, such as
-`x[-idx]` and `x[-which(x == 99)]`. Parentheses around the index are ignored.
-A minus inside a call or multiplication, as in `x[head(idx, -1)]` or
-`x[-1 * idx]`, is outside the scope of this rule.
+Checks for `[]` indices whose outermost operator is unary minus `-`, such as
+`x[-idx]` and `x[-which(x == 99)]`.
 
 The rule will not report for cases below:
 
