@@ -20,26 +20,18 @@ use super::nonempty_guard::{IdentifierIndex, check_identifier_index};
 ///
 /// This rule does not report:
 ///
-/// - Named arguments in `[]`, such as `roll = -tol` in `dt[x, roll = -tol]`.
-/// - Non-zero literals, constant arithmetic, and `:` sequences, such as `x[-1]`,
-///   `x[-(2 * 3)]`, `x[-c(1, 2)]`, and `x[-(1:n)]`.
-/// - Calls to `c()` with a known positive subscript, such as `x[-c(idx, 1)]`,
-///   `x[-c(idx, c(1, 2))]`, or `x[-c(idx, 1:3)]`.
-/// - Subsetting by the same object's length or dimension, such as
-///   `x[-length(x)]`, `df[-nrow(df), ]`, `df[, -ncol(df)]`, or `df[-NCOL(df)]`.
-/// - Group size indices, such as `x[-n()]`, `x[-dplyr::n()]`, and `dt[-.N, ]`.
-///   `n()` must have no arguments and be the sole index. `.N` must be the sole
-///   index or the row index.
-/// - An unchanged `for` loop variable drawn from `seq_along()`, `seq_len()`,
-///   `which()`, or a range of positive integer literals such as `1:10`.
-/// - `-idx` guarded by an `if` or `while` condition proving `idx` is nonempty,
-///   such as `length(idx) > 0`, `length(idx)`, or `any(idx > 0)`.
-/// - `-idx` after a guard that exits when `idx` is empty (such as `return()`,
-///   `stop()`, `rlang::abort()`, `cli::cli_abort()`, `next`, or `break`), or
-///   after an assertion such as `stopifnot(length(idx) > 0)`.
-/// - `-idx` after assigning a non-zero constant, a `:` sequence, or a `c()` call
-///   with a known positive subscript, such as `idx <- 1`, `idx <- a:b`, or
-///   `idx <- c(1, 3)`.
+/// - Named arguments in `[]` (e.g., `dt[x, roll = -tol]`).
+/// - Non-zero literals, constant arithmetic, non-zero `:` sequences, and `c()`
+///   calls with a positive subscript (e.g., `x[-1]`, `x[-(1:n)]`,
+///   `x[-c(idx, 1)]`).
+/// - The subsetted object's own length or dimensions (e.g., `x[-length(x)]`,
+///   `df[-nrow(df), ]`), or group size helpers (`x[-n()]`, `dt[-.N]`).
+/// - Unmodified `for` loop variables iterating over `seq_along()`, `seq_len()`,
+///   `which()`, or a positive integer range (e.g., `1:10`).
+/// - Variables guarded against being empty by an `if`/`while` condition, an
+///   early exit, or `stopifnot()` (e.g., `if (length(idx) > 0) x[-idx]`).
+/// - Variables previously assigned a non-zero constant, non-zero `:` sequence,
+///   or positive `c()` call (e.g., `idx <- c(1, 3); x[-idx]`).
 ///
 /// ## Why is this bad?
 ///
@@ -71,6 +63,10 @@ use super::nonempty_guard::{IdentifierIndex, check_identifier_index};
 /// ```r
 /// x <- 1:10
 /// x[x != 99]
+///
+/// # Or handle empty indices explicitly when you already have an index vector:
+/// idx <- which(x == 99)
+/// if (length(idx) > 0) x[-idx] else x
 /// ```
 /// <!-- docs: end -->
 pub fn negative_index(ast: &RSubset) -> anyhow::Result<Vec<Diagnostic>> {
@@ -106,6 +102,7 @@ pub fn negative_index(ast: &RSubset) -> anyhow::Result<Vec<Diagnostic>> {
                     IdentifierIndex::Safe => continue,
                     IdentifierIndex::DefiniteZero => true,
                     IdentifierIndex::Unguarded => {
+                        // Exempt `.N` only after checking for an explicit zero assignment.
                         if position == 0 && index_count <= 2 && identifier.name_text() == ".N" {
                             continue;
                         }
