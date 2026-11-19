@@ -4,8 +4,10 @@ use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 use oak_core::syntax_ext::RIdentifierExt;
 
-use super::literal_index::{is_literal, is_zero_index, unparenthesized};
-use super::nonempty_guard::{IdentifierIndex, check_identifier_index, is_index_length};
+use super::literal_index::{
+    call_name_and_package, has_single_variable_argument, is_literal, is_zero_index, unparenthesized,
+};
+use super::nonempty_guard::{IdentifierIndex, check_identifier_index};
 
 /// <!-- docs: start -->
 /// Version added: 0.8.0
@@ -23,8 +25,13 @@ use super::nonempty_guard::{IdentifierIndex, check_identifier_index, is_index_le
 ///   `x[-(2 * 3)]`, `x[-c(1, 2)]`, and `x[-(1:n)]`.
 /// - Calls to `c()` with a known positive subscript, such as `x[-c(idx, 1)]`,
 ///   `x[-c(idx, c(1, 2))]`, or `x[-c(idx, 1:3)]`.
-/// - Single-index subsetting by the object's own length, such as `x[-length(x)]`,
-///   where returning an empty object for an empty `x` is expected.
+/// - Subsetting by the same object's length or dimension, such as
+///   `x[-length(x)]`, `df[-nrow(df), ]`, `df[, -ncol(df)]`, or `df[-NCOL(df)]`.
+/// - Group size indices, such as `x[-n()]`, `x[-dplyr::n()]`, and `dt[-.N, ]`.
+///   `n()` must have no arguments and be the sole index. `.N` must be the sole
+///   index or the row index.
+/// - An unchanged `for` loop variable drawn from `seq_along()`, `seq_len()`,
+///   `which()`, or a range of positive integer literals such as `1:10`.
 /// - `-idx` guarded by an `if` or `while` condition proving `idx` is nonempty,
 ///   such as `length(idx) > 0`, `length(idx)`, or `any(idx > 0)`.
 /// - `-idx` after a guard that exits when `idx` is empty (such as `return()`,
@@ -68,12 +75,14 @@ use super::nonempty_guard::{IdentifierIndex, check_identifier_index, is_index_le
 pub fn negative_index(ast: &RSubset) -> anyhow::Result<Vec<Diagnostic>> {
     let mut diagnostics = Vec::new();
     let arguments = ast.arguments()?.items();
-    let single_index = arguments.len() == 1;
-    for arg in arguments {
+    let positional_arguments = || {
+        arguments
+            .iter()
+            .filter(|arg| !arg.as_ref().is_ok_and(|arg| arg.name_clause().is_some()))
+    };
+    let index_count = positional_arguments().count();
+    for (position, arg) in positional_arguments().enumerate() {
         let arg = arg?;
-        if arg.name_clause().is_some() {
-            continue;
-        }
         let Some(index) = arg.value() else {
             continue;
         };
@@ -86,7 +95,7 @@ pub fn negative_index(ast: &RSubset) -> anyhow::Result<Vec<Diagnostic>> {
         }
 
         let operand = unparenthesized(unary.argument()?)?;
-        if single_index && is_subset_length(ast, &operand)? {
+        if is_subset_extent(ast, &operand, position, index_count)? {
             continue;
         }
 
@@ -95,7 +104,12 @@ pub fn negative_index(ast: &RSubset) -> anyhow::Result<Vec<Diagnostic>> {
                 match check_identifier_index(&unary, identifier)? {
                     IdentifierIndex::Safe => continue,
                     IdentifierIndex::DefiniteZero => true,
-                    IdentifierIndex::Unguarded => false,
+                    IdentifierIndex::Unguarded => {
+                        if position == 0 && index_count <= 2 && identifier.name_text() == ".N" {
+                            continue;
+                        }
+                        false
+                    }
                 }
             }
             _ => {
@@ -130,14 +144,33 @@ pub fn negative_index(ast: &RSubset) -> anyhow::Result<Vec<Diagnostic>> {
     Ok(diagnostics)
 }
 
-/// Recognize `x[-length(x)]` by comparing variable names. Repeated calls such
-/// as `f()[-length(f())]` can produce different objects.
-fn is_subset_length(subset: &RSubset, operand: &AnyRExpression) -> anyhow::Result<bool> {
+/// Match a group size or the extent of the object along the indexed dimension.
+/// Restrict extent checks to variables: repeated calls can return different objects.
+fn is_subset_extent(
+    subset: &RSubset,
+    operand: &AnyRExpression,
+    position: usize,
+    index_count: usize,
+) -> anyhow::Result<bool> {
     let AnyRExpression::RCall(call) = operand else {
         return Ok(false);
     };
+    let Some((name, package)) = call_name_and_package(call)? else {
+        return Ok(false);
+    };
+    if name == "n" && index_count == 1 && matches!(package.as_deref(), None | Some("dplyr")) {
+        return Ok(call.arguments()?.items().is_empty());
+    }
+    if !matches!(package.as_deref(), None | Some("base"))
+        || !matches!(
+            (index_count, position, name.as_str()),
+            (1, 0, "length" | "ncol" | "NCOL") | (2, 0, "nrow" | "NROW") | (2, 1, "ncol" | "NCOL")
+        )
+    {
+        return Ok(false);
+    }
     let AnyRExpression::RIdentifier(object) = unparenthesized(subset.function()?)? else {
         return Ok(false);
     };
-    is_index_length(call, &object.name_text())
+    has_single_variable_argument(call, &object.name_text())
 }

@@ -1,11 +1,12 @@
 use crate::utils::{StatementsExt, get_arg_by_name, get_arg_by_position};
 use air_r_syntax::*;
-use biome_rowan::{AstNode, AstSeparatedList, TextSize, WalkEvent};
+use biome_rowan::{AstNode, TextSize, WalkEvent};
 use oak_core::syntax_ext::RIdentifierExt;
 
 use super::literal_index::{
-    call_name_and_package, is_call_to, is_nonempty_numeric_expression, is_zero_index,
-    numeric_literal, unparenthesized,
+    call_name_and_package, has_single_variable_argument, is_call_to,
+    is_nonempty_numeric_expression, is_positive_index_sequence, is_zero_index, numeric_literal,
+    unparenthesized,
 };
 
 #[derive(PartialEq, Eq)]
@@ -107,6 +108,11 @@ fn guarded_index(
             Some(AnyRExpression::RWhileStatement(statement)) => {
                 while_index_status(&statement, name, position, end)?
             }
+            Some(AnyRExpression::RForStatement(statement))
+                if for_index_is_positive(&statement, name, position, end)? =>
+            {
+                IdentifierIndex::Safe
+            }
             _ => IdentifierIndex::Unguarded,
         };
         match branch {
@@ -173,6 +179,26 @@ fn while_index_status(
         return Ok(IdentifierIndex::Unguarded);
     }
     branch_index_status(statement.condition()?, body, name, true, end)
+}
+
+/// A `for` loop rebinds its own index on each iteration. Scan only the body:
+/// a write after the use in this iteration does not affect the next binding.
+fn for_index_is_positive(
+    statement: &RForStatement,
+    name: &str,
+    position: TextSize,
+    end: TextSize,
+) -> anyhow::Result<bool> {
+    let AnyRForVariable::RIdentifier(variable) = statement.variable()? else {
+        return Ok(false);
+    };
+    if variable.name_text() != name {
+        return Ok(false);
+    }
+    let body = statement.body()?;
+    Ok(body.range().contains(position)
+        && is_positive_index_sequence(statement.sequence()?)?
+        && !has_write(body.syntax(), name, end)?)
 }
 
 /// Evidence from a condition applies only while the checked value is unchanged.
@@ -500,20 +526,8 @@ fn is_stopifnot_guard(call: &RCall, name: &str) -> anyhow::Result<bool> {
 }
 
 /// Recognize the length of this variable, including `base::length(x = idx)`.
-pub(super) fn is_index_length(call: &RCall, name: &str) -> anyhow::Result<bool> {
-    if !is_call_to(call, "length", "base")? {
-        return Ok(false);
-    }
-    let arguments = call.arguments()?.items();
-    if arguments.len() != 1 {
-        return Ok(false);
-    }
-    let Some(argument) = get_arg_by_position(&arguments, 1).and_then(|arg| arg.value()) else {
-        return Ok(false);
-    };
-    Ok(unparenthesized(argument)?
-        .as_r_identifier()
-        .is_some_and(|identifier| identifier.name_text() == name))
+fn is_index_length(call: &RCall, name: &str) -> anyhow::Result<bool> {
+    Ok(is_call_to(call, "length", "base")? && has_single_variable_argument(call, name)?)
 }
 
 /// Discard a guard if the variable may have been assigned before its use.

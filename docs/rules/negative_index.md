@@ -16,8 +16,13 @@ This rule does not report:
   `x[-(2 * 3)]`, `x[-c(1, 2)]`, and `x[-(1:n)]`.
 - Calls to `c()` with a known positive subscript, such as `x[-c(idx, 1)]`,
   `x[-c(idx, c(1, 2))]`, or `x[-c(idx, 1:3)]`.
-- Single-index subsetting by the object's own length, such as `x[-length(x)]`,
-  where returning an empty object for an empty `x` is expected.
+- Subsetting by the same object's length or dimension, such as
+  `x[-length(x)]`, `df[-nrow(df), ]`, `df[, -ncol(df)]`, or `df[-NCOL(df)]`.
+- Group size indices, such as `x[-n()]`, `x[-dplyr::n()]`, and `dt[-.N, ]`.
+  `n()` must have no arguments and be the sole index. `.N` must be the sole
+  index or the row index.
+- An unchanged `for` loop variable drawn from `seq_along()`, `seq_len()`,
+  `which()`, or a range of positive integer literals such as `1:10`.
 - `-idx` guarded by an `if` or `while` condition proving `idx` is nonempty,
   such as `length(idx) > 0`, `length(idx)`, or `any(idx > 0)`.
 - `-idx` after a guard that exits when `idx` is empty (such as `return()`,

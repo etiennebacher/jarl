@@ -1,6 +1,6 @@
-use crate::utils::argument_name;
+use crate::utils::{argument_name, get_arg_by_position};
 use air_r_syntax::*;
-use biome_rowan::AstNode;
+use biome_rowan::{AstNode, AstSeparatedList};
 use oak_core::syntax_ext::{AnyRSelectorExt, RIdentifierExt};
 
 /// Recognize a zero literal, an all-zero `c()` call, or a `0:0` sequence.
@@ -130,6 +130,28 @@ fn is_positive_subscript(number: f64) -> bool {
     number.is_finite() && number >= 1.0
 }
 
+/// Recognize sequences that, if they yield any values, yield positive integers.
+pub(super) fn is_positive_index_sequence(expression: AnyRExpression) -> anyhow::Result<bool> {
+    match unparenthesized(expression)? {
+        AnyRExpression::RCall(call) => Ok(call_name_and_package(&call)?.is_some_and(
+            |(name, package)| {
+                matches!(package.as_deref(), None | Some("base"))
+                    && matches!(name.as_str(), "seq_along" | "seq_len" | "which")
+            },
+        )),
+        AnyRExpression::RBinaryExpression(binary)
+            if binary.operator()?.kind() == RSyntaxKind::COLON =>
+        {
+            let positive_integer = |number| is_positive_subscript(number) && number.fract() == 0.0;
+            Ok(
+                numeric_literal(&binary.left()?).is_some_and(positive_integer)
+                    && numeric_literal(&binary.right()?).is_some_and(positive_integer),
+            )
+        }
+        _ => Ok(false),
+    }
+}
+
 /// A `:` sequence always includes its start, but steps by one and can miss
 /// its end. For instance, `0.5:1` contains only `0.5`, which truncates to zero.
 fn sequence_has_positive_subscript(binary: &RBinaryExpression) -> anyhow::Result<bool> {
@@ -201,6 +223,21 @@ pub(super) fn unparenthesized(mut expression: AnyRExpression) -> anyhow::Result<
         expression = paren.body()?;
     }
     Ok(expression)
+}
+
+/// Match one argument referring to a variable, including named arguments such
+/// as `length(x = idx)`.
+pub(super) fn has_single_variable_argument(call: &RCall, name: &str) -> anyhow::Result<bool> {
+    let arguments = call.arguments()?.items();
+    if arguments.len() != 1 {
+        return Ok(false);
+    }
+    let Some(argument) = get_arg_by_position(&arguments, 1).and_then(|arg| arg.value()) else {
+        return Ok(false);
+    };
+    Ok(unparenthesized(argument)?
+        .as_r_identifier()
+        .is_some_and(|identifier| identifier.name_text() == name))
 }
 
 /// Read the name and optional package of a plain or namespace-qualified call.

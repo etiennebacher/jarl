@@ -44,9 +44,19 @@ mod tests {
             "x[-(1:3)]",
             "x[-(1:n)]",
             "df[-(1:5), ]",
-            // A single index can use the length of the object being subsetted.
+            // The length or dimension matches the object and position being subsetted.
             "x[-length(x)]",
             "(x)[-(base::length(x = (`x`)))]",
+            "df[-nrow(df), , drop = FALSE]",
+            "df[-base::NROW(df), ]",
+            "df[, -ncol(df)]",
+            "df[-ncol(df)]",
+            "df[-base::NCOL(x = df)]",
+            "x[-n()]",
+            "df |> summarise(val = x[-dplyr::n()])",
+            "dt[-.N]",
+            "dt[-.N, ]",
+            "dt[, x[-.N]]",
             // A minus inside a call or another operator is not a top-level negation.
             "x[head(idx, -1)]",
             "x[head(-idx, 1)]",
@@ -68,6 +78,19 @@ mod tests {
             "x[f(function() -idx)]",
             "dt[x, roll = -tol]",
             "# jarl-ignore negative_index: index is known to be nonempty\nx[-idx]",
+        ] {
+            expect_no_lint(code, "negative_index", None);
+        }
+    }
+
+    #[test]
+    fn test_no_lint_negative_index_for_loops() {
+        for code in [
+            "for (i in seq_along(x)) x[-i]",
+            "for (i in base::seq_len(nrow(df))) df[-i, ]",
+            "for (i in which(cond)) x[-i]",
+            "for (i in 1:10) x[-i]",
+            "for (i in seq_along(x)) { x[-i]; i <- integer() }",
         ] {
             expect_no_lint(code, "negative_index", None);
         }
@@ -576,6 +599,106 @@ mod tests {
           |
         1 | df[-nrow(df)]
           |    --------- Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("for (i in 1:0) x[-i]"), @"
+        warning: negative_index
+         --> <test>:1:18
+          |
+        1 | for (i in 1:0) x[-i]
+          |                  -- Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("for (i in other::seq_len(3)) x[-i]"), @"
+        warning: negative_index
+         --> <test>:1:32
+          |
+        1 | for (i in other::seq_len(3)) x[-i]
+          |                                -- Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("for (i in seq_along(x)) { i <- f(); x[-i] }"), @"
+        warning: negative_index
+         --> <test>:1:39
+          |
+        1 | for (i in seq_along(x)) { i <- f(); x[-i] }
+          |                                       -- Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("for (i in seq_along(x[-i])) print(i)"), @"
+        warning: negative_index
+         --> <test>:1:23
+          |
+        1 | for (i in seq_along(x[-i])) print(i)
+          |                       -- Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("df[-nrow(other), ]"), @"
+        warning: negative_index
+         --> <test>:1:4
+          |
+        1 | df[-nrow(other), ]
+          |    ------------ Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("df[, -nrow(df)]"), @"
+        warning: negative_index
+         --> <test>:1:6
+          |
+        1 | df[, -nrow(df)]
+          |      --------- Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("dt[, -.N]"), @"
+        warning: negative_index
+         --> <test>:1:6
+          |
+        1 | dt[, -.N]
+          |      --- Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("x[-n(1)]"), @"
+        warning: negative_index
+         --> <test>:1:3
+          |
+        1 | x[-n(1)]
+          |   ----- Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("x[-other::n()]"), @"
+        warning: negative_index
+         --> <test>:1:3
+          |
+        1 | x[-other::n()]
+          |   ----------- Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("df[-n(), ]"), @"
+        warning: negative_index
+         --> <test>:1:4
+          |
+        1 | df[-n(), ]
+          |    ---- Non-literal negative indices may produce unexpected results when empty or zero.
           |
           = help: Handle empty or zero indices explicitly, or use a logical index.
         Found 1 error.
