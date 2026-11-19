@@ -16,7 +16,6 @@ mod tests {
         for code in [
             // Literals include nested parentheses and literal-only c() calls.
             "x[((-((1))))]",
-            "x[-0]",
             "x[-2L]",
             "x[-1i]",
             "x[-Inf]",
@@ -181,6 +180,16 @@ mod tests {
 
     #[test]
     fn test_lint_negative_index() {
+        assert_snapshot!(snapshot_lint("x[-0]"), @"
+        warning: negative_index
+         --> <test>:1:3
+          |
+        1 | x[-0]
+          |   -- The negated index is zero, so it selects no elements.
+          |
+          = help: Handle zero indices explicitly or use a logical index.
+        Found 1 error.
+        ");
         assert_snapshot!(snapshot_lint("x[((-idx))]"), @"
         warning: negative_index
          --> <test>:1:3

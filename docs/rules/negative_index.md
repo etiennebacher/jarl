@@ -5,28 +5,29 @@
 
 ## What it does
 
-Checks for `[]` indices whose outermost operator is unary minus `-`, such as
-`x[-idx]` and `x[-which(x == 99)]`.
+Checks for `[]` subsetting with non-literal negative indices, such as
+variables or calls (`x[-idx]`, `x[-which(x == 99)]`). And also for
+negated zero indices (`x[-0]`, or `x[-idx]` when `idx` is assigned `0`).
 
-The rule will not report for cases below:
+This rule does not report:
 
-- Literals and constant arithmetic, such as `x[-1]`, `x[-(2 * 3)]`, and `x[-c(1, 2)]`.
-- A single index such as `x[-length(x)]`, where the same variable is subsetted
-  and passed to `length()`. If `x` is empty, selecting nothing is expected.
-- `-idx` guarded by an `if` or `while` condition proving it is nonempty,
+- Non-zero literals and constant arithmetic, such as `x[-1]`, `x[-(2 * 3)]`,
+  and `x[-c(1, 2)]`.
+- Single-index subsetting by the object's own length, such as `x[-length(x)]`,
+  where returning an empty object for an empty `x` is expected.
+- `-idx` guarded by an `if` or `while` condition proving `idx` is nonempty,
   such as `length(idx) > 0`, `length(idx)`, or `any(idx > 0)`.
-- `-idx` after a check that exits when the index is empty, for example with
-  `return()`, `stop()`, `rlang::abort()`, `cli::cli_abort()`, `next`, or `break`,
-  or after an assertion such as `stopifnot(length(idx) > 0)`.
-- `-idx` after a constant numeric assignment, such as `idx <- 1` or `idx <- 2 * 3`.
-  Assigning a zero literal still triggers a warning on `x[-idx]` because `x[-0]`
-  selects nothing.
+- `-idx` after a guard that exits when `idx` is empty (such as `return()`,
+  `stop()`, `rlang::abort()`, `cli::cli_abort()`, `next`, or `break`), or
+  after an assertion such as `stopifnot(length(idx) > 0)`.
+- `-idx` after a non-zero constant numeric assignment, such as `idx <- 1` or
+  `idx <- 2 * 3`.
 
 ## Why is this bad?
 
-If `idx` is empty, `x[-idx]` selects no elements instead of keeping all of
-`x`. For example, trying to remove a value that is not present returns an
-empty vector:
+If `idx` is empty or `0`, `x[-idx]` selects no elements instead of keeping
+all of `x`. For example, trying to remove a value that is not present
+returns an empty vector:
 
 ```r
 x <- 1:10
