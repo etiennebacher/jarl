@@ -25,7 +25,7 @@ mod tests {
             "x[-\"text\"]",
             "x[-base::c(-1, c(-2, 3))]",
             // Constant arithmetic is recognized recursively, without evaluating it.
-            "x[-2 * 3]",
+            "x[-(2 * 3)]",
             "x[-(1 + 2)]",
             "x[-(3 - 1L)]",
             "x[-(4 / 2)]",
@@ -42,6 +42,7 @@ mod tests {
             "x[head(idx, -1)]",
             "x[head(-idx, 1)]",
             "x[c(-1, -idx)]",
+            "x[-2 * 3]",
             "x[-1 * idx]",
             "x[idx > -limit]",
             "x[!(-idx)]",
@@ -74,7 +75,8 @@ mod tests {
             "if (length(idx) == 0) NULL else x[-idx]",
             "if (n <= 1) NULL else x[-n]",
             "if (length(idx) > -1) NULL else x[-idx]",
-            "if (length(idx) > +0) x[-idx]",
+            "if (length(idx) > +(0)) x[-idx]",
+            "if (length(idx) > -(0)) x[-idx]",
             // One conjunct suffices, but both alternatives must exclude an empty index.
             "if (length(idx) > 0 && verbose) x[-idx]",
             "if (verbose && length(idx) > 0) x[-idx]",
@@ -164,8 +166,9 @@ mod tests {
     #[test]
     fn test_no_lint_negative_index_preserved_guards() {
         for code in [
-            // Unrelated writes and deferred function bodies do not invalidate a guard.
+            // Unrelated writes, named arguments, and deferred function bodies preserve the guard.
             "if (length(idx) > 0) { other <- NULL; x[-idx] }",
+            "if (length(idx) > 0) { f(idx = NULL); x[-idx] }",
             "if (length(idx) > 0) { f <- function() idx <- NULL; x[-idx] }",
             // Writes after a read do not affect it until a subsequent loop iteration.
             "if (length(idx) > 0) { x[-idx]; idx <- NULL }",
@@ -206,6 +209,16 @@ mod tests {
           |
         1 | x[-which(x == 99)]
           |   --------------- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("x[-seq_len(n)]"), @"
+        warning: negative_index
+         --> <test>:1:3
+          |
+        1 | x[-seq_len(n)]
+          |   ----------- Non-literal negative indices may produce unexpected results when empty.
           |
           = help: Handle empty indices explicitly or use a logical index.
         Found 1 error.

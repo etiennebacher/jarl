@@ -148,11 +148,11 @@ fn has_if_guard(
     if consequence.range().contains(position) {
         return branch_is_guarded(statement.condition()?, consequence, name, true, end);
     }
-    if let Some(else_clause) = statement.else_clause()
-        && let alternative = else_clause.alternative()?
-        && alternative.range().contains(position)
-    {
-        return branch_is_guarded(statement.condition()?, alternative, name, false, end);
+    if let Some(else_clause) = statement.else_clause() {
+        let alternative = else_clause.alternative()?;
+        if alternative.range().contains(position) {
+            return branch_is_guarded(statement.condition()?, alternative, name, false, end);
+        }
     }
     Ok(false)
 }
@@ -323,7 +323,7 @@ fn condition_proves_nonempty(
                 // Short-circuit operators always return a scalar, even inside
                 // `stopifnot()`, so their operands cannot pass as empty results.
                 let left = condition_proves_nonempty(binary.left()?, name, truth, false)?;
-                let right = condition_proves_nonempty(binary.right()?, name, truth, false)?;
+                let right = || condition_proves_nonempty(binary.right()?, name, truth, false);
                 // A false && or true || can result from either operand, so
                 // both possibilities must imply nonemptiness. Otherwise one
                 // operand's proof suffices: `length(idx) > 0 && verbose`.
@@ -332,9 +332,9 @@ fn condition_proves_nonempty(
                     (RSyntaxKind::AND2, false) | (RSyntaxKind::OR2, true)
                 );
                 return Ok(if requires_both {
-                    left && right
+                    left && right()?
                 } else {
-                    left || right
+                    left || right()?
                 });
             }
 
@@ -450,12 +450,14 @@ fn is_stopifnot_guard(call: &RCall, name: &str) -> anyhow::Result<bool> {
 
 /// Recognize the length of this variable, including `base::length(x = idx)`.
 pub(super) fn is_index_length(call: &RCall, name: &str) -> anyhow::Result<bool> {
-    if !is_call_to(call, "length", "base")? || call.arguments()?.items().len() != 1 {
+    if !is_call_to(call, "length", "base")? {
         return Ok(false);
     }
-    let Some(argument) =
-        get_arg_by_position(&call.arguments()?.items(), 1).and_then(|arg| arg.value())
-    else {
+    let arguments = call.arguments()?.items();
+    if arguments.len() != 1 {
+        return Ok(false);
+    }
+    let Some(argument) = get_arg_by_position(&arguments, 1).and_then(|arg| arg.value()) else {
         return Ok(false);
     };
     Ok(unparenthesized(argument)?

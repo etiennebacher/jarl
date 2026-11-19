@@ -95,10 +95,11 @@ pub(super) fn is_literal(expression: &AnyRExpression) -> anyhow::Result<bool> {
     }
 }
 
-/// Read a decimal integer or double as `f64`, including `L` suffixes and unary
-/// signs.
+/// Read a decimal integer or double as `f64`, including `L` suffixes, unary
+/// signs, and parentheses.
 pub(super) fn numeric_literal(expression: &AnyRExpression) -> Option<f64> {
     match expression {
+        AnyRExpression::RParenthesizedExpression(paren) => numeric_literal(&paren.body().ok()?),
         AnyRExpression::AnyRValue(AnyRValue::RIntegerValue(_) | AnyRValue::RDoubleValue(_)) => {
             expression
                 .to_trimmed_string()
