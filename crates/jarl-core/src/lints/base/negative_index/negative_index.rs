@@ -18,6 +18,7 @@ use super::nonempty_guard::{IdentifierIndex, check_identifier_index, is_index_le
 ///
 /// This rule does not report:
 ///
+/// - Named arguments in `[]`, such as `roll = -tol` in `dt[x, roll = -tol]`.
 /// - Non-zero literals, constant arithmetic, and `:` sequences, such as `x[-1]`,
 ///   `x[-(2 * 3)]`, `x[-c(1, 2)]`, and `x[-(1:n)]`.
 /// - Calls to `c()` with a known positive subscript, such as `x[-c(idx, 1)]`,
@@ -70,6 +71,9 @@ pub fn negative_index(ast: &RSubset) -> anyhow::Result<Vec<Diagnostic>> {
     let single_index = arguments.len() == 1;
     for arg in arguments {
         let arg = arg?;
+        if arg.name_clause().is_some() {
+            continue;
+        }
         let Some(index) = arg.value() else {
             continue;
         };
@@ -82,7 +86,7 @@ pub fn negative_index(ast: &RSubset) -> anyhow::Result<Vec<Diagnostic>> {
         }
 
         let operand = unparenthesized(unary.argument()?)?;
-        if single_index && arg.name_clause().is_none() && is_subset_length(ast, &operand)? {
+        if single_index && is_subset_length(ast, &operand)? {
             continue;
         }
 

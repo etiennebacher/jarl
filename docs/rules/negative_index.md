@@ -11,6 +11,7 @@ negated zero indices (`x[-0]`, or `x[-idx]` when `idx` is assigned `0`).
 
 This rule does not report:
 
+- Named arguments in `[]`, such as `roll = -tol` in `dt[x, roll = -tol]`.
 - Non-zero literals, constant arithmetic, and `:` sequences, such as `x[-1]`,
   `x[-(2 * 3)]`, `x[-c(1, 2)]`, and `x[-(1:n)]`.
 - Calls to `c()` with a known positive subscript, such as `x[-c(idx, 1)]`,

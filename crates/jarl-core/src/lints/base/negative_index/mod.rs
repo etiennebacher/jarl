@@ -66,6 +66,7 @@ mod tests {
             "x[[-idx]]",
             "x[y[[-idx]]]",
             "x[f(function() -idx)]",
+            "dt[x, roll = -tol]",
             "# jarl-ignore negative_index: index is known to be nonempty\nx[-idx]",
         ] {
             expect_no_lint(code, "negative_index", None);
