@@ -217,6 +217,7 @@ mod tests {
   }
 }",
             "idx <- 1; if (flag) { idx <- f() } else { x[-idx] }",
+            "if (length(idx) > 0) { if (a) idx <- f() else if (b) idx <- g() else x[-idx] }",
             // Writes after a read do not affect it until a subsequent loop iteration.
             "if (length(idx) > 0) { x[-idx]; idx <- NULL }",
             "idx <- 1; idx <- x[-idx]",

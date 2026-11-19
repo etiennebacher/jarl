@@ -6,8 +6,8 @@
 ## What it does
 
 Checks for `[]` subsetting with non-literal negative indices, such as
-variables or calls (`x[-idx]`, `x[-which(x == 99)]`). And also for
-negated zero indices (`x[-0]`, or `x[-idx]` when `idx` is assigned `0`).
+variables or calls (`x[-idx]`, `x[-which(x == 99)]`), as well as negated
+zero indices (`x[-0]`, or `x[-idx]` when `idx` is known to be `0`).
 
 This rule does not report:
 
@@ -46,8 +46,8 @@ x[-which(x == 99)]
 Since `99` is not in `x`, the intended result is the unchanged vector `1:10`
 rather than an empty vector.
 
-No automatic fix is provided. Handle empty indices explicitly or use a
-logical index when possible.
+No automatic fix is provided. Handle empty or zero indices explicitly or use
+a logical index when possible.
 
 ## Example
 
