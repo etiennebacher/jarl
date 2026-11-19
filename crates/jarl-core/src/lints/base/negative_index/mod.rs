@@ -175,10 +175,18 @@ mod tests {
     #[test]
     fn test_no_lint_negative_index_preserved_guards() {
         for code in [
-            // Unrelated writes, named arguments, and deferred function bodies preserve the guard.
+            // Unrelated writes and writes on paths that do not reach the index preserve the guard.
             "if (length(idx) > 0) { other <- NULL; x[-idx] }",
             "if (length(idx) > 0) { f(idx = NULL); x[-idx] }",
             "if (length(idx) > 0) { f <- function() idx <- NULL; x[-idx] }",
+            "if (length(idx) > 0) {
+  if (flag) {
+    idx <- f()
+  } else {
+    x[-idx]
+  }
+}",
+            "idx <- 1; if (flag) { idx <- f() } else { x[-idx] }",
             // Writes after a read do not affect it until a subsequent loop iteration.
             "if (length(idx) > 0) { x[-idx]; idx <- NULL }",
             "idx <- 1; idx <- x[-idx]",
@@ -700,6 +708,16 @@ mod tests {
         Found 1 error.
         ");
         // Writes while evaluating a condition invalidate its evidence.
+        assert_snapshot!(snapshot_lint("idx <- 1; if ({ idx <- f(); flag }) NULL else x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:49
+          |
+        1 | idx <- 1; if ({ idx <- f(); flag }) NULL else x[-idx]
+          |                                                 ---- Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
+        Found 1 error.
+        ");
         assert_snapshot!(snapshot_lint("if (length(idx) > 0 && { idx <- f(); TRUE }) x[-idx]"), @"
         warning: negative_index
          --> <test>:1:48
@@ -759,6 +777,16 @@ mod tests {
           |
         2 | while (running) idx <- x[-idx] # comment
           |                          ---- Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("idx <- 1\nwhile (running) if (flag) idx <- f() else x[-idx]"), @"
+        warning: negative_index
+         --> <test>:2:45
+          |
+        2 | while (running) if (flag) idx <- f() else x[-idx]
+          |                                             ---- Non-literal negative indices may produce unexpected results when empty or zero.
           |
           = help: Handle empty or zero indices explicitly, or use a logical index.
         Found 1 error.

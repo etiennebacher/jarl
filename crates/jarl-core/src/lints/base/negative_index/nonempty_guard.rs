@@ -518,14 +518,31 @@ pub(super) fn is_index_length(call: &RCall, name: &str) -> anyhow::Result<bool> 
 
 /// Discard a guard if the variable may have been assigned before its use.
 /// Writes in nested function definitions do not run when defining the function.
+/// When the scan stops inside `else`, the corresponding `then` branch cannot
+/// run on that path. A scan through the end of a loop still considers both
+/// branches because either can run on an earlier iteration.
 fn has_write(node: &RSyntaxNode, name: &str, end: TextSize) -> anyhow::Result<bool> {
     let mut walk = node.preorder();
+    let mut consequence_to_skip = None;
     while let Some(event) = walk.next() {
         let WalkEvent::Enter(node) = event else {
             continue;
         };
         if node.text_trimmed_range().start() >= end {
             break;
+        }
+        if consequence_to_skip.as_ref() == Some(&node) {
+            walk.skip_subtree();
+            consequence_to_skip = None;
+            continue;
+        }
+        if let Some(statement) = RIfStatement::cast_ref(&node)
+            && let Some(else_clause) = statement.else_clause()
+            && let Ok(alternative) = else_clause.alternative()
+            && alternative.range().contains(end)
+            && let Ok(consequence) = statement.consequence()
+        {
+            consequence_to_skip = Some(consequence.into_syntax());
         }
         if RFunctionDefinition::can_cast(node.kind()) {
             walk.skip_subtree();
