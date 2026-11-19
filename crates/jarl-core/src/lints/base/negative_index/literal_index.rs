@@ -23,10 +23,20 @@ pub(super) fn is_zero_index(expression: &AnyRExpression) -> anyhow::Result<bool>
     }
 }
 
+/// Recognize an assignment that can be exempted. A `c()` call must have a
+/// known positive subscript; zero is classified separately.
+pub(super) fn is_safe_assigned_index(expression: &AnyRExpression) -> anyhow::Result<bool> {
+    match expression {
+        AnyRExpression::RParenthesizedExpression(paren) => is_safe_assigned_index(&paren.body()?),
+        AnyRExpression::RCall(call) => Ok(matches!(classify_c_call(call)?, CIndex::Positive)),
+        _ => is_nonempty_numeric_expression(expression),
+    }
+}
+
 /// Recognize a standalone `:` sequence or arithmetic on numeric literals.
 /// A sequence on its own is nonempty, but arithmetic on it can produce a
 /// zero index, as in `1:n - 1` when `n` is `1`.
-pub(super) fn is_nonempty_numeric_expression(expression: &AnyRExpression) -> anyhow::Result<bool> {
+fn is_nonempty_numeric_expression(expression: &AnyRExpression) -> anyhow::Result<bool> {
     match expression {
         AnyRExpression::RParenthesizedExpression(paren) => {
             is_nonempty_numeric_expression(&paren.body()?)

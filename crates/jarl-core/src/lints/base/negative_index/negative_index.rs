@@ -37,8 +37,9 @@ use super::nonempty_guard::{IdentifierIndex, check_identifier_index};
 /// - `-idx` after a guard that exits when `idx` is empty (such as `return()`,
 ///   `stop()`, `rlang::abort()`, `cli::cli_abort()`, `next`, or `break`), or
 ///   after an assertion such as `stopifnot(length(idx) > 0)`.
-/// - `-idx` after assigning a non-zero constant or a `:` sequence, such as
-///   `idx <- 1`, `idx <- 2 * 3`, or `idx <- a:b`.
+/// - `-idx` after assigning a non-zero constant, a `:` sequence, or a `c()` call
+///   with a known positive subscript, such as `idx <- 1`, `idx <- a:b`, or
+///   `idx <- c(1, 3)`.
 ///
 /// ## Why is this bad?
 ///

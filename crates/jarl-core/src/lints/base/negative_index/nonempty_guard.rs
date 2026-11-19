@@ -4,9 +4,8 @@ use biome_rowan::{AstNode, TextSize, WalkEvent};
 use oak_core::syntax_ext::RIdentifierExt;
 
 use super::literal_index::{
-    call_name_and_package, has_single_variable_argument, is_call_to,
-    is_nonempty_numeric_expression, is_positive_index_sequence, is_zero_index, numeric_literal,
-    unparenthesized,
+    call_name_and_package, has_single_variable_argument, is_call_to, is_positive_index_sequence,
+    is_safe_assigned_index, is_zero_index, numeric_literal, unparenthesized,
 };
 
 #[derive(PartialEq, Eq)]
@@ -23,18 +22,14 @@ pub(super) fn check_identifier_index(
     let name = identifier.name_text();
     let position = unary.range().start();
 
-    // An enclosing length check also accepts a scalar zero. Look for an
-    // assignment first so `idx <- 0L; if (length(idx)) x[-idx]` still warns.
+    // A length check accepts zero values. Check the assignment first so
+    // `idx <- c(0, 0); if (length(idx)) x[-idx]` still warns.
     if let Some(value) = preceding_assignment(unary, &name, position)? {
-        let value = unparenthesized(value)?;
-        if matches!(value, AnyRExpression::RFalseExpression(_))
-            || is_nonempty_numeric_expression(&value)?
-        {
-            return Ok(if is_zero_index(&value)? {
-                IdentifierIndex::DefiniteZero
-            } else {
-                IdentifierIndex::Safe
-            });
+        if is_zero_index(&value)? {
+            return Ok(IdentifierIndex::DefiniteZero);
+        }
+        if is_safe_assigned_index(&value)? {
+            return Ok(IdentifierIndex::Safe);
         }
     }
 

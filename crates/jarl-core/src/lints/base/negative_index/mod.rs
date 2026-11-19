@@ -143,6 +143,8 @@ mod tests {
             "idx <- 1 + 1; x[-idx]",
             "idx <- 0:2; x[-idx]",
             "idx <- a:b; x[-idx]",
+            "drop_cols <- c(1, 3); df[, -drop_cols]",
+            "idx <- (c(other, 1)); x[-idx]",
             "idx = -2L; x[-idx]",
             "1.5 -> idx; x[-idx]",
             "`my idx` <- 1; x[-`my idx`]",
@@ -947,6 +949,56 @@ mod tests {
           |               ---- The negated index is zero, so it selects no elements.
           |
           = help: Handle zero indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("idx <- -c(0, 0); x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:20
+          |
+        1 | idx <- -c(0, 0); x[-idx]
+          |                    ---- The negated index is zero, so it selects no elements.
+          |
+          = help: Handle zero indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("idx <- c(0, 0); if (length(idx)) x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:36
+          |
+        1 | idx <- c(0, 0); if (length(idx)) x[-idx]
+          |                                    ---- The negated index is zero, so it selects no elements.
+          |
+          = help: Handle zero indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("idx <- c(); x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:15
+          |
+        1 | idx <- c(); x[-idx]
+          |               ---- Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("idx <- c(NULL); x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:19
+          |
+        1 | idx <- c(NULL); x[-idx]
+          |                   ---- Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("idx <- c(0.5); x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:18
+          |
+        1 | idx <- c(0.5); x[-idx]
+          |                  ---- Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("idx <- 1; idx <- (+(-((0L)))); if (length(idx)) x[-idx]"), @"
