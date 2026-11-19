@@ -23,13 +23,34 @@ pub(super) fn is_zero_index(expression: &AnyRExpression) -> anyhow::Result<bool>
     }
 }
 
-/// Recognize numeric literals, `:` sequences, and arithmetic built from them
-/// without evaluating it. Requiring both arithmetic operands to qualify
-/// excludes expressions such as `NULL * -2` and `idx * -2`.
+/// Recognize a standalone `:` sequence or arithmetic on numeric literals.
+/// A sequence on its own is nonempty, but arithmetic on it can produce a
+/// zero index, as in `1:n - 1` when `n` is `1`.
 pub(super) fn is_nonempty_numeric_expression(expression: &AnyRExpression) -> anyhow::Result<bool> {
     match expression {
         AnyRExpression::RParenthesizedExpression(paren) => {
             is_nonempty_numeric_expression(&paren.body()?)
+        }
+        AnyRExpression::RUnaryExpression(unary) => {
+            Ok(matches!(
+                unary.operator()?.kind(),
+                RSyntaxKind::PLUS | RSyntaxKind::MINUS
+            ) && is_nonempty_numeric_expression(&unary.argument()?)?)
+        }
+        AnyRExpression::RBinaryExpression(binary)
+            if binary.operator()?.kind() == RSyntaxKind::COLON =>
+        {
+            Ok(true)
+        }
+        _ => is_constant_numeric_expression(expression),
+    }
+}
+
+/// Recognize arithmetic built from numeric literals without evaluating it.
+fn is_constant_numeric_expression(expression: &AnyRExpression) -> anyhow::Result<bool> {
+    match expression {
+        AnyRExpression::RParenthesizedExpression(paren) => {
+            is_constant_numeric_expression(&paren.body()?)
         }
         AnyRExpression::AnyRValue(AnyRValue::RIntegerValue(_) | AnyRValue::RDoubleValue(_)) => {
             Ok(true)
@@ -38,13 +59,10 @@ pub(super) fn is_nonempty_numeric_expression(expression: &AnyRExpression) -> any
             Ok(matches!(
                 unary.operator()?.kind(),
                 RSyntaxKind::PLUS | RSyntaxKind::MINUS
-            ) && is_nonempty_numeric_expression(&unary.argument()?)?)
+            ) && is_constant_numeric_expression(&unary.argument()?)?)
         }
         AnyRExpression::RBinaryExpression(binary) => {
             let operator = binary.operator()?;
-            if operator.kind() == RSyntaxKind::COLON {
-                return Ok(true);
-            }
             let is_arithmetic = matches!(
                 operator.kind(),
                 RSyntaxKind::PLUS
@@ -56,8 +74,8 @@ pub(super) fn is_nonempty_numeric_expression(expression: &AnyRExpression) -> any
             ) || (operator.kind() == RSyntaxKind::SPECIAL
                 && matches!(operator.text_trimmed(), "%%" | "%/%"));
             Ok(is_arithmetic
-                && is_nonempty_numeric_expression(&binary.left()?)?
-                && is_nonempty_numeric_expression(&binary.right()?)?)
+                && is_constant_numeric_expression(&binary.left()?)?
+                && is_constant_numeric_expression(&binary.right()?)?)
         }
         _ => Ok(false),
     }

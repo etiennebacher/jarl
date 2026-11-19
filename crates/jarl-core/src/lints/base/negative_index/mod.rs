@@ -584,6 +584,36 @@ mod tests {
           = help: Handle empty or zero indices explicitly, or use a logical index.
         Found 1 error.
         ");
+        assert_snapshot!(snapshot_lint("x[-(1:n - 1)]"), @"
+        warning: negative_index
+         --> <test>:1:3
+          |
+        1 | x[-(1:n - 1)]
+          |   ---------- Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("x[-(1:n * 0)]"), @"
+        warning: negative_index
+         --> <test>:1:3
+          |
+        1 | x[-(1:n * 0)]
+          |   ---------- Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("idx <- 1:n - 1; x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:19
+          |
+        1 | idx <- 1:n - 1; x[-idx]
+          |                   ---- Non-literal negative indices may produce unexpected results when empty or zero.
+          |
+          = help: Handle empty or zero indices explicitly, or use a logical index.
+        Found 1 error.
+        ");
         assert_snapshot!(snapshot_lint("dt[, -x]"), @"
         warning: negative_index
          --> <test>:1:6
