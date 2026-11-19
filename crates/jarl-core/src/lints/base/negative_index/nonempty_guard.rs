@@ -6,25 +6,16 @@ use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList, TextSize, WalkEvent};
 use oak_core::syntax_ext::{AnyRSelectorExt, RIdentifierExt};
 
-/// A check or numeric assignment can establish that a negated variable is
-/// nonempty. Only trust that evidence while the variable holds its value.
+use super::negative_index::unparenthesized;
+
+/// Look for a condition or assertion that proves the negated variable is nonempty.
 pub(super) fn has_nonempty_guard(unary: &RUnaryExpression) -> anyhow::Result<bool> {
     let AnyRExpression::RIdentifier(identifier) = unparenthesized(unary.argument()?)? else {
         return Ok(false);
     };
     let name = identifier.name_text();
     let position = unary.range().start();
-    let mut end = position;
-
-    for ancestor in unary.syntax().ancestors().skip(1) {
-        // A deferred function body may run after the checked variable changes.
-        if RFunctionDefinition::can_cast(ancestor.kind()) {
-            break;
-        }
-
-        // Collect protection from enclosing conditions and earlier statements.
-        // Each checker handles its own control flow and uses the same condition
-        // and assignment analysis below.
+    for (ancestor, end) in index_ancestors(unary) {
         let guarded = if let Some(statements) = RStatementList::cast_ref(&ancestor) {
             has_preceding_guard(&statements, &name, position, end)?
         } else {
@@ -41,19 +32,32 @@ pub(super) fn has_nonempty_guard(unary: &RUnaryExpression) -> anyhow::Result<boo
         if guarded {
             return Ok(true);
         }
-
-        // `while` rechecks its own condition on each iteration. Only guards
-        // outside a loop must account for writes after the use in its body.
-        if matches!(
-            ancestor.kind(),
-            RSyntaxKind::R_FOR_STATEMENT
-                | RSyntaxKind::R_WHILE_STATEMENT
-                | RSyntaxKind::R_REPEAT_STATEMENT
-        ) {
-            end = ancestor.text_trimmed_range().end();
-        }
     }
     Ok(false)
+}
+
+/// Walk outward within the current function. For evidence outside a loop,
+/// include writes after the index use that can affect the next iteration.
+pub(super) fn index_ancestors(
+    unary: &RUnaryExpression,
+) -> impl Iterator<Item = (RSyntaxNode, TextSize)> {
+    unary
+        .syntax()
+        .ancestors()
+        .skip(1)
+        .take_while(|ancestor| !RFunctionDefinition::can_cast(ancestor.kind()))
+        .scan(unary.range().start(), |end, ancestor| {
+            let current_end = *end;
+            if matches!(
+                ancestor.kind(),
+                RSyntaxKind::R_FOR_STATEMENT
+                    | RSyntaxKind::R_WHILE_STATEMENT
+                    | RSyntaxKind::R_REPEAT_STATEMENT
+            ) {
+                *end = ancestor.text_trimmed_range().end();
+            }
+            Some((ancestor, current_end))
+        })
 }
 
 /// Use the condition's truth value for the branch containing this index.
@@ -124,7 +128,6 @@ fn has_preceding_guard(
             let guarded = match unparenthesized(expression.clone())? {
                 AnyRExpression::RIfStatement(statement) => is_early_exit_guard(&statement, name)?,
                 AnyRExpression::RCall(call) => is_stopifnot_guard(&call, name)?,
-                AnyRExpression::RBinaryExpression(binary) => is_numeric_assignment(&binary, name)?,
                 _ => false,
             };
             if guarded {
@@ -136,66 +139,6 @@ fn has_preceding_guard(
         }
     }
     Ok(false)
-}
-
-/// A direct local assignment of constant arithmetic establishes nonemptiness
-/// on every path reaching the next statement. Conditional writes and replacement
-/// assignments cannot establish this fact; the caller treats them as invalidating
-/// writes.
-fn is_numeric_assignment(binary: &RBinaryExpression, name: &str) -> anyhow::Result<bool> {
-    let (target, value) = match binary.operator()?.kind() {
-        RSyntaxKind::ASSIGN | RSyntaxKind::EQUAL => (binary.left()?, binary.right()?),
-        RSyntaxKind::ASSIGN_RIGHT => (binary.right()?, binary.left()?),
-        _ => return Ok(false),
-    };
-    let AnyRExpression::RIdentifier(identifier) = target else {
-        return Ok(false);
-    };
-    Ok(identifier.name_text() == name
-        && is_constant_numeric_expression(value.clone())?
-        && !is_zero_literal(value)?)
-}
-
-/// Zero has length one, but `x[-0]` selects nothing.
-fn is_zero_literal(expression: AnyRExpression) -> anyhow::Result<bool> {
-    match unparenthesized(expression)? {
-        AnyRExpression::RUnaryExpression(unary) => is_zero_literal(unary.argument()?),
-        expression => Ok(numeric_literal(&expression) == Some(0.0)),
-    }
-}
-
-/// Recognize arithmetic built only from numeric scalars, without evaluating it.
-/// Requiring both operands to qualify excludes empty values (`NULL * -2`) and
-/// runtime values (`idx * -2`). Only known arithmetic operators are accepted.
-pub(super) fn is_constant_numeric_expression(expression: AnyRExpression) -> anyhow::Result<bool> {
-    match unparenthesized(expression)? {
-        AnyRExpression::AnyRValue(AnyRValue::RIntegerValue(_) | AnyRValue::RDoubleValue(_)) => {
-            Ok(true)
-        }
-        AnyRExpression::RUnaryExpression(unary) => {
-            Ok(matches!(
-                unary.operator()?.kind(),
-                RSyntaxKind::PLUS | RSyntaxKind::MINUS
-            ) && is_constant_numeric_expression(unary.argument()?)?)
-        }
-        AnyRExpression::RBinaryExpression(binary) => {
-            let operator = binary.operator()?;
-            let is_arithmetic = matches!(
-                operator.kind(),
-                RSyntaxKind::PLUS
-                    | RSyntaxKind::MINUS
-                    | RSyntaxKind::MULTIPLY
-                    | RSyntaxKind::DIVIDE
-                    | RSyntaxKind::EXPONENTIATE
-                    | RSyntaxKind::EXPONENTIATE2
-            ) || (operator.kind() == RSyntaxKind::SPECIAL
-                && matches!(operator.text_trimmed(), "%%" | "%/%"));
-            Ok(is_arithmetic
-                && is_constant_numeric_expression(binary.left()?)?
-                && is_constant_numeric_expression(binary.right()?)?)
-        }
-        _ => Ok(false),
-    }
 }
 
 /// An early exit protects later uses when the condition on the surviving path
@@ -460,18 +403,9 @@ fn is_base_call(call: &RCall, name: &str) -> anyhow::Result<bool> {
         ))
 }
 
-/// Strip only the parentheses around the whole expression, so `((-idx))`
-/// is checked as `-idx` while `-(idx)` keeps its parenthesized operand.
-pub(super) fn unparenthesized(mut expression: AnyRExpression) -> anyhow::Result<AnyRExpression> {
-    while let AnyRExpression::RParenthesizedExpression(paren) = expression {
-        expression = paren.body()?;
-    }
-    Ok(expression)
-}
-
 /// Read a decimal integer or double as `f64`, including `L` suffixes and unary
 /// signs.
-fn numeric_literal(expression: &AnyRExpression) -> Option<f64> {
+pub(super) fn numeric_literal(expression: &AnyRExpression) -> Option<f64> {
     match expression {
         AnyRExpression::AnyRValue(AnyRValue::RIntegerValue(_) | AnyRValue::RDoubleValue(_)) => {
             expression
@@ -491,7 +425,7 @@ fn numeric_literal(expression: &AnyRExpression) -> Option<f64> {
 
 /// Discard a guard if the variable may have been assigned before its use.
 /// Writes in nested function definitions do not run when defining the function.
-fn has_write(node: &RSyntaxNode, name: &str, end: TextSize) -> anyhow::Result<bool> {
+pub(super) fn has_write(node: &RSyntaxNode, name: &str, end: TextSize) -> anyhow::Result<bool> {
     let mut walk = node.preorder();
     while let Some(event) = walk.next() {
         let WalkEvent::Enter(node) = event else {

@@ -1,3 +1,4 @@
+mod literal_index;
 pub(crate) mod negative_index;
 mod nonempty_guard;
 
@@ -15,6 +16,7 @@ mod tests {
         for code in [
             // Literals include nested parentheses and literal-only c() calls.
             "x[((-((1))))]",
+            "x[-0]",
             "x[-2L]",
             "x[-1i]",
             "x[-Inf]",
@@ -413,27 +415,27 @@ mod tests {
          --> <test>:3:3
           |
         3 | x[-idx]
-          |   ---- Non-literal negative indices may produce unexpected results when empty.
+          |   ---- The negated index is zero, so it selects no elements.
           |
-          = help: Handle empty indices explicitly or use a logical index.
+          = help: Handle zero indices explicitly or use a logical index.
         Found 1 error.
         ");
-        assert_snapshot!(snapshot_lint("idx <- 1; idx <- (+(-((0L)))); x[-idx]"), @"
+        assert_snapshot!(snapshot_lint("idx <- 1; idx <- (+(-((0L)))); if (length(idx)) x[-idx]"), @"
         warning: negative_index
-         --> <test>:1:34
+         --> <test>:1:51
           |
-        1 | idx <- 1; idx <- (+(-((0L)))); x[-idx]
-          |                                  ---- Non-literal negative indices may produce unexpected results when empty.
+        1 | idx <- 1; idx <- (+(-((0L)))); if (length(idx)) x[-idx]
+          |                                                   ---- The negated index is zero, so it selects no elements.
           |
-          = help: Handle empty indices explicitly or use a logical index.
+          = help: Handle zero indices explicitly or use a logical index.
         Found 1 error.
         ");
         // A conditional assignment need not execute.
-        assert_snapshot!(snapshot_lint("if (flag) idx <- 1; x[-idx]"), @"
+        assert_snapshot!(snapshot_lint("if (flag) idx <- 0; x[-idx]"), @"
         warning: negative_index
          --> <test>:1:23
           |
-        1 | if (flag) idx <- 1; x[-idx]
+        1 | if (flag) idx <- 0; x[-idx]
           |                       ---- Non-literal negative indices may produce unexpected results when empty.
           |
           = help: Handle empty indices explicitly or use a logical index.
@@ -485,11 +487,11 @@ mod tests {
     #[test]
     fn test_lint_negative_index_invalidated_guards() {
         // Reassignment invalidates earlier evidence, including from an enclosing block.
-        assert_snapshot!(snapshot_lint("idx <- 1; idx <- get_indices(); x[-idx]"), @"
+        assert_snapshot!(snapshot_lint("idx <- 0; idx <- get_indices(); x[-idx]"), @"
         warning: negative_index
          --> <test>:1:35
           |
-        1 | idx <- 1; idx <- get_indices(); x[-idx]
+        1 | idx <- 0; idx <- get_indices(); x[-idx]
           |                                   ---- Non-literal negative indices may produce unexpected results when empty.
           |
           = help: Handle empty indices explicitly or use a logical index.

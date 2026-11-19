@@ -1,15 +1,11 @@
-use crate::diagnostic::{Diagnostic, Fix, Violation};
+use crate::diagnostic::{Diagnostic, Fix, ViolationData};
 use crate::rule_set::Rule;
-use crate::utils::get_function_name;
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 use oak_core::syntax_ext::RIdentifierExt;
 
-use super::nonempty_guard::{
-    has_nonempty_guard, is_constant_numeric_expression, is_index_length, unparenthesized,
-};
-
-pub struct NegativeIndex;
+use super::literal_index::{LiteralIndex, is_literal_index};
+use super::nonempty_guard::{has_nonempty_guard, is_index_length};
 
 /// <!-- docs: start -->
 /// Version added: 0.8.0
@@ -65,20 +61,6 @@ pub struct NegativeIndex;
 /// x[x != 99]
 /// ```
 /// <!-- docs: end -->
-impl Violation for NegativeIndex {
-    fn rule(&self) -> Rule {
-        Rule::NegativeIndex
-    }
-
-    fn body(&self) -> String {
-        "Non-literal negative indices may produce unexpected results when empty.".to_string()
-    }
-
-    fn suggestion(&self) -> Option<String> {
-        Some("Handle empty indices explicitly or use a logical index.".to_string())
-    }
-}
-
 pub fn negative_index(ast: &RSubset) -> anyhow::Result<Vec<Diagnostic>> {
     let mut diagnostics = Vec::new();
     let arguments = ast.arguments()?.items();
@@ -93,15 +75,33 @@ pub fn negative_index(ast: &RSubset) -> anyhow::Result<Vec<Diagnostic>> {
             continue;
         };
         if unary.operator()?.kind() != RSyntaxKind::MINUS
-            || is_literal(unary.argument()?)?
             || (single_index && arg.name_clause().is_none() && is_subset_length(ast, &unary)?)
-            || has_nonempty_guard(&unary)?
         {
             continue;
         }
 
+        let (message, suggestion) = match is_literal_index(&unary)? {
+            LiteralIndex::Literal => continue,
+            LiteralIndex::Zero => (
+                "The negated index is zero, so it selects no elements.",
+                "Handle zero indices explicitly or use a logical index.",
+            ),
+            LiteralIndex::NonLiteral => {
+                if has_nonempty_guard(&unary)? {
+                    continue;
+                }
+                (
+                    "Non-literal negative indices may produce unexpected results when empty.",
+                    "Handle empty indices explicitly or use a logical index.",
+                )
+            }
+        };
         diagnostics.push(Diagnostic::new(
-            NegativeIndex,
+            ViolationData::new(
+                Rule::NegativeIndex,
+                message.to_string(),
+                Some(suggestion.to_string()),
+            ),
             index.syntax().text_trimmed_range(),
             Fix::empty(),
         ));
@@ -121,44 +121,11 @@ fn is_subset_length(subset: &RSubset, unary: &RUnaryExpression) -> anyhow::Resul
     is_index_length(&call, &object.name_text())
 }
 
-/// A `c()` made only of literals has no runtime-dependent values to warn about.
-fn is_literal_c_call(call: &RCall) -> anyhow::Result<bool> {
-    if get_function_name(call.function()?) != "c" {
-        return Ok(false);
+/// Strip only the parentheses around the whole expression, so `((-idx))`
+/// is checked as `-idx` while `-(idx)` keeps its parenthesized operand.
+pub(super) fn unparenthesized(mut expression: AnyRExpression) -> anyhow::Result<AnyRExpression> {
+    while let AnyRExpression::RParenthesizedExpression(paren) = expression {
+        expression = paren.body()?;
     }
-    for arg in call.arguments()?.items() {
-        let Some(value) = arg?.value() else {
-            return Ok(false);
-        };
-        if !is_literal(value)? {
-            return Ok(false);
-        }
-    }
-    Ok(true)
-}
-
-fn is_literal(expression: AnyRExpression) -> anyhow::Result<bool> {
-    match unparenthesized(expression)? {
-        AnyRExpression::AnyRValue(
-            AnyRValue::RIntegerValue(_)
-            | AnyRValue::RDoubleValue(_)
-            | AnyRValue::RComplexValue(_)
-            | AnyRValue::RStringValue(_),
-        )
-        | AnyRExpression::RNaExpression(_)
-        | AnyRExpression::RNullExpression(_)
-        | AnyRExpression::RTrueExpression(_)
-        | AnyRExpression::RFalseExpression(_)
-        | AnyRExpression::RInfExpression(_)
-        | AnyRExpression::RNanExpression(_) => Ok(true),
-        expression @ AnyRExpression::RBinaryExpression(_) => {
-            is_constant_numeric_expression(expression)
-        }
-        AnyRExpression::RCall(call) => is_literal_c_call(&call),
-        AnyRExpression::RUnaryExpression(unary) => Ok(matches!(
-            unary.operator()?.kind(),
-            RSyntaxKind::PLUS | RSyntaxKind::MINUS
-        ) && is_literal(unary.argument()?)?),
-        _ => Ok(false),
-    }
+    Ok(expression)
 }
