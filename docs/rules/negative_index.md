@@ -5,13 +5,14 @@
 
 ## What it does
 
-Checks for unary minus in `[]` indices, such as `x[-idx]` and `x[-which(x == 99)]`.
+Checks for `[]` indices whose outermost operator is unary minus, such as
+`x[-idx]` and `x[-which(x == 99)]`. Parentheses around the index are ignored.
+A minus inside a call or multiplication, as in `x[head(idx, -1)]` or
+`x[-1 * idx]`, is outside the scope of this rule.
 
 The rule will not report for cases below:
 
-- Literals and constant arithmetic, such as `x[-1]`, `x[-2 * 3]`, and `x[c(-1, -2)]`.
-- Negation inside comparisons, such as `x[x > -n]`.
-- Negation inside `which()`, `order()`, and `between()`.
+- Literals and constant arithmetic, such as `x[-1]`, `x[-(2 * 3)]`, and `x[-c(1, 2)]`.
 - `-idx` guarded by an `if` or `while` condition proving it is nonempty,
   such as `length(idx) > 0`, `length(idx)`, or `any(idx > 0)`.
 - `-idx` after a check that exits when the index is empty, for example with

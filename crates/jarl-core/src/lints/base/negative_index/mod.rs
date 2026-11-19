@@ -22,7 +22,7 @@ mod tests {
             "x[-TRUE]",
             "x[-NULL]",
             "x[-\"text\"]",
-            "x[c(-1, c(-2, 3))]",
+            "x[-c(-1, c(-2, 3))]",
             // Constant arithmetic is recognized recursively, without evaluating it.
             "x[-2 * 3]",
             "x[-(1 + 2)]",
@@ -33,28 +33,15 @@ mod tests {
             "x[-(5 %% 2)]",
             "x[-(5 %/% 2)]",
             "x[-((2 + 3) * +4)]",
-            "x[c(-2 * 3, -(4 / 2))]",
-            // Logical indices cannot pass negative values through.
-            "x[idx == -1]",
-            "x[idx != -1]",
-            "x[idx < -limit]",
-            "x[idx <= -limit]",
+            "x[-c(-2 * 3, -(4 / 2))]",
+            // A minus inside a call or another operator is not a top-level negation.
+            "x[head(idx, -1)]",
+            "x[head(-idx, 1)]",
+            "x[c(-1, -idx)]",
+            "x[-1 * idx]",
             "x[idx > -limit]",
-            "x[idx >= -limit]",
             "x[!(-idx)]",
-            "x[keep & -idx]",
-            "x[keep && -idx]",
-            "x[keep | -idx]",
-            "x[keep || -idx]",
-            // Known calls consume negative arguments without returning negative indices.
-            "x[which(-idx)]",
-            "x[base::which(-idx)]",
-            "x[1 + order(-idx)]",
-            "x[base::order(-idx)]",
-            "x[between(x, -1, 1)]",
-            "x[dplyr::between(x, -lower, upper)]",
-            "x[data.table::between(x, -1, 1)]",
-            // Only unary minus contributing to a [] index is relevant.
+            "x[(-idx)[1]]",
             "x[, ]",
             "x[1 - idx]",
             "x[+idx]",
@@ -191,12 +178,12 @@ mod tests {
 
     #[test]
     fn test_lint_negative_index() {
-        assert_snapshot!(snapshot_lint("x[-idx]"), @"
+        assert_snapshot!(snapshot_lint("x[((-idx))]"), @"
         warning: negative_index
          --> <test>:1:3
           |
-        1 | x[-idx]
-          |   ---- Non-literal negative indices may produce unexpected results when empty.
+        1 | x[((-idx))]
+          |   -------- Non-literal negative indices may produce unexpected results when empty.
           |
           = help: Handle empty indices explicitly or use a logical index.
         Found 1 error.
@@ -221,32 +208,12 @@ mod tests {
           = help: Handle empty indices explicitly or use a logical index.
         Found 1 error.
         ");
-        assert_snapshot!(snapshot_lint("x[f(-idx)]"), @"
+        assert_snapshot!(snapshot_lint("x[-head(idx, 1)]"), @"
         warning: negative_index
          --> <test>:1:3
           |
-        1 | x[f(-idx)]
-          |   ------- Non-literal negative indices may produce unexpected results when empty.
-          |
-          = help: Handle empty indices explicitly or use a logical index.
-        Found 1 error.
-        ");
-        assert_snapshot!(snapshot_lint("x[pkg::order(-idx)]"), @"
-        warning: negative_index
-         --> <test>:1:3
-          |
-        1 | x[pkg::order(-idx)]
-          |   ---------------- Non-literal negative indices may produce unexpected results when empty.
-          |
-          = help: Handle empty indices explicitly or use a logical index.
-        Found 1 error.
-        ");
-        assert_snapshot!(snapshot_lint("x[pkg::between(x, -1, 1)]"), @"
-        warning: negative_index
-         --> <test>:1:3
-          |
-        1 | x[pkg::between(x, -1, 1)]
-          |   ---------------------- Non-literal negative indices may produce unexpected results when empty.
+        1 | x[-head(idx, 1)]
+          |   ------------- Non-literal negative indices may produce unexpected results when empty.
           |
           = help: Handle empty indices explicitly or use a logical index.
         Found 1 error.
@@ -258,16 +225,6 @@ mod tests {
           |
         1 | x[-(idx + 1)]
           |   ---------- Non-literal negative indices may produce unexpected results when empty.
-          |
-          = help: Handle empty indices explicitly or use a logical index.
-        Found 1 error.
-        ");
-        assert_snapshot!(snapshot_lint("x[-2 * NULL]"), @"
-        warning: negative_index
-         --> <test>:1:3
-          |
-        1 | x[-2 * NULL]
-          |   --------- Non-literal negative indices may produce unexpected results when empty.
           |
           = help: Handle empty indices explicitly or use a logical index.
         Found 1 error.
@@ -289,36 +246,6 @@ mod tests {
           |
         1 | x[-(1 %custom% 2)]
           |   --------------- Non-literal negative indices may produce unexpected results when empty.
-          |
-          = help: Handle empty indices explicitly or use a logical index.
-        Found 1 error.
-        ");
-        assert_snapshot!(snapshot_lint("x[-1 * idx]"), @"
-        warning: negative_index
-         --> <test>:1:3
-          |
-        1 | x[-1 * idx]
-          |   -------- Non-literal negative indices may produce unexpected results when empty.
-          |
-          = help: Handle empty indices explicitly or use a logical index.
-        Found 1 error.
-        ");
-        assert_snapshot!(snapshot_lint("x[c(-1, -idx)]"), @"
-        warning: negative_index
-         --> <test>:1:3
-          |
-        1 | x[c(-1, -idx)]
-          |   ----------- Non-literal negative indices may produce unexpected results when empty.
-          |
-          = help: Handle empty indices explicitly or use a logical index.
-        Found 1 error.
-        ");
-        assert_snapshot!(snapshot_lint("x[c(-1, idx)]"), @"
-        warning: negative_index
-         --> <test>:1:3
-          |
-        1 | x[c(-1, idx)]
-          |   ---------- Non-literal negative indices may produce unexpected results when empty.
           |
           = help: Handle empty indices explicitly or use a logical index.
         Found 1 error.
@@ -346,16 +273,6 @@ mod tests {
           |
         1 | x[y[-idx]]
           |     ---- Non-literal negative indices may produce unexpected results when empty.
-          |
-          = help: Handle empty indices explicitly or use a logical index.
-        Found 1 error.
-        ");
-        assert_snapshot!(snapshot_lint("x[(-idx)[1]]"), @"
-        warning: negative_index
-         --> <test>:1:3
-          |
-        1 | x[(-idx)[1]]
-          |   --------- Non-literal negative indices may produce unexpected results when empty.
           |
           = help: Handle empty indices explicitly or use a logical index.
         Found 1 error.
@@ -421,16 +338,6 @@ mod tests {
           |
         1 | if (other::length(idx) > 0) x[-idx]
           |                               ---- Non-literal negative indices may produce unexpected results when empty.
-          |
-          = help: Handle empty indices explicitly or use a logical index.
-        Found 1 error.
-        ");
-        assert_snapshot!(snapshot_lint("if (n > 1) x[-n * idx]"), @"
-        warning: negative_index
-         --> <test>:1:14
-          |
-        1 | if (n > 1) x[-n * idx]
-          |              -------- Non-literal negative indices may produce unexpected results when empty.
           |
           = help: Handle empty indices explicitly or use a logical index.
         Found 1 error.

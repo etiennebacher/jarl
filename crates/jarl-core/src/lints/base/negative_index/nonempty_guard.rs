@@ -450,7 +450,7 @@ fn is_base_call(call: &RCall, name: &str) -> anyhow::Result<bool> {
         ))
 }
 
-fn unparenthesized(mut expression: AnyRExpression) -> anyhow::Result<AnyRExpression> {
+pub(super) fn unparenthesized(mut expression: AnyRExpression) -> anyhow::Result<AnyRExpression> {
     while let AnyRExpression::RParenthesizedExpression(paren) = expression {
         expression = paren.body()?;
     }
