@@ -241,6 +241,26 @@ mod tests {
           = help: Handle zero indices explicitly or use a logical index.
         Found 1 error.
         ");
+        assert_snapshot!(snapshot_lint("x[-FALSE]"), @"
+        warning: negative_index
+         --> <test>:1:3
+          |
+        1 | x[-FALSE]
+          |   ------ The negated index is zero, so it selects no elements.
+          |
+          = help: Handle zero indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("x[-c(FALSE)]"), @"
+        warning: negative_index
+         --> <test>:1:3
+          |
+        1 | x[-c(FALSE)]
+          |   --------- The negated index is zero, so it selects no elements.
+          |
+          = help: Handle zero indices explicitly or use a logical index.
+        Found 1 error.
+        ");
         assert_snapshot!(snapshot_lint("x[-(0:0)]"), @"
         warning: negative_index
          --> <test>:1:3
@@ -869,6 +889,16 @@ mod tests {
 
     #[test]
     fn test_lint_negative_index_numeric_assignment() {
+        assert_snapshot!(snapshot_lint("idx <- FALSE; x[-idx]"), @"
+        warning: negative_index
+         --> <test>:1:17
+          |
+        1 | idx <- FALSE; x[-idx]
+          |                 ---- The negated index is zero, so it selects no elements.
+          |
+          = help: Handle zero indices explicitly or use a logical index.
+        Found 1 error.
+        ");
         assert_snapshot!(snapshot_lint("x <- 1:3\nidx <- 0\nx[-idx]"), @"
         warning: negative_index
          --> <test>:3:3

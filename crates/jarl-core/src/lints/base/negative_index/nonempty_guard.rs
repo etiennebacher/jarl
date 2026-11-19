@@ -25,14 +25,17 @@ pub(super) fn check_identifier_index(
 
     // An enclosing length check also accepts a scalar zero. Look for an
     // assignment first so `idx <- 0L; if (length(idx)) x[-idx]` still warns.
-    if let Some(value) = preceding_assignment(unary, &name, position)?
-        && is_nonempty_numeric_expression(&value)?
-    {
-        return Ok(if is_zero_index(&value)? {
-            IdentifierIndex::DefiniteZero
-        } else {
-            IdentifierIndex::Safe
-        });
+    if let Some(value) = preceding_assignment(unary, &name, position)? {
+        let value = unparenthesized(value)?;
+        if matches!(value, AnyRExpression::RFalseExpression(_))
+            || is_nonempty_numeric_expression(&value)?
+        {
+            return Ok(if is_zero_index(&value)? {
+                IdentifierIndex::DefiniteZero
+            } else {
+                IdentifierIndex::Safe
+            });
+        }
     }
 
     guarded_index(unary, &name, position)

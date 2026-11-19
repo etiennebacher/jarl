@@ -3,9 +3,10 @@ use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 use oak_core::syntax_ext::{AnyRSelectorExt, RIdentifierExt};
 
-/// Recognize a zero literal, an all-zero `c()` call, or a `0:0` sequence.
+/// Recognize zero, `FALSE`, an all-zero `c()` call, or a `0:0` sequence.
 pub(super) fn is_zero_index(expression: &AnyRExpression) -> anyhow::Result<bool> {
     match expression {
+        AnyRExpression::RFalseExpression(_) => Ok(true),
         AnyRExpression::RParenthesizedExpression(paren) => is_zero_index(&paren.body()?),
         AnyRExpression::RUnaryExpression(unary) => Ok(matches!(
             unary.operator()?.kind(),
@@ -112,7 +113,6 @@ fn classify_c_argument(value: AnyRExpression) -> anyhow::Result<CIndex> {
     }
     match &value {
         AnyRExpression::RNullExpression(_) => Ok(CIndex::Empty),
-        AnyRExpression::RFalseExpression(_) => Ok(CIndex::Zero),
         AnyRExpression::RCall(call) => classify_c_call(call),
         AnyRExpression::RBinaryExpression(binary)
             if binary.operator()?.kind() == RSyntaxKind::COLON
