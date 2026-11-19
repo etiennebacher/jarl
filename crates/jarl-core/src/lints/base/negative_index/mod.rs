@@ -34,6 +34,9 @@ mod tests {
             "x[-(5 %/% 2)]",
             "x[-((2 + 3) * +4)]",
             "x[-c(-2 * 3, -(4 / 2))]",
+            // A single index can use the length of the object being subsetted.
+            "x[-length(x)]",
+            "(x)[-(base::length(x = (`x`)))]",
             // A minus inside a call or another operator is not a top-level negation.
             "x[head(idx, -1)]",
             "x[head(-idx, 1)]",
@@ -212,6 +215,46 @@ mod tests {
           |
         1 | x[-head(idx, 1)]
           |   ------------- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("x[-length(y)]"), @"
+        warning: negative_index
+         --> <test>:1:3
+          |
+        1 | x[-length(y)]
+          |   ---------- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("x[-other::length(x)]"), @"
+        warning: negative_index
+         --> <test>:1:3
+          |
+        1 | x[-other::length(x)]
+          |   ----------------- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("x[-length(x), ]"), @"
+        warning: negative_index
+         --> <test>:1:3
+          |
+        1 | x[-length(x), ]
+          |   ---------- Non-literal negative indices may produce unexpected results when empty.
+          |
+          = help: Handle empty indices explicitly or use a logical index.
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("f()[-length(f())]"), @"
+        warning: negative_index
+         --> <test>:1:5
+          |
+        1 | f()[-length(f())]
+          |     ------------ Non-literal negative indices may produce unexpected results when empty.
           |
           = help: Handle empty indices explicitly or use a logical index.
         Found 1 error.

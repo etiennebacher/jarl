@@ -13,6 +13,8 @@ A minus inside a call or multiplication, as in `x[head(idx, -1)]` or
 The rule will not report for cases below:
 
 - Literals and constant arithmetic, such as `x[-1]`, `x[-(2 * 3)]`, and `x[-c(1, 2)]`.
+- A single index such as `x[-length(x)]`, where the same variable is subsetted
+  and passed to `length()`. If `x` is empty, selecting nothing is expected.
 - `-idx` guarded by an `if` or `while` condition proving it is nonempty,
   such as `length(idx) > 0`, `length(idx)`, or `any(idx > 0)`.
 - `-idx` after a check that exits when the index is empty, for example with

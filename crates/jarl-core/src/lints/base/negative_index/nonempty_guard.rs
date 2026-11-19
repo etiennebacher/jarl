@@ -436,7 +436,7 @@ fn is_stopifnot_guard(call: &RCall, name: &str) -> anyhow::Result<bool> {
 }
 
 /// Recognize the length of this variable, including `base::length(x = idx)`.
-fn is_index_length(call: &RCall, name: &str) -> anyhow::Result<bool> {
+pub(super) fn is_index_length(call: &RCall, name: &str) -> anyhow::Result<bool> {
     if !is_base_call(call, "length")? || call.arguments()?.items().len() != 1 {
         return Ok(false);
     }

@@ -2,9 +2,12 @@ use crate::diagnostic::{Diagnostic, Fix, Violation};
 use crate::rule_set::Rule;
 use crate::utils::get_function_name;
 use air_r_syntax::*;
-use biome_rowan::AstNode;
+use biome_rowan::{AstNode, AstSeparatedList};
+use oak_core::syntax_ext::RIdentifierExt;
 
-use super::nonempty_guard::{has_nonempty_guard, is_constant_numeric_expression, unparenthesized};
+use super::nonempty_guard::{
+    has_nonempty_guard, is_constant_numeric_expression, is_index_length, unparenthesized,
+};
 
 pub struct NegativeIndex;
 
@@ -21,6 +24,8 @@ pub struct NegativeIndex;
 /// The rule will not report for cases below:
 ///
 /// - Literals and constant arithmetic, such as `x[-1]`, `x[-(2 * 3)]`, and `x[-c(1, 2)]`.
+/// - A single index such as `x[-length(x)]`, where the same variable is subsetted
+///   and passed to `length()`. If `x` is empty, selecting nothing is expected.
 /// - `-idx` guarded by an `if` or `while` condition proving it is nonempty,
 ///   such as `length(idx) > 0`, `length(idx)`, or `any(idx > 0)`.
 /// - `-idx` after a check that exits when the index is empty, for example with
@@ -78,8 +83,11 @@ impl Violation for NegativeIndex {
 
 pub fn negative_index(ast: &RSubset) -> anyhow::Result<Vec<Diagnostic>> {
     let mut diagnostics = Vec::new();
-    for arg in ast.arguments()?.items() {
-        let Some(index) = arg?.value() else {
+    let arguments = ast.arguments()?.items();
+    let single_index = arguments.len() == 1;
+    for arg in arguments {
+        let arg = arg?;
+        let Some(index) = arg.value() else {
             continue;
         };
 
@@ -88,6 +96,7 @@ pub fn negative_index(ast: &RSubset) -> anyhow::Result<Vec<Diagnostic>> {
         };
         if unary.operator()?.kind() != RSyntaxKind::MINUS
             || is_literal(unary.argument()?)?
+            || (single_index && arg.name_clause().is_none() && is_subset_length(ast, &unary)?)
             || has_nonempty_guard(&unary)?
         {
             continue;
@@ -100,6 +109,18 @@ pub fn negative_index(ast: &RSubset) -> anyhow::Result<Vec<Diagnostic>> {
         ));
     }
     Ok(diagnostics)
+}
+
+/// Recognize `x[-length(x)]` by comparing variable names. Repeated calls such
+/// as `f()[-length(f())]` can produce different objects.
+fn is_subset_length(subset: &RSubset, unary: &RUnaryExpression) -> anyhow::Result<bool> {
+    let AnyRExpression::RCall(call) = unparenthesized(unary.argument()?)? else {
+        return Ok(false);
+    };
+    let AnyRExpression::RIdentifier(object) = unparenthesized(subset.function()?)? else {
+        return Ok(false);
+    };
+    is_index_length(&call, &object.name_text())
 }
 
 /// A `c()` made only of literals has no runtime-dependent values to warn about.
