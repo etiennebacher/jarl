@@ -88,7 +88,7 @@ pub fn negative_index(ast: &RSubset) -> anyhow::Result<Vec<Diagnostic>> {
             AnyRExpression::RIdentifier(identifier) => {
                 match check_identifier_index(&unary, identifier)? {
                     IdentifierIndex::Safe => continue,
-                    IdentifierIndex::Zero => true,
+                    IdentifierIndex::DefiniteZero => true,
                     IdentifierIndex::Unguarded => false,
                 }
             }
@@ -107,8 +107,8 @@ pub fn negative_index(ast: &RSubset) -> anyhow::Result<Vec<Diagnostic>> {
             )
         } else {
             (
-                "Non-literal negative indices may produce unexpected results when empty.",
-                "Handle empty indices explicitly or use a logical index.",
+                "Non-literal negative indices may produce unexpected results when empty or zero.",
+                "Handle empty or zero indices explicitly, or use a logical index.",
             )
         };
         diagnostics.push(Diagnostic::new(

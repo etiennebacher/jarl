@@ -8,9 +8,10 @@ use super::literal_index::{
     numeric_literal, unparenthesized,
 };
 
+#[derive(PartialEq, Eq)]
 pub(super) enum IdentifierIndex {
     Safe,
-    Zero,
+    DefiniteZero,
     Unguarded,
 }
 
@@ -27,17 +28,13 @@ pub(super) fn check_identifier_index(
         && is_nonempty_numeric_expression(&value)?
     {
         return Ok(if is_zero_index(&value)? {
-            IdentifierIndex::Zero
+            IdentifierIndex::DefiniteZero
         } else {
             IdentifierIndex::Safe
         });
     }
 
-    Ok(if has_nonempty_guard(unary, &name, position)? {
-        IdentifierIndex::Safe
-    } else {
-        IdentifierIndex::Unguarded
-    })
+    guarded_index(unary, &name, position)
 }
 
 /// Find the preceding direct assignment, stopping at any intervening write
@@ -87,31 +84,38 @@ fn assigned_value(
         .then_some(value))
 }
 
-/// Look for a condition or assertion that proves the negated variable is nonempty.
-fn has_nonempty_guard(
+/// Look for a guard or an enclosing condition that proves the index is zero.
+fn guarded_index(
     unary: &RUnaryExpression,
     name: &str,
     position: TextSize,
-) -> anyhow::Result<bool> {
+) -> anyhow::Result<IdentifierIndex> {
+    let mut result = IdentifierIndex::Unguarded;
     for (ancestor, end) in index_ancestors(unary) {
-        let guarded = if let Some(statements) = RStatementList::cast_ref(&ancestor) {
-            has_preceding_guard(&statements, name, position, end)?
-        } else {
-            match AnyRExpression::cast_ref(&ancestor) {
-                Some(AnyRExpression::RIfStatement(statement)) => {
-                    has_if_guard(&statement, name, position, end)?
-                }
-                Some(AnyRExpression::RWhileStatement(statement)) => {
-                    has_while_guard(&statement, name, position, end)?
-                }
-                _ => false,
+        if let Some(statements) = RStatementList::cast_ref(&ancestor) {
+            if result != IdentifierIndex::Safe
+                && has_preceding_guard(&statements, name, position, end)?
+            {
+                result = IdentifierIndex::Safe;
             }
+            continue;
+        }
+        let branch = match AnyRExpression::cast_ref(&ancestor) {
+            Some(AnyRExpression::RIfStatement(statement)) => {
+                if_index_status(&statement, name, position, end)?
+            }
+            Some(AnyRExpression::RWhileStatement(statement)) => {
+                while_index_status(&statement, name, position, end)?
+            }
+            _ => IdentifierIndex::Unguarded,
         };
-        if guarded {
-            return Ok(true);
+        match branch {
+            IdentifierIndex::DefiniteZero => return Ok(IdentifierIndex::DefiniteZero),
+            IdentifierIndex::Safe => result = IdentifierIndex::Safe,
+            IdentifierIndex::Unguarded => {}
         }
     }
-    Ok(false)
+    Ok(result)
 }
 
 /// Walk outward within the current function. For evidence outside a loop,
@@ -138,51 +142,55 @@ fn index_ancestors(unary: &RUnaryExpression) -> impl Iterator<Item = (RSyntaxNod
 
 /// Use the condition's truth value for the branch containing this index.
 /// An index in the condition itself has not yet passed that check.
-fn has_if_guard(
+fn if_index_status(
     statement: &RIfStatement,
     name: &str,
     position: TextSize,
     end: TextSize,
-) -> anyhow::Result<bool> {
+) -> anyhow::Result<IdentifierIndex> {
     let consequence = statement.consequence()?;
     if consequence.range().contains(position) {
-        return branch_is_guarded(statement.condition()?, consequence, name, true, end);
+        return branch_index_status(statement.condition()?, consequence, name, true, end);
     }
     if let Some(else_clause) = statement.else_clause() {
         let alternative = else_clause.alternative()?;
         if alternative.range().contains(position) {
-            return branch_is_guarded(statement.condition()?, alternative, name, false, end);
+            return branch_index_status(statement.condition()?, alternative, name, false, end);
         }
     }
-    Ok(false)
+    Ok(IdentifierIndex::Unguarded)
 }
 
 /// The while condition is true when entering its body on each iteration.
-fn has_while_guard(
+fn while_index_status(
     statement: &RWhileStatement,
     name: &str,
     position: TextSize,
     end: TextSize,
-) -> anyhow::Result<bool> {
+) -> anyhow::Result<IdentifierIndex> {
     let body = statement.body()?;
-    Ok(body.range().contains(position)
-        && branch_is_guarded(statement.condition()?, body, name, true, end)?)
+    if !body.range().contains(position) {
+        return Ok(IdentifierIndex::Unguarded);
+    }
+    branch_index_status(statement.condition()?, body, name, true, end)
 }
 
-/// A condition protects the selected branch only while its checked value is
-/// unchanged, including assignments performed while evaluating the condition.
-fn branch_is_guarded(
+/// Evidence from a condition applies only while the checked value is unchanged.
+fn branch_index_status(
     condition: AnyRExpression,
     branch: AnyRExpression,
     name: &str,
     truth: bool,
     end: TextSize,
-) -> anyhow::Result<bool> {
-    Ok(
-        condition_proves_nonempty(condition.clone(), name, truth, false)?
-            && !has_write(condition.syntax(), name, condition.range().end())?
-            && !has_write(branch.syntax(), name, end)?,
-    )
+) -> anyhow::Result<IdentifierIndex> {
+    let status = condition_index_status(condition.clone(), name, truth, false)?;
+    if matches!(status, IdentifierIndex::Unguarded)
+        || has_write(condition.syntax(), name, condition.range().end())?
+        || has_write(branch.syntax(), name, end)?
+    {
+        return Ok(IdentifierIndex::Unguarded);
+    }
+    Ok(status)
 }
 
 /// Look backward for a guard, stopping at a write that would invalidate it.
@@ -307,85 +315,128 @@ fn condition_proves_nonempty(
     truth: bool,
     allow_empty: bool,
 ) -> anyhow::Result<bool> {
-    match unparenthesized(condition)? {
+    Ok(matches!(
+        condition_index_status(condition, name, truth, allow_empty)?,
+        IdentifierIndex::Safe
+    ))
+}
+
+fn condition_index_status(
+    condition: AnyRExpression,
+    name: &str,
+    truth: bool,
+    allow_empty: bool,
+) -> anyhow::Result<IdentifierIndex> {
+    let guarded = match unparenthesized(condition)? {
         // A length of zero cannot enter the true branch of `if (length(idx))`.
         AnyRExpression::RCall(call) => {
-            Ok(truth && (is_index_length(&call, name)? || is_any_guard(&call, name)?))
+            truth && (is_index_length(&call, name)? || is_any_guard(&call, name)?)
         }
         AnyRExpression::RUnaryExpression(unary)
             if unary.operator()?.kind() == RSyntaxKind::BANG =>
         {
-            condition_proves_nonempty(unary.argument()?, name, !truth, allow_empty)
+            return condition_index_status(unary.argument()?, name, !truth, allow_empty);
         }
         AnyRExpression::RBinaryExpression(binary) => {
             let operator = binary.operator()?.kind();
             if matches!(operator, RSyntaxKind::AND2 | RSyntaxKind::OR2) {
                 // Short-circuit operators always return a scalar, even inside
                 // `stopifnot()`, so their operands cannot pass as empty results.
-                let left = condition_proves_nonempty(binary.left()?, name, truth, false)?;
-                let right = || condition_proves_nonempty(binary.right()?, name, truth, false);
-                // A false && or true || can result from either operand, so
-                // both possibilities must imply nonemptiness. Otherwise one
-                // operand's proof suffices: `length(idx) > 0 && verbose`.
+                let left = condition_index_status(binary.left()?, name, truth, false)?;
+                let right = || condition_index_status(binary.right()?, name, truth, false);
+                // A false && or true || can result from either operand. Both
+                // possibilities must support the same conclusion. For a true
+                // && or false ||, either operand can establish it.
                 let requires_both = matches!(
                     (operator, truth),
                     (RSyntaxKind::AND2, false) | (RSyntaxKind::OR2, true)
                 );
-                return Ok(if requires_both {
-                    left && right()?
-                } else {
-                    left || right()?
+                if requires_both {
+                    return Ok(if left != IdentifierIndex::Unguarded && left == right()? {
+                        left
+                    } else {
+                        IdentifierIndex::Unguarded
+                    });
+                }
+                if left == IdentifierIndex::DefiniteZero {
+                    return Ok(left);
+                }
+                return Ok(match right()? {
+                    IdentifierIndex::Unguarded => left,
+                    status => status,
                 });
             }
-
-            comparison_proves_nonempty(&binary, name, truth, allow_empty)
+            return comparison_index_status(&binary, name, truth, allow_empty);
         }
-        _ => Ok(false),
-    }
+        _ => false,
+    };
+    Ok(if guarded {
+        IdentifierIndex::Safe
+    } else {
+        IdentifierIndex::Unguarded
+    })
 }
 
 /// Recognize comparisons of the variable or its length with a numeric literal.
-/// For length comparisons, substitute zero on the original side and check
-/// whether an empty index could produce the required truth value.
-fn comparison_proves_nonempty(
+/// A direct comparison can prove the index is zero or rule out zero. A length
+/// comparison only tells us whether the index can be empty.
+fn comparison_index_status(
     binary: &RBinaryExpression,
     name: &str,
     truth: bool,
     allow_empty: bool,
-) -> anyhow::Result<bool> {
+) -> anyhow::Result<IdentifierIndex> {
     let left = unparenthesized(binary.left()?)?;
     let right = unparenthesized(binary.right()?)?;
     let operator = binary.operator()?.kind();
     // Preserve operand order: `length(idx) > 1` becomes `0 > 1`, while
     // `1 < length(idx)` becomes `1 < 0`. The operator needs no reversal.
-    let (expression, left_when_empty, right_when_empty) =
+    let (expression, number, left_at_zero, right_at_zero) =
         if let Some(number) = numeric_literal(&right) {
-            (left, 0.0, number)
+            (left, number, 0.0, number)
         } else if let Some(number) = numeric_literal(&left) {
-            (right, number, 0.0)
+            (right, number, number, 0.0)
         } else {
-            return Ok(false);
+            return Ok(IdentifierIndex::Unguarded);
         };
-    // An empty length must send execution away from the selected branch.
-    // This also restricts both kinds of proof to comparison operators.
-    let empty_result = match operator {
-        RSyntaxKind::EQUAL2 => left_when_empty == right_when_empty,
-        RSyntaxKind::NOT_EQUAL => left_when_empty != right_when_empty,
-        RSyntaxKind::LESS_THAN => left_when_empty < right_when_empty,
-        RSyntaxKind::LESS_THAN_OR_EQUAL_TO => left_when_empty <= right_when_empty,
-        RSyntaxKind::GREATER_THAN => left_when_empty > right_when_empty,
-        RSyntaxKind::GREATER_THAN_OR_EQUAL_TO => left_when_empty >= right_when_empty,
-        _ => return Ok(false),
+    let zero_result = match operator {
+        RSyntaxKind::EQUAL2 => left_at_zero == right_at_zero,
+        RSyntaxKind::NOT_EQUAL => left_at_zero != right_at_zero,
+        RSyntaxKind::LESS_THAN => left_at_zero < right_at_zero,
+        RSyntaxKind::LESS_THAN_OR_EQUAL_TO => left_at_zero <= right_at_zero,
+        RSyntaxKind::GREATER_THAN => left_at_zero > right_at_zero,
+        RSyntaxKind::GREATER_THAN_OR_EQUAL_TO => left_at_zero >= right_at_zero,
+        _ => return Ok(IdentifierIndex::Unguarded),
     };
     // Direct vector comparisons can pass stopifnot() with an empty result.
     // `if` and a true `any()` require at least one result instead.
     if let AnyRExpression::RIdentifier(identifier) = expression {
-        return Ok(!allow_empty && identifier.name_text() == name);
+        if allow_empty || identifier.name_text() != name {
+            return Ok(IdentifierIndex::Unguarded);
+        }
+        let is_exact_zero = number == 0.0
+            && matches!(
+                (operator, truth),
+                (RSyntaxKind::EQUAL2, true) | (RSyntaxKind::NOT_EQUAL, false)
+            );
+        return Ok(if is_exact_zero {
+            IdentifierIndex::DefiniteZero
+        } else if zero_result == truth {
+            IdentifierIndex::Unguarded
+        } else {
+            IdentifierIndex::Safe
+        });
     }
-    let AnyRExpression::RCall(call) = expression else {
-        return Ok(false);
-    };
-    Ok(empty_result != truth && is_index_length(&call, name)?)
+    Ok(
+        if zero_result != truth
+            && let AnyRExpression::RCall(call) = expression
+            && is_index_length(&call, name)?
+        {
+            IdentifierIndex::Safe
+        } else {
+            IdentifierIndex::Unguarded
+        },
+    )
 }
 
 /// A true `any()` needs at least one true element. Only accept one data
