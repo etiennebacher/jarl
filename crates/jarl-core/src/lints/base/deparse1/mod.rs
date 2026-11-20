@@ -120,7 +120,7 @@ mod tests {
 
         assert_snapshot!(
             "fix_output",
-            get_unsafe_fixed_text_with_settings(
+            get_unsafe_fixed_text(
                 vec![
                     "paste(deparse(x), collapse = ' ')",
                     "paste(deparse(substitute(x)), collapse = ' ')",
@@ -129,8 +129,7 @@ mod tests {
                     "base::paste(base::deparse(x), collapse = ' ')",
                 ],
                 "deparse1",
-                Some("4.0.0"),
-                None
+                Some("4.0.0")
             )
         );
     }
@@ -142,7 +141,7 @@ mod tests {
         // lint is reported but no fix is applied.
         assert_snapshot!(
             "no_fix_with_comments",
-            get_unsafe_fixed_text_with_settings(
+            get_unsafe_fixed_text(
                 vec![
                     "# leading comment\npaste(deparse(x), collapse = ' ')",
                     "paste(deparse(x), collapse = ' ') # trailing comment",
@@ -150,8 +149,7 @@ mod tests {
                     "paste(deparse(\n  # comment\n  x\n), collapse = ' ')",
                 ],
                 "deparse1",
-                Some("4.0.0"),
-                None
+                Some("4.0.0")
             )
         );
     }

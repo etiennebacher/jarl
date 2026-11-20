@@ -257,8 +257,8 @@ pub fn get_diagnostic_highlight(text: &str, rule: &str, min_r_version: Option<&s
 }
 
 /// Get fixed text with unsafe fixes for a series of code snippets
-pub fn get_unsafe_fixed_text(text: Vec<&str>, rule: &str) -> String {
-    get_unsafe_fixed_text_with_settings(text, rule, None, None)
+pub fn get_unsafe_fixed_text(text: Vec<&str>, rule: &str, min_r_version: Option<&str>) -> String {
+    get_unsafe_fixed_text_with_settings(text, rule, min_r_version, None)
 }
 
 /// Get fixed text with unsafe fixes, using a pre-built package cache.

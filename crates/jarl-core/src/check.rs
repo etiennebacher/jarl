@@ -1325,7 +1325,7 @@ f <- function() NULL
         // `expect_not` and `any_is_na` lints. The fix loop should keep
         // going until the code is fully clean.
         assert_snapshot!(
-            get_unsafe_fixed_text(vec!["expect_true(all(!is.na(x)))"], "ALL"),
+            get_unsafe_fixed_text(vec!["expect_true(all(!is.na(x)))"], "ALL", None),
             @"
         OLD:
         ====

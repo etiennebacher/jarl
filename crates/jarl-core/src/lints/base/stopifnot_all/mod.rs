@@ -118,6 +118,7 @@ mod tests {
                     "stopifnot(x, all(a, b, c), all(y, z))",
                 ],
                 "stopifnot_all",
+                None
             )
         );
     }
@@ -129,6 +130,7 @@ mod tests {
             get_unsafe_fixed_text(
                 vec!["stopifnot(all(\n  # comment\n  x\n))"],
                 "stopifnot_all",
+                None
             )
         );
     }

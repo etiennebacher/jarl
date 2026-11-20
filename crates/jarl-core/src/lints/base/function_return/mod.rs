@@ -277,6 +277,7 @@ g <- function(y, F = function(z) {
                     "f <- function(x) {\n  return(value = x)\n}",
                 ],
                 "function_return",
+                None
             )
         );
     }

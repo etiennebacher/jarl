@@ -110,6 +110,7 @@ mod tests {
                     "apply(MARGIN = 1, FUN = paste, X = x, collapse = \"_\")",
                 ],
                 "apply_paste",
+                None
             )
         );
     }
@@ -124,6 +125,7 @@ mod tests {
                     "apply(x, 1, paste, collapse = \"_\") # trailing comment",
                 ],
                 "apply_paste",
+                None
             )
         );
     }

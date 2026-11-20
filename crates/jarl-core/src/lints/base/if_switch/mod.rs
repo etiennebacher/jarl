@@ -315,6 +315,7 @@ mod tests {
                     "if (x == 'a') 1 else if (x == 'b') 2 else if (x == 'c') 3 else if (x == 'd') 4 else y = 5",
                 ],
                 "if_switch",
+                None
             )
         );
     }
