@@ -1,7 +1,9 @@
 use crate::diagnostic::*;
 use crate::rule_set::Rule;
-use crate::utils::{get_arg_by_name, get_nested_functions_content, node_contains_comments};
+use crate::utils::{Formals, get_arg, get_nested_functions_content, node_contains_comments};
 use air_r_syntax::*;
+
+const FORMALS_PASTE: Formals = &["...", "sep", "collapse"];
 
 pub struct Deparse1;
 
@@ -55,7 +57,7 @@ pub fn deparse1(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>
         ast, fn_name, "paste", "deparse"
     )?);
 
-    let collapse = unwrap_or_return_none!(get_arg_by_name(&ast.arguments()?.items(), "collapse"));
+    let collapse = unwrap_or_return_none!(get_arg(ast, FORMALS_PASTE, "collapse"));
     let collapse_value = unwrap_or_return_none!(collapse.value());
 
     let collapse_r_value = unwrap_or_return_none!(collapse_value.as_any_r_value());
