@@ -35,6 +35,12 @@ mod tests {
             "deparse1",
             Some("4.0.0"),
         );
+        // deparse1() doesn't exist before R 4.0.0
+        expect_no_lint(
+            "paste(deparse(x), collapse = ' ')",
+            "deparse1",
+            Some("3.5.0"),
+        );
     }
 
     #[test]
