@@ -65,7 +65,7 @@ mod tests {
                     "which(c(a, b, c) == '')"
                 ],
                 "nzchar",
-                None
+                None,
             )
         );
     }
@@ -110,7 +110,7 @@ mod tests {
                     "nchar(x = x) > 0",
                 ],
                 "nzchar",
-                None
+                None,
             )
         );
     }

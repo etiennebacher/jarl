@@ -226,7 +226,7 @@ mod tests {
                     "rep(x, times = 2, length.out = -1)",
                 ],
                 "rep_times_ignored",
-                None
+                None,
             )
         );
     }
@@ -242,7 +242,7 @@ mod tests {
                     "rep(x, times = 2, length.out = 4L) # trailing comment",
                 ],
                 "rep_times_ignored",
-                None
+                None,
             )
         );
     }
