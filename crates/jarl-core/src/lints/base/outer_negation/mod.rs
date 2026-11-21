@@ -175,7 +175,8 @@ mod tests {
                     "any(\n  # Keep this comment.\n  !x\n)",
                     "all(!(x + # Keep this comment too.\n  y))",
                 ],
-                "outer_negation"
+                "outer_negation",
+                None
             )
         );
     }

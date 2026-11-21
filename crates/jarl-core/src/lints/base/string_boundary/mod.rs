@@ -291,7 +291,8 @@ mod tests {
                     r#"substring(x, nchar(x), nchar(x)) == R'---[你]---'"#,
                     r#"substr(x, 1, 2) == r"(\n)""#,
                 ],
-                "string_boundary"
+                "string_boundary",
+                None
             )
         );
     }
@@ -326,7 +327,8 @@ mod tests {
                     "substr(x, stop = 1, start = 2) == 'ab'",
                     r#"substr(x, 1, 6) == "\u4f60""#,
                 ],
-                "string_boundary"
+                "string_boundary",
+                None
             )
         );
     }
@@ -341,7 +343,8 @@ mod tests {
                     "substr(x, \n # a comment \n1, 2) == 'ab'",
                     "substr(x, 1, 2) == 'ab' # trailing comment",
                 ],
-                "string_boundary"
+                "string_boundary",
+                None
             )
         );
     }

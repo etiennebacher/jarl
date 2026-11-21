@@ -382,6 +382,7 @@ group_by(x, grp) |> summarize(a = mean(b)) |> ungroup()
                     "library(dplyr); x |> group_by(grp) |> slice_head(n = 1) |> ungroup()",
                 ],
                 "dplyr_group_by_ungroup",
+                None,
                 &NS,
             )
         );
@@ -396,6 +397,7 @@ group_by(x, grp) |> summarize(a = mean(b)) |> ungroup()
                     "library(dplyr); x |> group_by(grp1, grp2) |> summarize(a = mean(b)) |> ungroup()"
                 ],
                 "dplyr_group_by_ungroup",
+                None,
                 &NS,
             )
         );
@@ -410,6 +412,7 @@ group_by(x, grp) |> summarize(a = mean(b)) |> ungroup()
                     "library(dplyr); x %>% group_by(grp) %>% summarize(a = mean(b)) %>% ungroup()"
                 ],
                 "dplyr_group_by_ungroup",
+                None,
                 &NS,
             )
         );
@@ -422,6 +425,7 @@ group_by(x, grp) |> summarize(a = mean(b)) |> ungroup()
             get_unsafe_fixed_text_with_cache(
                 vec!["library(dplyr); group_by(x, grp) |> summarize(a = mean(b)) |> ungroup()"],
                 "dplyr_group_by_ungroup",
+                None,
                 &NS,
             )
         );
@@ -436,6 +440,7 @@ group_by(x, grp) |> summarize(a = mean(b)) |> ungroup()
                     "x |> dplyr::group_by(grp) |> dplyr::summarize(a = mean(b)) |> dplyr::ungroup()",
                 ],
                 "dplyr_group_by_ungroup",
+                None,
                 &NS,
             )
         );
@@ -451,6 +456,7 @@ group_by(x, grp) |> summarize(a = mean(b)) |> ungroup()
                     "library(dplyr); x |>\n  group_by(grp) |>\n  summarize(\n    # comment\n    a = mean(b)\n  ) |>\n  ungroup()",
                 ],
                 "dplyr_group_by_ungroup",
+                None,
                 &NS,
             )
         );
@@ -485,6 +491,7 @@ x |> group_by(!!!syms(grps)) |> summarize(a = mean(b)) |> ungroup()
                     "library(dplyr); x |> group_by(!!!syms(grps)) |> summarize(a = mean(b)) |> ungroup()"
                 ],
                 "dplyr_group_by_ungroup",
+                None,
                 &NS,
             )
         );
