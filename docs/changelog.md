@@ -15,7 +15,7 @@
   * `null_list` (#785, @JosephBARBIERDARNAL)
   * `terminal_close` (#811)
   * `todo_comment` (#739, @Yousa-Mirage)
-  * `unnecessary_lambda`
+  * `unnecessary_anonymous_function`
 
 * Improved rules:
 

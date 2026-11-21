@@ -735,8 +735,8 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
-    UnnecessaryLambda => {
-        name: "unnecessary_lambda",
+    UnnecessaryAnonymousFunction => {
+        name: "unnecessary_anonymous_function",
         categories: [Read],
         default: Enabled,
         fix: Unsafe,

@@ -1,4 +1,4 @@
-pub(crate) mod unnecessary_lambda;
+pub(crate) mod unnecessary_anonymous_function;
 
 #[cfg(test)]
 mod tests {
@@ -6,12 +6,12 @@ mod tests {
     use insta::assert_snapshot;
 
     fn snapshot_lint(code: &str) -> String {
-        format_diagnostics(code, "unnecessary_lambda", None)
+        format_diagnostics(code, "unnecessary_anonymous_function", None)
     }
 
     #[test]
-    fn test_no_lint_unnecessary_lambda() {
-        let rule = "unnecessary_lambda";
+    fn test_no_lint_unnecessary_anonymous_function() {
+        let rule = "unnecessary_anonymous_function";
         expect_no_lint("lapply(DF, sum)", rule, None);
         expect_no_lint("lapply()", rule, None);
         expect_no_lint("x |> lapply()", rule, None);
@@ -112,8 +112,8 @@ mod tests {
     }
 
     #[test]
-    fn test_no_lint_unnecessary_lambda_comparison() {
-        let rule = "unnecessary_lambda";
+    fn test_no_lint_unnecessary_anonymous_function_comparison() {
+        let rule = "unnecessary_anonymous_function";
         expect_no_lint("lapply(x, function(xi) foo(xi) == 2)", rule, None);
         expect_no_lint("sapply(x, function(xi) foo(xi) == 2)", rule, None);
         expect_no_lint("sapply(x, function(xi) foo(xi) == 'a')", rule, None);
@@ -145,8 +145,8 @@ mod tests {
     }
 
     #[test]
-    fn test_no_lint_unnecessary_lambda_multiple_formals() {
-        let rule = "unnecessary_lambda";
+    fn test_no_lint_unnecessary_anonymous_function_multiple_formals() {
+        let rule = "unnecessary_anonymous_function";
         // Swapped positional arguments
         expect_no_lint("mapply(function(xi, yi) foo(yi, xi), x, y)", rule, None);
         // Discarded arguments
@@ -201,8 +201,8 @@ mod tests {
     }
 
     #[test]
-    fn test_no_lint_unnecessary_lambda_keyword_args() {
-        let rule = "unnecessary_lambda";
+    fn test_no_lint_unnecessary_anonymous_function_keyword_args() {
+        let rule = "unnecessary_anonymous_function";
         expect_no_lint("lapply(x, function(xi) data.frame(nm = xi))", rule, None);
         expect_no_lint(
             "lapply(x, function(xi) return(data.frame(nm = xi)))",
@@ -217,8 +217,8 @@ mod tests {
     }
 
     #[test]
-    fn test_no_lint_unnecessary_lambda_purrr() {
-        let rule = "unnecessary_lambda";
+    fn test_no_lint_unnecessary_anonymous_function_purrr() {
+        let rule = "unnecessary_anonymous_function";
         expect_no_lint("purrr::map(x, ~.x)", rule, None);
         expect_no_lint("purrr::map_df(x, ~lm(y, .x))", rule, None);
         expect_no_lint("map_dbl(x, ~foo(bar = .x))", rule, None);
@@ -234,9 +234,9 @@ mod tests {
     }
 
     #[test]
-    fn test_lint_unnecessary_lambda() {
+    fn test_lint_unnecessary_anonymous_function() {
         assert_snapshot!(snapshot_lint("lapply(DF, function(x) return(sum(x)))"), @"
-        warning: unnecessary_lambda
+        warning: unnecessary_anonymous_function
          --> <test>:1:12
           |
         1 | lapply(DF, function(x) return(sum(x)))
@@ -246,7 +246,7 @@ mod tests {
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("lapply(DF, \\(x) sum(x))"), @r"
-        warning: unnecessary_lambda
+        warning: unnecessary_anonymous_function
          --> <test>:1:12
           |
         1 | lapply(DF, \(x) sum(x))
@@ -256,7 +256,7 @@ mod tests {
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("rapply(l, function(x) is.data.frame(x))"), @"
-        warning: unnecessary_lambda
+        warning: unnecessary_anonymous_function
          --> <test>:1:11
           |
         1 | rapply(l, function(x) is.data.frame(x))
@@ -266,7 +266,7 @@ mod tests {
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("sapply(x, function(xi) (foo(xi)))"), @"
-        warning: unnecessary_lambda
+        warning: unnecessary_anonymous_function
          --> <test>:1:11
           |
         1 | sapply(x, function(xi) (foo(xi)))
@@ -276,7 +276,7 @@ mod tests {
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("sapply(x, function(xi) pkg::foo(xi))"), @"
-        warning: unnecessary_lambda
+        warning: unnecessary_anonymous_function
          --> <test>:1:11
           |
         1 | sapply(x, function(xi) pkg::foo(xi))
@@ -287,7 +287,7 @@ mod tests {
         ");
         // Multiple formals
         assert_snapshot!(snapshot_lint("mapply(function(xi, yi) foo(xi, yi), x, y)"), @"
-        warning: unnecessary_lambda
+        warning: unnecessary_anonymous_function
          --> <test>:1:8
           |
         1 | mapply(function(xi, yi) foo(xi, yi), x, y)
@@ -297,7 +297,7 @@ mod tests {
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("mapply(function(xi, y) foo(xi, y = y), x, y = z)"), @"
-        warning: unnecessary_lambda
+        warning: unnecessary_anonymous_function
          --> <test>:1:8
           |
         1 | mapply(function(xi, y) foo(xi, y = y), x, y = z)
@@ -307,7 +307,7 @@ mod tests {
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("outer(x, y, function(xi, yi) foo(xi, yi))"), @"
-        warning: unnecessary_lambda
+        warning: unnecessary_anonymous_function
          --> <test>:1:13
           |
         1 | outer(x, y, function(xi, yi) foo(xi, yi))
@@ -317,7 +317,7 @@ mod tests {
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("x |> outer(y, function(xi, yi) foo(xi, yi))"), @"
-        warning: unnecessary_lambda
+        warning: unnecessary_anonymous_function
          --> <test>:1:15
           |
         1 | x |> outer(y, function(xi, yi) foo(xi, yi))
@@ -327,7 +327,7 @@ mod tests {
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("mapply(function(xi, yi) foo(xi, yi), x, y, SIMPLIFY = FALSE)"), @"
-        warning: unnecessary_lambda
+        warning: unnecessary_anonymous_function
          --> <test>:1:8
           |
         1 | mapply(function(xi, yi) foo(xi, yi), x, y, SIMPLIFY = FALSE)
@@ -338,7 +338,7 @@ mod tests {
         ");
         // purrr
         assert_snapshot!(snapshot_lint("purrr::map(x, ~foo(.x), .progress = TRUE)"), @"
-        warning: unnecessary_lambda
+        warning: unnecessary_anonymous_function
          --> <test>:1:15
           |
         1 | purrr::map(x, ~foo(.x), .progress = TRUE)
@@ -348,7 +348,7 @@ mod tests {
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("x |> purrr::map(~foo(.x))"), @"
-        warning: unnecessary_lambda
+        warning: unnecessary_anonymous_function
          --> <test>:1:17
           |
         1 | x |> purrr::map(~foo(.x))
@@ -358,7 +358,7 @@ mod tests {
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("purrr::map(x, ~foo(.x))"), @"
-        warning: unnecessary_lambda
+        warning: unnecessary_anonymous_function
          --> <test>:1:15
           |
         1 | purrr::map(x, ~foo(.x))
@@ -368,7 +368,7 @@ mod tests {
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("purrr::map_vec(x, ~foo(.x))"), @"
-        warning: unnecessary_lambda
+        warning: unnecessary_anonymous_function
          --> <test>:1:19
           |
         1 | purrr::map_vec(x, ~foo(.x))
@@ -378,7 +378,7 @@ mod tests {
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("map(x, ~foo(.))"), @"
-        warning: unnecessary_lambda
+        warning: unnecessary_anonymous_function
          --> <test>:1:8
           |
         1 | map(x, ~foo(.))
@@ -388,7 +388,7 @@ mod tests {
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("purrr::map(x, function(xi) foo(xi))"), @"
-        warning: unnecessary_lambda
+        warning: unnecessary_anonymous_function
          --> <test>:1:15
           |
         1 | purrr::map(x, function(xi) foo(xi))
@@ -399,7 +399,7 @@ mod tests {
         ");
         // Braces
         assert_snapshot!(snapshot_lint("sapply(x, function(xi) { foo(xi) })"), @"
-        warning: unnecessary_lambda
+        warning: unnecessary_anonymous_function
          --> <test>:1:11
           |
         1 | sapply(x, function(xi) { foo(xi) })
@@ -409,7 +409,7 @@ mod tests {
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("lapply(x, function(xi) { return(print(xi)) })"), @"
-        warning: unnecessary_lambda
+        warning: unnecessary_anonymous_function
          --> <test>:1:11
           |
         1 | lapply(x, function(xi) { return(print(xi)) })
@@ -419,7 +419,7 @@ mod tests {
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("lapply(x, function(xi) {\n  return(print(xi))\n})"), @"
-        warning: unnecessary_lambda
+        warning: unnecessary_anonymous_function
          --> <test>:1:11
           |
         1 |   lapply(x, function(xi) {
@@ -432,7 +432,7 @@ mod tests {
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("lapply(y, function(yi) {\n  print(yi) # comment\n})"), @"
-        warning: unnecessary_lambda
+        warning: unnecessary_anonymous_function
          --> <test>:1:11
           |
         1 |   lapply(y, function(yi) {
@@ -446,27 +446,27 @@ mod tests {
         ");
         expect_no_lint(
             "lapply(x, function(xi) {\n  print(xi)\n  xi\n})",
-            "unnecessary_lambda",
+            "unnecessary_anonymous_function",
             None,
         );
         expect_no_lint(
             "lapply(x, function(xi) { foo(xi)$bar })",
-            "unnecessary_lambda",
+            "unnecessary_anonymous_function",
             None,
         );
         expect_no_lint(
             "lapply(x, function(xi) { foo(xi) - 1 })",
-            "unnecessary_lambda",
+            "unnecessary_anonymous_function",
             None,
         );
     }
 
     #[test]
-    fn test_lint_unnecessary_lambda_messages() {
+    fn test_lint_unnecessary_anonymous_function_messages() {
         assert_snapshot!(
             snapshot_lint("lapply(DF, function(x) sum(x))"),
             @"
-        warning: unnecessary_lambda
+        warning: unnecessary_anonymous_function
          --> <test>:1:12
           |
         1 | lapply(DF, function(x) sum(x))
@@ -479,14 +479,14 @@ mod tests {
         assert_snapshot!(
             snapshot_lint("{\n  sapply(x, function(xi) sd(xi))\n  lapply(y, function(yi) {\n    sum(yi)\n  })\n}"),
             @"
-        warning: unnecessary_lambda
+        warning: unnecessary_anonymous_function
          --> <test>:2:13
           |
         2 |   sapply(x, function(xi) sd(xi))
           |             ------------------- Unnecessary anonymous function around `sd()`.
           |
           = help: Pass `sd` directly to `sapply()`.
-        warning: unnecessary_lambda
+        warning: unnecessary_anonymous_function
          --> <test>:3:13
           |
         3 |     lapply(y, function(yi) {
@@ -502,7 +502,7 @@ mod tests {
     }
 
     #[test]
-    fn test_unnecessary_lambda_fix() {
+    fn test_unnecessary_anonymous_function_fix() {
         assert_snapshot!(
             "fix_output",
             get_unsafe_fixed_text(
@@ -515,12 +515,12 @@ mod tests {
                     // No fix: comments
                     "lapply(y, function(yi) {\n  print(yi) # comment\n})",
                 ],
-                "unnecessary_lambda"
+                "unnecessary_anonymous_function"
             )
         );
         // Unsafe fix only
         assert_snapshot!(
-            get_fixed_text(vec!["lapply(DF, function(x) sum(x))"], "unnecessary_lambda", None),
+            get_fixed_text(vec!["lapply(DF, function(x) sum(x))"], "unnecessary_anonymous_function", None),
             @"
         OLD:
         ====

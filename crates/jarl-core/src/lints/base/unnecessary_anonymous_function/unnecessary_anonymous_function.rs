@@ -89,7 +89,10 @@ const PURRR_OPTIONS: &[&str] = &[".progress", ".ptype", ".id"];
 /// purrr::map(x, sum)
 /// ```
 /// <!-- docs: end -->
-pub fn unnecessary_lambda(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
+pub fn unnecessary_anonymous_function(
+    ast: &RCall,
+    fn_name: &str,
+) -> anyhow::Result<Option<Diagnostic>> {
     let is_purrr = PURRR_MAPPERS.contains(&fn_name);
     if !is_purrr && !APPLY_FUNS.contains(&fn_name) {
         return Ok(None);
@@ -276,7 +279,7 @@ fn pass_directly_diagnostic(lambda: &RSyntaxNode, fun: &str, fn_name: &str) -> D
     let range = lambda.text_trimmed_range();
     Diagnostic::new(
         ViolationData::new(
-            Rule::UnnecessaryLambda,
+            Rule::UnnecessaryAnonymousFunction,
             format!("Unnecessary anonymous function around `{fun}()`."),
             Some(format!("Pass `{fun}` directly to `{fn_name}()`.")),
         ),

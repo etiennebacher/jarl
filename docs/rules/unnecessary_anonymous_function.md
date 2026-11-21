@@ -1,4 +1,4 @@
-# unnecessary_lambda
+# unnecessary_anonymous_function
 
 ::: {.callout-note title="Added in 0.8.0" .low-opacity}
 :::
