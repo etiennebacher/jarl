@@ -114,11 +114,22 @@ mod tests {
     #[test]
     fn test_no_lint_unnecessary_lambda_comparison() {
         let rule = "unnecessary_lambda";
-        // lapply() returns a list
         expect_no_lint("lapply(x, function(xi) foo(xi) == 2)", rule, None);
-        // Not a constant
+        expect_no_lint("sapply(x, function(xi) foo(xi) == 2)", rule, None);
+        expect_no_lint("sapply(x, function(xi) foo(xi) == 'a')", rule, None);
+        expect_no_lint("sapply(x, function(xi) 2 < foo(xi))", rule, None);
+        expect_no_lint("sapply(x, \\(xi) foo(xi) != TRUE)", rule, None);
+        expect_no_lint("sapply(x, function(xi) foo(xi) < 1 + 2i)", rule, None);
+        expect_no_lint("sapply(x, function(xi) round(xi, 2) == 1)", rule, None);
+        expect_no_lint("sapply(x, function(xi) { foo(xi) == 2 })", rule, None);
+        expect_no_lint("sapply(x, function(xi) return(foo(xi) == 2))", rule, None);
+        expect_no_lint(
+            "vapply(x, function(xi) foo(xi) == 2, logical(1L))",
+            rule,
+            None,
+        );
+        expect_no_lint("purrr::map_lgl(x, ~ foo(.x) == 2)", rule, None);
         expect_no_lint("sapply(x, function(xi) foo(xi) == y)", rule, None);
-        // Nested call
         expect_no_lint("sapply(x, function(xi) sum(abs(xi)) == 0)", rule, None);
 
         // Negations and unary operators
@@ -433,37 +444,6 @@ mod tests {
           = help: Pass `print` directly to `lapply()`.
         Found 1 error.
         ");
-        // Comparisons
-        assert_snapshot!(snapshot_lint("sapply(x, function(xi) foo(xi) == 'a')"), @"
-        warning: unnecessary_lambda
-         --> <test>:1:11
-          |
-        1 | sapply(x, function(xi) foo(xi) == 'a')
-          |           --------------------------- Comparing to a constant inside `sapply()` doesn't benefit from vectorization.
-          |
-          = help: Compare after calling `sapply()`, e.g. `sapply(x, foo) == 'a'`.
-        Found 1 error.
-        ");
-        assert_snapshot!(snapshot_lint("sapply(x, function(xi) 2 < foo(xi))"), @"
-        warning: unnecessary_lambda
-         --> <test>:1:11
-          |
-        1 | sapply(x, function(xi) 2 < foo(xi))
-          |           ------------------------ Comparing to a constant inside `sapply()` doesn't benefit from vectorization.
-          |
-          = help: Compare after calling `sapply()`, e.g. `2 < sapply(x, foo)`.
-        Found 1 error.
-        ");
-        assert_snapshot!(snapshot_lint("sapply(x, \\(xi) foo(xi) != TRUE)"), @r"
-        warning: unnecessary_lambda
-         --> <test>:1:11
-          |
-        1 | sapply(x, \(xi) foo(xi) != TRUE)
-          |           --------------------- Comparing to a constant inside `sapply()` doesn't benefit from vectorization.
-          |
-          = help: Compare after calling `sapply()`, e.g. `sapply(x, foo) != TRUE`.
-        Found 1 error.
-        ");
         expect_no_lint(
             "lapply(x, function(xi) {\n  print(xi)\n  xi\n})",
             "unnecessary_lambda",
@@ -493,32 +473,6 @@ mod tests {
           |            ------------------ Unnecessary anonymous function around `sum()`.
           |
           = help: Pass `sum` directly to `lapply()`.
-        Found 1 error.
-        "
-        );
-        assert_snapshot!(
-            snapshot_lint("sapply(x, function(xi) foo(xi) < 1 + 2i)"),
-            @"
-        warning: unnecessary_lambda
-         --> <test>:1:11
-          |
-        1 | sapply(x, function(xi) foo(xi) < 1 + 2i)
-          |           ----------------------------- Comparing to a constant inside `sapply()` doesn't benefit from vectorization.
-          |
-          = help: Compare after calling `sapply()`, e.g. `sapply(x, foo) < 1 + 2i`.
-        Found 1 error.
-        "
-        );
-        assert_snapshot!(
-            snapshot_lint("vapply(x, function(xi) foo(xi) == 2, logical(1L))"),
-            @"
-        warning: unnecessary_lambda
-         --> <test>:1:11
-          |
-        1 | vapply(x, function(xi) foo(xi) == 2, logical(1L))
-          |           ------------------------- Comparing to a constant inside `vapply()` doesn't benefit from vectorization.
-          |
-          = help: Compare after calling `vapply()`, e.g. `vapply(x, foo, FUN.VALUE = <intermediate>) == 2`.
         Found 1 error.
         "
         );
@@ -558,8 +512,6 @@ mod tests {
                     "lapply(x, function(xi) {\n  print(xi)\n})",
                     "mapply(function(xi, yi) foo(xi, yi), x, y)",
                     "purrr::map(x, ~ pkg::foo(.x))",
-                    // No fix: comparison
-                    "sapply(x, function(xi) foo(xi) == 2)",
                     // No fix: comments
                     "lapply(y, function(yi) {\n  print(yi) # comment\n})",
                 ],

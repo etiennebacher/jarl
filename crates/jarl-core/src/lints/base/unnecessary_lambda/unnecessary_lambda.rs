@@ -60,42 +60,33 @@ const PURRR_OPTIONS: &[&str] = &[".progress", ".ptype", ".id"];
 /// and similar functions, that only call another function, e.g.
 /// `lapply(x, function(xi) sum(xi))`.
 ///
-/// It also checks for anonymous functions in `sapply()` and `vapply()` that
-/// only compare the result of a function to a constant, e.g.
-/// `sapply(x, function(xi) foo(xi) == 2)`.
-///
 /// ## Why is this bad?
 ///
 /// The anonymous function is unnecessary: the function it calls can be passed
 /// directly, e.g. `lapply(x, sum)`.
 ///
-/// Comparing to a constant once on the output of `sapply()` or `vapply()`,
-/// e.g. `sapply(x, foo) == 2`, is faster than doing it for every element since
-/// `==` is vectorized.
-///
-/// Anonymous functions whose first argument isn't the iterated element, e.g.
+/// Anonymous functions that do more than calling another function, e.g.
+/// `sapply(x, function(xi) foo(xi) == 2)`, are not reported. Neither are
+/// anonymous functions whose first argument isn't the iterated element, e.g.
 /// `lapply(x, function(xi) grep("a", xi))`, or that pass extra arguments to the
 /// inner function, e.g. `lapply(x, function(xi) sum(xi, na.rm = TRUE))` or
-/// `lapply(x, function(xi, y) foo(xi, y), y)`, are not reported because removing
-/// them is not always more readable.
+/// `lapply(x, function(xi, y) foo(xi, y), y)`, because removing them is not
+/// always more readable.
 ///
-/// This rule has an unsafe automatic fix when the anonymous function only
-/// passes its arguments to the inner function. It is unsafe because the inner
-/// function may use non-standard evaluation, e.g. `function(x) substitute(x)`.
+/// This rule has an unsafe automatic fix because the inner function may use
+/// non-standard evaluation, e.g. `function(x) substitute(x)`.
 ///
 /// ## Example
 ///
 /// ```r
 /// lapply(x, function(xi) sum(xi))
 /// purrr::map(x, ~ sum(.x))
-/// sapply(x, function(xi) foo(xi) == 2)
 /// ```
 ///
 /// Use instead:
 /// ```r
 /// lapply(x, sum)
 /// purrr::map(x, sum)
-/// sapply(x, foo) == 2
 /// ```
 /// <!-- docs: end -->
 pub fn unnecessary_lambda(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
@@ -180,64 +171,12 @@ fn check_lambda(
     }
 
     let body = unwrap_body(lambda.body().ok()?);
-
-    if let Some(call) = body.as_r_call() {
-        let (fun, only_formals) = inner_call_target(call, &formals, &formals, outer_args)?;
-        if !only_formals {
-            return None;
-        }
-        return Some(pass_directly_diagnostic(lambda.syntax(), &fun, fn_name));
-    }
-
-    if !matches!(fn_name, "sapply" | "vapply") {
+    let call = body.as_r_call()?;
+    let (fun, only_formals) = inner_call_target(call, &formals, &formals, outer_args)?;
+    if !only_formals {
         return None;
     }
-    let binary = body.as_r_binary_expression()?;
-    let operator = binary.operator().ok()?;
-    if !matches!(
-        operator.kind(),
-        RSyntaxKind::EQUAL2
-            | RSyntaxKind::NOT_EQUAL
-            | RSyntaxKind::LESS_THAN
-            | RSyntaxKind::LESS_THAN_OR_EQUAL_TO
-            | RSyntaxKind::GREATER_THAN
-            | RSyntaxKind::GREATER_THAN_OR_EQUAL_TO
-    ) {
-        return None;
-    }
-    let (left, right) = (binary.left().ok()?, binary.right().ok()?);
-    let (call, constant, call_on_left) = match (left.as_r_call(), right.as_r_call()) {
-        (Some(call), None) if is_constant(&right) => (call, right.clone(), true),
-        (None, Some(call)) if is_constant(&left) => (call, left.clone(), false),
-        _ => return None,
-    };
-    let (fun, _) = inner_call_target(call, &formals, &formals, outer_args)?;
-
-    let fun_value = if fn_name == "vapply" {
-        ", FUN.VALUE = <intermediate>"
-    } else {
-        ""
-    };
-    let applied = format!("{fn_name}(x, {fun}{fun_value})");
-    let (op, constant) = (operator.text_trimmed(), constant.syntax().text_trimmed());
-    let comparison = if call_on_left {
-        format!("{applied} {op} {constant}")
-    } else {
-        format!("{constant} {op} {applied}")
-    };
-    Some(Diagnostic::new(
-        ViolationData::new(
-            Rule::UnnecessaryLambda,
-            format!(
-                "Comparing to a constant inside `{fn_name}()` doesn't benefit from vectorization."
-            ),
-            Some(format!(
-                "Compare after calling `{fn_name}()`, e.g. `{comparison}`."
-            )),
-        ),
-        lambda.syntax().text_trimmed_range(),
-        Fix::empty(),
-    ))
+    Some(pass_directly_diagnostic(lambda.syntax(), &fun, fn_name))
 }
 
 /// purrr-style lambdas, e.g. `~ foo(.x)`.
@@ -392,32 +331,6 @@ fn symbol_name(node: &RSyntaxNode) -> Option<String> {
 
 fn argument_name(arg: &RArgument) -> Option<String> {
     symbol_name(arg.name_clause()?.name().ok()?.syntax())
-}
-
-/// Numbers, strings, `TRUE`/`FALSE`, and complex numbers like `1 + 2i`.
-fn is_constant(expr: &AnyRExpression) -> bool {
-    match expr {
-        AnyRExpression::AnyRValue(_)
-        | AnyRExpression::RTrueExpression(_)
-        | AnyRExpression::RFalseExpression(_) => true,
-        AnyRExpression::RBinaryExpression(binary) => {
-            binary
-                .operator()
-                .is_ok_and(|op| op.kind() == RSyntaxKind::PLUS)
-                && binary.left().is_ok_and(|e| is_number(&e))
-                && binary.right().is_ok_and(|e| is_number(&e))
-        }
-        _ => false,
-    }
-}
-
-fn is_number(expr: &AnyRExpression) -> bool {
-    matches!(
-        expr,
-        AnyRExpression::AnyRValue(
-            AnyRValue::RDoubleValue(_) | AnyRValue::RIntegerValue(_) | AnyRValue::RComplexValue(_)
-        )
-    )
 }
 
 fn is_piped(call: &RCall) -> bool {
