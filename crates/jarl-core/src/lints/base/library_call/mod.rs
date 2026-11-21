@@ -262,6 +262,7 @@ library(abc)
                     "library(baz)\nx <- 1\nif (foo) {\n    library(bar)\n} else {\n    library(bar2)\n}"
                 ],
                 "library_call",
+                None,
             )
         );
 
@@ -276,6 +277,7 @@ library(abc)
                     "options(warn = 1)\nSys.setenv(LANG = \"en\")\nx <- 1\nlibrary(foo)\n",
                 ],
                 "library_call",
+                None,
             )
         );
     }
@@ -298,6 +300,7 @@ library(abc)
                     "library(dplyr)\nx <- 1\nlibrary(purrr); y <- 2 # trailing\n",
                 ],
                 "library_call",
+                None,
             )
         );
     }

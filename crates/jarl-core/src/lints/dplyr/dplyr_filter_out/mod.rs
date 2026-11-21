@@ -17,7 +17,7 @@ mod tests {
     }
 
     fn snapshot_fix(code: &str) -> String {
-        get_unsafe_fixed_text_with_cache(vec![code], "dplyr_filter_out", &NS)
+        get_unsafe_fixed_text_with_cache(vec![code], "dplyr_filter_out", None, &NS)
     }
 
     #[test]

@@ -301,7 +301,8 @@ mod tests {
                     "expect_equal(2, x) |> identity()",
                     "expect_equal(2, expect_identical('a', x))",
                 ],
-                "yoda_condition"
+                "yoda_condition",
+                None
             )
         );
     }
@@ -320,7 +321,8 @@ mod tests {
                     "expect_equal(2, # expected\nx)",
                     "expect_equal(2, foo( # actual\nx))",
                 ],
-                "yoda_condition"
+                "yoda_condition",
+                None
             )
         );
     }

@@ -115,6 +115,7 @@ mod tests {
                     "stop('boom', call. =)",
                 ],
                 "condition_call",
+                None
             )
         );
     }
@@ -131,6 +132,7 @@ mod tests {
                     "stop('boom', call. = TRUE) # trailing comment",
                 ],
                 "condition_call",
+                None
             )
         );
     }
