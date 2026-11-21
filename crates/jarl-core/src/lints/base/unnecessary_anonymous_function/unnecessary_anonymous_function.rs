@@ -19,7 +19,6 @@ const APPLY_FUNS: &[&str] = &[
     "dendrapply",
     "mapply",
     "by",
-    "outer",
     "mclapply",
     "mcmapply",
     "parApply",
@@ -150,7 +149,6 @@ fn check_lambda(
     // than `lapply(x, foo, y)`.
     let n_iterated = match fn_name {
         "mapply" | "mcmapply" => usize::MAX,
-        "outer" => 2,
         _ => 1,
     };
     if formals.is_empty() || formals.len() > n_iterated {
@@ -174,11 +172,7 @@ fn check_lambda(
     }
 
     let body = unwrap_body(lambda.body().ok()?);
-    let call = body.as_r_call()?;
-    let (fun, only_formals) = inner_call_target(call, &formals, &formals, outer_args)?;
-    if !only_formals {
-        return None;
-    }
+    let fun = inner_call_target(body.as_r_call()?, &formals, outer_args)?;
     Some(pass_directly_diagnostic(lambda.syntax(), &fun, fn_name))
 }
 
@@ -204,29 +198,17 @@ fn check_formula(
     if first != ".x" && first != "." {
         return None;
     }
-    // All of these refer to the same element.
-    let forbidden = [".x", ".", "..1"].map(String::from);
-    let (fun, only_formals) = inner_call_target(call, &[first], &forbidden, outer_args)?;
-    if !only_formals {
-        return None;
-    }
+    let fun = inner_call_target(call, &[first], outer_args)?;
     Some(pass_directly_diagnostic(formula.syntax(), &fun, fn_name))
 }
 
 /// If `call` can replace the anonymous function, return the text of its
-/// function and whether `call` has no arguments other than `formals`.
+/// function.
 ///
-/// The leading arguments of `call` must be `formals` in order, the first one
+/// The arguments of `call` must be exactly `formals` in order, the first one
 /// passed positionally and the others passed the same way as in the outer
-/// call (positionally or by matching name). The remaining arguments must not
-/// refer to `forbidden` symbols nor contain calls, which would be evaluated
-/// once instead of for each element.
-fn inner_call_target(
-    call: &RCall,
-    formals: &[String],
-    forbidden: &[String],
-    outer_args: &[RArgument],
-) -> Option<(String, bool)> {
+/// call (positionally or by matching name).
+fn inner_call_target(call: &RCall, formals: &[String], outer_args: &[RArgument]) -> Option<String> {
     let function = call.function().ok()?;
     if function.as_r_identifier().is_none() && function.as_r_namespace_expression().is_none() {
         return None;
@@ -237,7 +219,7 @@ fn inner_call_target(
     }
 
     let inner_args: Vec<RArgument> = call.arguments().ok()?.items().iter().flatten().collect();
-    if inner_args.len() < formals.len() {
+    if inner_args.len() != formals.len() {
         return None;
     }
 
@@ -259,20 +241,7 @@ fn inner_call_target(
         }
     }
 
-    for arg in &inner_args[formals.len()..] {
-        let Some(value) = arg.value() else {
-            continue;
-        };
-        let is_invalid = value.syntax().descendants().any(|node| {
-            RCall::can_cast(node.kind())
-                || symbol_name(&node).is_some_and(|name| forbidden.contains(&name))
-        });
-        if is_invalid {
-            return None;
-        }
-    }
-
-    Some((fun, inner_args.len() == formals.len()))
+    Some(fun)
 }
 
 fn pass_directly_diagnostic(lambda: &RSyntaxNode, fun: &str, fn_name: &str) -> Diagnostic {

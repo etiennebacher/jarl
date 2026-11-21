@@ -151,7 +151,6 @@ mod tests {
         expect_no_lint("mapply(function(xi, yi) foo(yi, xi), x, y)", rule, None);
         // Discarded arguments
         expect_no_lint("mapply(function(xi, yi) foo(xi), x, y)", rule, None);
-        expect_no_lint("outer(x, y, function(xi, yi) foo(xi))", rule, None);
         expect_no_lint("purrr::map2(x, y, function(xi, yi) foo(xi))", rule, None);
         // `yi` is not supplied by the outer call
         expect_no_lint("mapply(function(xi, yi) foo(xi, yi), x)", rule, None);
@@ -193,11 +192,12 @@ mod tests {
         expect_no_lint("lapply(x, \\(xi, y) foo(xi, y = y), y = 1)", rule, None);
         expect_no_lint("lapply(x, \\(xi, ...) foo(xi, ...), y = 1)", rule, None);
         expect_no_lint("purrr::map(x, function(xi, y) foo(xi, y), y)", rule, None);
-        expect_no_lint(
-            "outer(x, y, function(xi, yi, z) foo(xi, yi, z), z)",
-            rule,
-            None,
-        );
+
+        // `outer()` is not supported: it passes `X` and `Y` positionally, so
+        // the named arguments of the inner call can't be kept
+        expect_no_lint("outer(x, y, function(xi, yi) foo(xi, yi))", rule, None);
+        expect_no_lint("x |> outer(y, function(xi, yi) foo(xi, yi))", rule, None);
+        expect_no_lint("outer(x, function(xi) foo(xi))", rule, None);
     }
 
     #[test]
@@ -304,26 +304,6 @@ mod tests {
           |        ------------------------------ Unnecessary anonymous function around `foo()`.
           |
           = help: Pass `foo` directly to `mapply()`.
-        Found 1 error.
-        ");
-        assert_snapshot!(snapshot_lint("outer(x, y, function(xi, yi) foo(xi, yi))"), @"
-        warning: unnecessary_anonymous_function
-         --> <test>:1:13
-          |
-        1 | outer(x, y, function(xi, yi) foo(xi, yi))
-          |             ---------------------------- Unnecessary anonymous function around `foo()`.
-          |
-          = help: Pass `foo` directly to `outer()`.
-        Found 1 error.
-        ");
-        assert_snapshot!(snapshot_lint("x |> outer(y, function(xi, yi) foo(xi, yi))"), @"
-        warning: unnecessary_anonymous_function
-         --> <test>:1:15
-          |
-        1 | x |> outer(y, function(xi, yi) foo(xi, yi))
-          |               ---------------------------- Unnecessary anonymous function around `foo()`.
-          |
-          = help: Pass `foo` directly to `outer()`.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("mapply(function(xi, yi) foo(xi, yi), x, y, SIMPLIFY = FALSE)"), @"
