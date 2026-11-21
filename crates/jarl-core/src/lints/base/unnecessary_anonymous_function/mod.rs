@@ -515,7 +515,8 @@ mod tests {
                     // No fix: comments
                     "lapply(y, function(yi) {\n  print(yi) # comment\n})",
                 ],
-                "unnecessary_anonymous_function"
+                "unnecessary_anonymous_function",
+                None
             )
         );
         // Unsafe fix only
