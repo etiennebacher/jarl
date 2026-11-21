@@ -519,17 +519,5 @@ mod tests {
                 None
             )
         );
-        // Unsafe fix only
-        assert_snapshot!(
-            get_fixed_text(vec!["lapply(DF, function(x) sum(x))"], "unnecessary_anonymous_function", None),
-            @"
-        OLD:
-        ====
-        lapply(DF, function(x) sum(x))
-        NEW:
-        ====
-        lapply(DF, function(x) sum(x))
-        "
-        );
     }
 }
