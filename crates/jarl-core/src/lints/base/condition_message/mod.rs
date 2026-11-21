@@ -248,6 +248,7 @@ mod tests {
                     "'hello ' |> paste0() |> warning(domain = foo)",
                 ],
                 "condition_message",
+                None
             )
         );
     }
@@ -264,6 +265,7 @@ mod tests {
                     "stop(paste0('hello'), call. = TRUE) # trailing comment",
                 ],
                 "condition_message",
+                None
             )
         );
     }

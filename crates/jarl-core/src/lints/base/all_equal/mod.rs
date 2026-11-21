@@ -113,6 +113,7 @@ mod tests {
 ) message('equal')",
                 ],
                 "all_equal",
+                None,
             )
         );
     }
@@ -135,7 +136,7 @@ mod tests {
         );
         assert_snapshot!(
             "multiline_pipe",
-            get_unsafe_fixed_text(vec!["all.equal(a, b) |>\n  isFALSE()"], "all_equal",)
+            get_unsafe_fixed_text(vec!["all.equal(a, b) |>\n  isFALSE()"], "all_equal", None,)
         );
     }
 
@@ -151,6 +152,7 @@ mod tests {
                     "if (all.equal(a, b)) message('equal') # trailing comment",
                 ],
                 "all_equal",
+                None,
             )
         );
     }

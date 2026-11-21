@@ -126,7 +126,11 @@ mod tests {
         // No fixes because we can't infer if it is correct or not.
         assert_snapshot!(
             "no_fix_output",
-            get_unsafe_fixed_text(vec!["is_regression <- class(x) == 'lm'",], "class_equals")
+            get_unsafe_fixed_text(
+                vec!["is_regression <- class(x) == 'lm'",],
+                "class_equals",
+                None
+            )
         );
 
         assert_snapshot!(
@@ -145,7 +149,8 @@ mod tests {
                     "if (class(foo(bar(y) + 1)) == 'abc') 1",
                     "if (my_fun(class(x) != 'character')) 1",
                 ],
-                "class_equals"
+                "class_equals",
+                None
             )
         );
     }
@@ -228,7 +233,8 @@ mod tests {
                     "is_regression <- identical(class(x), 'lm')",
                     "is_regression <- identical('lm', class(x))",
                 ],
-                "class_equals"
+                "class_equals",
+                None
             )
         );
     }
@@ -244,7 +250,8 @@ mod tests {
                     "if(\n  class(\n  # comment\nx) == 'foo'\n) 1",
                     "if (class(x) == 'foo') 1 # trailing comment",
                 ],
-                "class_equals"
+                "class_equals",
+                None
             )
         );
     }

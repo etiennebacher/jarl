@@ -236,6 +236,7 @@ mod tests {
                     "y <- lapply(\n  x,\n  function(x) NULL\n)",
                 ],
                 "null_list",
+                None,
             )
         );
     }
@@ -250,6 +251,7 @@ mod tests {
                     "lapply(\n  # comment\n  x,\n  function(x) NULL\n)",
                 ],
                 "null_list",
+                None,
             )
         );
     }
