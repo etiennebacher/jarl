@@ -735,6 +735,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    UnnecessaryAnonymousFunction => {
+        name: "unnecessary_anonymous_function",
+        categories: [Read],
+        default: Disabled,
+        fix: Unsafe,
+        min_r_version: None,
+    },
     UnnecessaryNesting => {
         name: "unnecessary_nesting",
         categories: [Read],

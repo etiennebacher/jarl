@@ -1,0 +1,51 @@
+---
+source: crates/jarl-core/src/lints/base/unnecessary_anonymous_function/mod.rs
+expression: "get_unsafe_fixed_text(vec![\"lapply(DF, function(x) sum(x))\",\n\"lapply(DF, \\\\(x) return(sum(x)))\",\n\"lapply(x, function(xi) {\\n  print(xi)\\n})\",\n\"mapply(function(xi, yi) foo(xi, yi), x, y)\", \"purrr::map(x, ~ pkg::foo(.x))\",\n\"lapply(y, function(yi) {\\n  print(yi) # comment\\n})\",], \"unnecessary_anonymous_function\")"
+---
+OLD:
+====
+lapply(DF, function(x) sum(x))
+NEW:
+====
+lapply(DF, sum)
+
+OLD:
+====
+lapply(DF, \(x) return(sum(x)))
+NEW:
+====
+lapply(DF, sum)
+
+OLD:
+====
+lapply(x, function(xi) {
+  print(xi)
+})
+NEW:
+====
+lapply(x, print)
+
+OLD:
+====
+mapply(function(xi, yi) foo(xi, yi), x, y)
+NEW:
+====
+mapply(foo, x, y)
+
+OLD:
+====
+purrr::map(x, ~ pkg::foo(.x))
+NEW:
+====
+purrr::map(x, pkg::foo)
+
+OLD:
+====
+lapply(y, function(yi) {
+  print(yi) # comment
+})
+NEW:
+====
+lapply(y, function(yi) {
+  print(yi) # comment
+})
