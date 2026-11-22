@@ -13,6 +13,7 @@
   * `keyword_quote` (#825)
   * `list_comparison` (#572, @Yousa-Mirage)
   * `null_list` (#785, @JosephBARBIERDARNAL)
+  * `paste` (#489, @novica)
   * `terminal_close` (#811)
   * `todo_comment` (#739, @Yousa-Mirage)
 

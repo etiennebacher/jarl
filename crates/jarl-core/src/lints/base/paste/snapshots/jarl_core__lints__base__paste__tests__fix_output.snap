@@ -1,0 +1,59 @@
+---
+source: crates/jarl-core/src/lints/base/paste/mod.rs
+expression: "get_fixed_text(vec![\"paste('a', 'b', sep = '')\",\n\"paste(sep = '', a, b, collapse = ',')\", \"base::paste(a, b, sep = '')\",\n\"x |> paste(y, sep = '')\", \"paste(x, collapse = ', ')\",\n\"paste0(foo(x), collapse = ', ')\", \"paste(rep('#', width), collapse = '')\",\n\"paste0(rep('*', times = 20L), collapse = '')\",], \"paste\", None,)"
+---
+OLD:
+====
+paste('a', 'b', sep = '')
+NEW:
+====
+paste0('a', 'b')
+
+OLD:
+====
+paste(sep = '', a, b, collapse = ',')
+NEW:
+====
+paste0(a, b, collapse = ',')
+
+OLD:
+====
+base::paste(a, b, sep = '')
+NEW:
+====
+base::paste0(a, b)
+
+OLD:
+====
+x |> paste(y, sep = '')
+NEW:
+====
+x |> paste0(y)
+
+OLD:
+====
+paste(x, collapse = ', ')
+NEW:
+====
+toString(x)
+
+OLD:
+====
+paste0(foo(x), collapse = ', ')
+NEW:
+====
+toString(foo(x))
+
+OLD:
+====
+paste(rep('#', width), collapse = '')
+NEW:
+====
+strrep('#', width)
+
+OLD:
+====
+paste0(rep('*', times = 20L), collapse = '')
+NEW:
+====
+strrep('*', 20L)
