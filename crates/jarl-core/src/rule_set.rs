@@ -588,6 +588,13 @@ declare_rules! {
         fix: Unsafe,
         min_r_version: None,
     },
+    Paste => {
+        name: "paste",
+        categories: [Read],
+        default: Enabled,
+        fix: Safe,
+        min_r_version: None,
+    },
     PipeConsistency => {
         name: "pipe_consistency",
         categories: [Read],

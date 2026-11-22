@@ -1,0 +1,25 @@
+---
+source: crates/jarl-core/src/lints/base/paste/mod.rs
+expression: "get_fixed_text(vec![\"paste(rep('a', each = 2), collapse = '')\",\n\"paste(\\n  'a', # comment\\n  'b',\\n  sep = ''\\n)\",], \"paste\", None,)"
+---
+OLD:
+====
+paste(rep('a', each = 2), collapse = '')
+NEW:
+====
+paste(rep('a', each = 2), collapse = '')
+
+OLD:
+====
+paste(
+  'a', # comment
+  'b',
+  sep = ''
+)
+NEW:
+====
+paste(
+  'a', # comment
+  'b',
+  sep = ''
+)
