@@ -738,7 +738,7 @@ declare_rules! {
     UnnecessaryAnonymousFunction => {
         name: "unnecessary_anonymous_function",
         categories: [Read],
-        default: Enabled,
+        default: Disabled,
         fix: Unsafe,
         min_r_version: None,
     },
