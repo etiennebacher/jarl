@@ -1,0 +1,47 @@
+---
+source: crates/jarl-core/src/lints/base/deparse1/mod.rs
+expression: "get_unsafe_fixed_text_with_settings(vec![\"# leading comment\\npaste(deparse(x), collapse = ' ')\",\n\"paste(deparse(x), collapse = ' ') # trailing comment\",\n\"paste(\\n  # comment\\n  deparse(x),\\n  collapse = ' '\\n)\",\n\"paste(deparse(\\n  # comment\\n  x\\n), collapse = ' ')\",], \"deparse1\",\nSome(\"4.0.0\"), None)"
+---
+OLD:
+====
+# leading comment
+paste(deparse(x), collapse = ' ')
+NEW:
+====
+# leading comment
+deparse1(x)
+
+OLD:
+====
+paste(deparse(x), collapse = ' ') # trailing comment
+NEW:
+====
+deparse1(x) # trailing comment
+
+OLD:
+====
+paste(
+  # comment
+  deparse(x),
+  collapse = ' '
+)
+NEW:
+====
+paste(
+  # comment
+  deparse(x),
+  collapse = ' '
+)
+
+OLD:
+====
+paste(deparse(
+  # comment
+  x
+), collapse = ' ')
+NEW:
+====
+paste(deparse(
+  # comment
+  x
+), collapse = ' ')
