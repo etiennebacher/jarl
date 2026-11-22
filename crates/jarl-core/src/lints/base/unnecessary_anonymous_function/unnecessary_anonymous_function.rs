@@ -51,7 +51,7 @@ const MAPPLY_OPTIONS: &[&str] = &[
 const PURRR_OPTIONS: &[&str] = &[".progress", ".ptype", ".id"];
 
 /// <!-- docs: start -->
-/// Version added: 0.8.0
+/// Version added: unreleased
 ///
 /// ## What it does
 ///
